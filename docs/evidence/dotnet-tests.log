@@ -1,0 +1,5 @@
+C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\bin\Release\net10.0\Aegis.Contracts.Tests.dll(.NETCoreApp,Version=v10.0)에 대한 테스트 실행
+지정된 패턴과 일치한 총 테스트 파일 수는 1개입니다.
+결과 파일: C:\Users\김진우\Desktop\Aegis\docs\evidence\dotnet-results\김진우_감자_2026-10-18_00_25_07_net10.0.trx
+
+통과!  - 실패:     0, 통과:    32, 건너뜀:     0, 전체:    32, 기간: 1 s - Aegis.Contracts.Tests.dll (net10.0)

@@ -1,0 +1,101 @@
+{
+  "scope": "2 independent module acquisition/archive/advisory processes and one integration API.",
+  "sampleIntervalMs": 20,
+  "signalsPerModule": 256,
+  "before": [
+    {
+      "deviceId": "EQ-SUPPLY-01",
+      "equipmentId": "CMP-DEMO-01",
+      "moduleId": "MODULE-01",
+      "transport": "replay",
+      "archiveEnabled": true,
+      "signalCount": 256,
+      "acceptedSignalValues": 23552,
+      "archiveCommitMs": 70.814,
+      "latestAvailableSequence": 118,
+      "pendingBatches": 27,
+      "observedLagMs": 988.758,
+      "lastObservedAtUtc": "2026-10-19T10:51:07.962000+00:00",
+      "lastCommittedRunId": "e637f745-c4b1-40e8-9ac8-155b75441270",
+      "lastCommittedSequence": 91,
+      "workerPid": 11988,
+      "restartCount": 0,
+      "workerState": "RUNNING"
+    },
+    {
+      "deviceId": "EQ-SUPPLY-02",
+      "equipmentId": "CMP-DEMO-01",
+      "moduleId": "MODULE-02",
+      "transport": "replay",
+      "archiveEnabled": true,
+      "signalCount": 256,
+      "acceptedSignalValues": 23552,
+      "archiveCommitMs": 65.649,
+      "latestAvailableSequence": 117,
+      "pendingBatches": 26,
+      "observedLagMs": 976.758,
+      "lastObservedAtUtc": "2026-10-19T10:51:07.974000+00:00",
+      "lastCommittedRunId": "ae78af2d-3ee9-478f-9dee-61ddbb94f63a",
+      "lastCommittedSequence": 91,
+      "workerPid": 15864,
+      "restartCount": 0,
+      "workerState": "RUNNING"
+    }
+  ],
+  "after": [
+    {
+      "deviceId": "EQ-SUPPLY-01",
+      "equipmentId": "CMP-DEMO-01",
+      "moduleId": "MODULE-01",
+      "transport": "replay",
+      "archiveEnabled": true,
+      "signalCount": 256,
+      "acceptedSignalValues": 11776,
+      "archiveCommitMs": 31.372,
+      "latestAvailableSequence": 271,
+      "pendingBatches": 97,
+      "observedLagMs": 2103.992,
+      "lastObservedAtUtc": "2026-10-19T10:51:09.622000+00:00",
+      "lastCommittedRunId": "e637f745-c4b1-40e8-9ac8-155b75441270",
+      "lastCommittedSequence": 174,
+      "workerPid": 9520,
+      "restartCount": 1,
+      "workerState": "RUNNING"
+    },
+    {
+      "deviceId": "EQ-SUPPLY-02",
+      "equipmentId": "CMP-DEMO-01",
+      "moduleId": "MODULE-02",
+      "transport": "replay",
+      "archiveEnabled": true,
+      "signalCount": 256,
+      "acceptedSignalValues": 68352,
+      "archiveCommitMs": 7.531,
+      "latestAvailableSequence": 266,
+      "pendingBatches": 0,
+      "observedLagMs": 251.992,
+      "lastObservedAtUtc": "2026-10-19T10:51:11.474000+00:00",
+      "lastCommittedRunId": "ae78af2d-3ee9-478f-9dee-61ddbb94f63a",
+      "lastCommittedSequence": 266,
+      "workerPid": 15864,
+      "restartCount": 0,
+      "workerState": "RUNNING"
+    }
+  ],
+  "peerWorkerPidUnchanged": true,
+  "workerRestarted": true,
+  "workersExitedAfterSupervisorLoss": true,
+  "contiguousArchives": [
+    {
+      "deviceId": "EQ-SUPPLY-01",
+      "batches": 175,
+      "signalValues": 44800
+    },
+    {
+      "deviceId": "EQ-SUPPLY-02",
+      "batches": 278,
+      "signalValues": 71168
+    }
+  ],
+  "ownedChildrenCleanedUp": true
+}

@@ -1,0 +1,7 @@
+{
+  "sources": [
+    {"deviceId": "CMP-01.CMC-01", "equipmentId": "CMP-01", "moduleId": "CMC-01", "baseUrl": "http://127.0.0.1:8771", "transport": "replay", "pollIntervalMs": 100, "analysisProfile": "raw"},
+    {"deviceId": "CMP-01.PMC-01", "equipmentId": "CMP-01", "moduleId": "PMC-01", "baseUrl": "http://127.0.0.1:8772", "transport": "replay", "pollIntervalMs": 100, "analysisProfile": "flow"},
+    {"deviceId": "CMP-01.SCHEDULER", "equipmentId": "CMP-01", "moduleId": "SCHEDULER", "baseUrl": "http://127.0.0.1:8773", "transport": "replay", "pollIntervalMs": 100, "analysisProfile": "raw"}
+  ]
+}

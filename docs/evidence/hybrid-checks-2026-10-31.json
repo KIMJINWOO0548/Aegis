@@ -1,0 +1,105 @@
+{
+  "generatedAtUtc": "2026-10-31T14:35:27.2485053Z",
+  "checks": [
+    {
+      "name": "contract-drift",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 0.339,
+      "log": "artifacts/checks/contract-drift.log"
+    },
+    {
+      "name": "contract-v34",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 0.957,
+      "log": "artifacts/checks/contract-v34.log"
+    },
+    {
+      "name": "python-pytest",
+      "status": "failed",
+      "exitCode": 1,
+      "durationSeconds": 111.951,
+      "log": "artifacts/checks/python-pytest.log"
+    },
+    {
+      "name": "emulator-unittest",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 18.947,
+      "log": "artifacts/checks/emulator-unittest.log"
+    },
+    {
+      "name": "ui-tests",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 7.769,
+      "log": "artifacts/checks/ui-tests.log"
+    },
+    {
+      "name": "ui-build",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 74.775,
+      "log": "artifacts/checks/ui-build.log"
+    },
+    {
+      "name": "dotnet-restore",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 7.133,
+      "log": "artifacts/checks/dotnet-restore.log"
+    },
+    {
+      "name": "dotnet-release-build",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 47.499,
+      "log": "artifacts/checks/dotnet-release-build.log"
+    },
+    {
+      "name": "dotnet-tests",
+      "status": "failed",
+      "exitCode": 1,
+      "durationSeconds": 14.563,
+      "log": "artifacts/checks/dotnet-tests.log"
+    },
+    {
+      "name": "gateway-inprocess-checks",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 7.217,
+      "log": "artifacts/checks/gateway-inprocess-checks.log"
+    }
+  ],
+  "overallStatus": "failed",
+  "selectedInProcessChecks": {
+    "cases": 47,
+    "status": "passed",
+    "scope": "C# engine + dashboard endpoint + window work-area xUnit cases only"
+  },
+  "python": {
+    "total": 300,
+    "passed": 257,
+    "failed": 43,
+    "directWin10014Errors": 35,
+    "apiOrWorkerStartFailures": 8
+  },
+  "browser": {
+    "sourceMode": "FIXTURES",
+    "realGatewayConnected": false,
+    "widthsWithoutPageOverflow": [
+      1366,
+      1024,
+      768,
+      390
+    ],
+    "workflowNodesInsideContainer": true,
+    "signalRows": 8,
+    "searchRows": 1,
+    "staleCurrentFilterEmpty": true,
+    "staleHistoricalRows": 8,
+    "finalPageConsoleErrors": 0,
+    "mobileScreenshot": "first capture timed out; mobile DOM bounds verified"
+  }
+}

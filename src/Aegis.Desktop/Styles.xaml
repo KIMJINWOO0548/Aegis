@@ -1,0 +1,59 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <FontFamily x:Key="AppFont">./Assets/Fonts/#Pretendard</FontFamily>
+    <SolidColorBrush x:Key="InkBrush" Color="#10243A" />
+    <SolidColorBrush x:Key="MutedBrush" Color="#536579" />
+    <SolidColorBrush x:Key="RuleBrush" Color="#E2E8F0" />
+    <Style x:Key="ActionButton" TargetType="Button">
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="26,12" />
+        <Setter Property="MinHeight" Value="48" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="5" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#102F55" />
+                            <Setter TargetName="ButtonBorder" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+        <Setter Property="Background" Value="#2679BC" />
+        <Setter Property="BorderBrush" Value="#2679BC" />
+        <Setter Property="Foreground" Value="White" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#2172B0" /></Trigger>
+            <Trigger Property="IsPressed" Value="True"><Setter Property="Background" Value="#1D68A5" /></Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+        <Setter Property="Background" Value="White" />
+        <Setter Property="BorderBrush" Value="#A6B4C3" />
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#EDF4FA" /></Trigger>
+            <Trigger Property="IsPressed" Value="True"><Setter Property="Background" Value="#DCEAF6" /></Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="CaptionButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+        <Setter Property="Width" Value="38" /><Setter Property="Height" Value="32" />
+        <Setter Property="MinHeight" Value="0" /><Setter Property="Padding" Value="11,8" />
+        <Setter Property="BorderThickness" Value="0" /><Setter Property="Background" Value="Transparent" />
+        <Setter Property="IsTabStop" Value="False" />
+    </Style>
+</ResourceDictionary>

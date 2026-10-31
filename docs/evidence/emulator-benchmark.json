@@ -1,0 +1,104 @@
+{
+  "generatedAtUtc": "2026-10-18T06:23:36.247639+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.14",
+  "logicalCpuCount": 8,
+  "scope": "Local synthetic HTTP acquisition only; WPF/ML/database excluded.",
+  "limits": "Short 1 Hz windows, single run per size; not saturation, soak or customer hardware performance. Working set is sampled, not private heap.",
+  "runs": [
+    {
+      "emulatorCount": 1,
+      "signalsPerEmulator": 8,
+      "pollIntervalSeconds": 1,
+      "measuredElapsedSeconds": 10.0,
+      "acceptedBatchesDuringWindow": 10,
+      "acceptedSignalValuesPerSecond": 8.0,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "finalStates": [
+        "CONNECTED"
+      ],
+      "apiLatency": {
+        "samples": 97,
+        "p50Ms": 2.165,
+        "p95Ms": 4.557
+      },
+      "collectorPollLatency": {
+        "samples": 11,
+        "p50Ms": 6.014,
+        "p95Ms": 62.627
+      },
+      "apiCpuPercentOfOneCore": 2.031,
+      "emulatorsCpuPercentOfOneCore": 0.312,
+      "apiPeakSampledWorkingSetMiB": 55.855,
+      "emulatorsPeakSampledWorkingSetMiB": 23.039,
+      "ownedChildrenCleanedUp": true
+    },
+    {
+      "emulatorCount": 4,
+      "signalsPerEmulator": 8,
+      "pollIntervalSeconds": 1,
+      "measuredElapsedSeconds": 10.001,
+      "acceptedBatchesDuringWindow": 40,
+      "acceptedSignalValuesPerSecond": 31.998,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "finalStates": [
+        "CONNECTED",
+        "CONNECTED",
+        "CONNECTED",
+        "CONNECTED"
+      ],
+      "apiLatency": {
+        "samples": 94,
+        "p50Ms": 3.659,
+        "p95Ms": 9.589
+      },
+      "collectorPollLatency": {
+        "samples": 44,
+        "p50Ms": 17.542,
+        "p95Ms": 103.527
+      },
+      "apiCpuPercentOfOneCore": 5.156,
+      "emulatorsCpuPercentOfOneCore": 0.625,
+      "apiPeakSampledWorkingSetMiB": 56.129,
+      "emulatorsPeakSampledWorkingSetMiB": 91.852,
+      "ownedChildrenCleanedUp": true
+    },
+    {
+      "emulatorCount": 8,
+      "signalsPerEmulator": 8,
+      "pollIntervalSeconds": 1,
+      "measuredElapsedSeconds": 10.001,
+      "acceptedBatchesDuringWindow": 80,
+      "acceptedSignalValuesPerSecond": 63.996,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "finalStates": [
+        "CONNECTED",
+        "CONNECTED",
+        "CONNECTED",
+        "CONNECTED",
+        "CONNECTED",
+        "CONNECTED",
+        "CONNECTED",
+        "CONNECTED"
+      ],
+      "apiLatency": {
+        "samples": 94,
+        "p50Ms": 3.351,
+        "p95Ms": 21.434
+      },
+      "collectorPollLatency": {
+        "samples": 88,
+        "p50Ms": 32.246,
+        "p95Ms": 83.699
+      },
+      "apiCpuPercentOfOneCore": 8.125,
+      "emulatorsCpuPercentOfOneCore": 2.5,
+      "apiPeakSampledWorkingSetMiB": 56.398,
+      "emulatorsPeakSampledWorkingSetMiB": 183.895,
+      "ownedChildrenCleanedUp": true
+    }
+  ]
+}

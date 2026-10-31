@@ -1,0 +1,91 @@
+Window: "Aegis Insight — 장비 상태", App: Aegis.Desktop.exe.
+	0 창 Aegis Insight — 장비 상태 Secondary Actions: Raise
+		1 단추를 선택합니다 최소화 Description: 최소화
+			2 이미지
+		3 단추를 선택합니다 최대화 Description: 최대화 ID: MaximizeButton
+			4 이미지 ID: MaximizeImage
+		5 단추를 선택합니다 창 닫기 Description: 닫기
+			6 이미지
+		7 텍스트 AEGIS INSIGHT
+		8 텍스트 장비 상태
+		9 창
+			10 이미지 ID: HeroArtwork
+			11 텍스트 선택된 장비
+			12 콤보 상자 에뮬레이터 장비 선택 ID: DeviceSelector
+			13 텍스트 EQ-SUPPLY-01 ID: DeviceIdText
+			14 텍스트 EMULATOR ID: ModeBadgeText
+			15 이미지
+			16 텍스트 에뮬레이터 연결 ID: HeadlineText
+			17 텍스트 최신 신호를 수신 중입니다. 관측 데이터 품질과 유량 분석 결과를 아래에서 확인하세요. ID: DescriptionText
+			18 이미지
+			19 텍스트 연결 상태
+			20 텍스트 연결됨 ID: TransportText
+			21 이미지
+			22 텍스트 분석 상태
+			23 텍스트 EWMA · 평가 불가 ID: AnalysisStateText
+			24 이미지
+			25 텍스트 데이터 출처
+			26 텍스트 시뮬레이터 ID: SourceText
+			27 이미지
+			28 텍스트 최근 관측
+			29 텍스트 관측 2026-10-19 07:21:53 +09:00 · 수신 07:21:53 ID: ObservationTimeText
+			30 이미지
+			31 텍스트 데이터 품질
+			32 텍스트 BAD · 유효하지 않은 신호 ID: QualityText
+			33 텍스트 최신 신호 8개
+			34 텍스트 신호 / 단위
+			35 텍스트 관측값
+			36 텍스트 품질
+			37 목록 뷰 선택한 장비의 최신 신호 ID: SignalList
+				2192 dataitem SignalReading { SignalKey = setpointFlowLpm, Value = 10.051795, Unit = L/min, Quality = GOOD, Issue = }
+					2193 텍스트 setpointFlowLpm L/min
+					2194 텍스트 10.052
+					2195 텍스트 GOOD
+					2196 텍스트
+				2072 dataitem SignalReading { SignalKey = actualFlowLpm, Value = -5, Unit = L/min, Quality = BAD, Issue = OUT_OF_RANGE · 개발용 허용 범위를 벗어났습니다. 센서 값과 단위·보정을 확인하세요. }
+				2197 dataitem SignalReading { SignalKey = supplyPressureKpa, Value = 252.071816, Unit = kPa, Quality = GOOD, Issue = }
+					2198 텍스트 supplyPressureKpa kPa
+					2199 텍스트 252.072
+					2200 텍스트 GOOD
+					2201 텍스트
+				2202 dataitem SignalReading { SignalKey = valveCommandPct, Value = 51.035908, Unit = %, Quality = GOOD, Issue = }
+					2203 텍스트 valveCommandPct %
+					2204 텍스트 51.036
+					2205 텍스트 GOOD
+					2206 텍스트
+				2207 dataitem SignalReading { SignalKey = valveFeedbackPct, Value = 50.731009, Unit = %, Quality = GOOD, Issue = }
+					2208 텍스트 valveFeedbackPct %
+					2209 텍스트 50.731
+					2210 텍스트 GOOD
+					2211 텍스트
+				2212 dataitem SignalReading { SignalKey = motorCurrentAmp, Value = 2.154712, Unit = A, Quality = GOOD, Issue = }
+					2213 텍스트 motorCurrentAmp A
+					2214 텍스트 2.155
+					2215 텍스트 GOOD
+					2216 텍스트
+				2217 dataitem SignalReading { SignalKey = temperatureC, Value = 27.207182, Unit = degC, Quality = GOOD, Issue = }
+					2218 텍스트 temperatureC degC
+					2219 텍스트 27.207
+					2220 텍스트 GOOD
+					2221 텍스트
+				1942 dataitem SignalReading { SignalKey = cycleCount, Value = 110, Unit = count, Quality = GOOD, Issue = }
+			54 텍스트 수신 1,096 · 거부 0 · 누락 0 · 순번 1095 · 응답 115.1 ms ID: ConnectionStatsText
+			55 텍스트 개발용 유량 분석
+			56 텍스트 ewma-flow-dev-1 · 유효 샘플 0/60 · 유량 오차 EWMA — L/min · 연결 또는 신호 품질을 확인하세요. 현재 정상 판정은 없습니다. ID: AnalysisDetailsText
+			57 텍스트 활성 경고 0개 ID: WarningText
+			58 텍스트 60초 창 · 30초마다 평가 · EWMA 1.5 L/min 초과 3회에 점검 권고. 학습된 ML 모델이 아닙니다.
+			59 단추를 선택합니다 연결 안내 보기
+				60 이미지
+				61 텍스트 연결 안내 보기
+			62 단추를 선택합니다 장비 상태 화면 닫기
+				63 텍스트 닫기
+			64 이미지
+			65 텍스트 시뮬레이터 데이터를 개발용 EWMA 규칙으로 분석합니다. 학습된 ML 모델이나 실제 설비의 정상 판정이 아닙니다. ID: NoticeText
+			66 스크롤 막대 (settable, float) Value: 48 ID: VerticalScrollBar
+				67 단추를 선택합니다 (disabled) ID: PART_LineUpButton
+				68 단추를 선택합니다 (disabled) ID: PageUp
+				69 단추를 선택합니다 (disabled) ID: PageDown
+				70 엄지 (disabled)
+				71 단추를 선택합니다 (disabled) ID: PART_LineDownButton
+
+The focused UI element is 0 창 Aegis Insight — 장비 상태 Secondary Actions: Raise.

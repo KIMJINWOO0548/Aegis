@@ -1,0 +1,50 @@
+{
+  "snapshots": 200,
+  "signals": 256,
+  "pages": 5,
+  "stages": {
+    "source_generate_seconds": 0.5932341000007,
+    "decode_validate_seconds": 0.4884439999877941,
+    "archive_serialize_and_commit_seconds": 0.8211837999988347,
+    "projection_seconds": 0.0822862999921199
+  }
+}
+         298239 function calls (298089 primitive calls) in 2.316 seconds
+
+   Ordered by: cumulative time
+   List reduced from 507 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        3    0.002    0.001    4.595    1.532 base_events.py:655(run_until_complete)
+       27    0.001    0.000    3.291    0.122 base_events.py:1922(_run_once)
+        3    0.001    0.000    3.282    1.094 base_events.py:631(run_forever)
+        1    0.000    0.000    2.299    2.299 runners.py:61(__exit__)
+        1    0.000    0.000    2.299    2.299 runners.py:64(close)
+        1    0.000    0.000    2.297    2.297 runners.py:86(run)
+       45    0.000    0.000    0.756    0.017 events.py:86(_run)
+       45    0.026    0.001    0.756    0.017 {method 'run' of '_contextvars.Context' objects}
+      415    0.005    0.000    0.697    0.002 __init__.py:183(dumps)
+        8    0.012    0.001    0.694    0.087 profile_ingestion.py:19(profile)
+      415    0.009    0.000    0.691    0.002 encoder.py:183(encode)
+      415    0.680    0.002    0.680    0.002 encoder.py:205(iterencode)
+        5    0.008    0.002    0.593    0.119 core.py:49(batch)
+        5    0.000    0.000    0.488    0.098 main.py:800(model_validate_json)
+        5    0.343    0.069    0.488    0.098 {method 'validate_json' of 'pydantic_core._pydantic_core.SchemaValidator' objects}
+      204    0.015    0.000    0.362    0.002 core.py:80(_snapshot_at)
+      207    0.037    0.000    0.336    0.002 {method 'extend' of 'list' objects}
+      200    0.001    0.000    0.323    0.002 main.py:472(model_dump)
+      200    0.176    0.001    0.323    0.002 {method 'to_python' of 'pydantic_core._pydantic_core.SchemaSerializer' objects}
+    50796    0.184    0.000    0.298    0.000 core.py:112(<genexpr>)
+       10    0.002    0.000    0.258    0.026 archive.py:107(append)
+       27    0.000    0.000    0.238    0.009 selectors.py:319(select)
+       27    0.000    0.000    0.237    0.009 selectors.py:313(_select)
+        8    0.000    0.000    0.236    0.029 thread.py:54(run)
+        5    0.001    0.000    0.231    0.046 archive.py:127(_append)
+        6    0.226    0.038    0.226    0.038 {method 'commit' of 'sqlite3.Connection' objects}
+    51401    0.128    0.000    0.147    0.000 enum.py:202(__get__)
+    52224    0.120    0.000    0.120    0.000 {built-in method builtins.round}
+    51200    0.117    0.000    0.117    0.000 collector.py:119(good_has_value)
+      200    0.005    0.000    0.081    0.000 collector.py:400(_accept)
+
+
+

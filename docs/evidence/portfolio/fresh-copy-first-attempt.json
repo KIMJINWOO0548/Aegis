@@ -1,0 +1,57 @@
+{
+  "generatedAtUtc": "2026-10-19T14:06:46.2704728Z",
+  "checks": [
+    {
+      "name": "contract-drift",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 0.709,
+      "log": null
+    },
+    {
+      "name": "contract-v34",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 1.747,
+      "log": null
+    },
+    {
+      "name": "python-pytest",
+      "status": "failed",
+      "exitCode": 4,
+      "durationSeconds": 2.105,
+      "log": null
+    },
+    {
+      "name": "emulator-unittest",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 10.7,
+      "log": null
+    },
+    {
+      "name": "dotnet-restore",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 2.574,
+      "log": null
+    },
+    {
+      "name": "dotnet-release-build",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 8.786,
+      "log": null
+    },
+    {
+      "name": "dotnet-tests",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 14.965,
+      "log": null
+    }
+  ],
+  "overallStatus": "failed",
+  "logsPreserved": false,
+  "observedFailure": "pytest collected zero tests because PowerShell split the concatenated JUnit argument. The first summary was saved before rerun; its referenced logs were subsequently overwritten, so they are not claimed retained."
+}

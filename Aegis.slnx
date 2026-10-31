@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Aegis.Contracts/Aegis.Contracts.csproj" />
+    <Project Path="src/Aegis.Desktop/Aegis.Desktop.csproj" />
+    <Project Path="src/Aegis.Worker/Aegis.Worker.csproj" />
+    <Project Path="src/Aegis.SignalProcessing/Aegis.SignalProcessing.csproj" />
+    <Project Path="src/Aegis.Gateway/Aegis.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Aegis.Contracts.Tests/Aegis.Contracts.Tests.csproj" />
+    <Project Path="tests/Aegis.SignalProcessing.Tests/Aegis.SignalProcessing.Tests.csproj" />
+    <Project Path="tests/Aegis.Gateway.Tests/Aegis.Gateway.Tests.csproj" />
+    <Project Path="tests/Aegis.InProcessChecks/Aegis.InProcessChecks.csproj" />
+  </Folder>
+</Solution>

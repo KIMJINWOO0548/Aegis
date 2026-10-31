@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aegis-insight"
+version = "0.1.0"
+description = "Aegis Insight local simulator acquisition and development advisory"
+requires-python = ">=3.12,<3.13"
+dependencies = ["fastapi==0.143.3", "pydantic==2.14.1", "uvicorn==0.54.0", "PyYAML==6.0.3", "httpx==0.28.1"]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["aegis*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+addopts = "-ra"

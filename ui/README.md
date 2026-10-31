@@ -1,0 +1,13 @@
+# Aegis shared dashboard
+
+Project-local React / TypeScript / Tailwind / shadcn UI. Build with `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm build`. The gateway serves `ui/dist` on its own origin. `pnpm dev` serves only the UI; authenticated API and SignalR require the gateway origin, so standalone Vite shows an unavailable/unlock state by design.
+
+Transport: GET `/api/session`, POST `/api/session` with JSON `{token}`, GET `/api/dashboard`, SignalR `/hubs/dashboard` event `snapshot`. Browser authentication uses same-origin cookies; no token URL, localStorage, or SignalR access-token query. WebView2 can arrive already authenticated.
+
+Only real received snapshots render; no runtime demo data. ECharts loads lazily, is resized using ResizeObserver and disposed on unmount. Chart history is memory-only, at most 120 summaries per signal per device; gaps and invalid quality break the line. Freshness expires after 3 seconds (at most 1 second future clock tolerance). Failed or reconnecting SignalR immediately removes current status from modules and signal rows, even when an HTTP snapshot is recent. GOOD means collection quality, never equipment normality. C# review, Python EWMA advisory, and unregistered inference remain separate. React Flow is lazy and read-only.
+
+Local fonts retain the upstream Pretendard license and sources under `public/fonts`. SVG asset is original conceptual module artwork, not measured geometry.
+
+Validation (2026-10-31): frozen-lockfile local installation completed; `pnpm test` passes 8 focused tests covering freshness/transport gating, null gaps, 120-point bounds/deduplication, device isolation/selection, and malformed/bounded contracts. `pnpm build` passes TypeScript and Vite production compilation. The shadcn 3.5 CLI generated Button/Card/Badge/Input/Tabs sources; their `cn` helper uses existing clsx/tailwind-merge, with no extra runtime package. Project-local build scripts allow only oxide/esbuild, with msw disabled.
+
+UI/UX Pro Max streaming-chart guidance was checked: text status and the signal table accompany the canvas chart; animation is disabled, focus is visible, and reduced motion is respected. The provided LIGHT sidebar/card screenshot remains the layout source. Browser/backend integration and viewport screenshots are delegated to the coordinator; no live backend was started by this UI task. Known build warning: the lazy ECharts chunk is about 511 kB (173 kB gzip); SignalR's upstream PURE comments are ignored by Rollup.

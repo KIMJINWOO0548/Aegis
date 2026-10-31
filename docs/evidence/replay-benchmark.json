@@ -1,0 +1,188 @@
+{
+  "generatedAtUtc": "2026-10-18T22:14:42.607519+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.14",
+  "logicalCpuCount": 8,
+  "scope": "Synthetic replay acquisition and SQLite WAL/FULL; WPF/advisory excluded.",
+  "limits": "Short single trials; not saturation, soak, hard real-time or customer hardware performance. Working set is sampled. Replay preserves committed prefixes; final source tails are not claimed drained.",
+  "runs": [
+    {
+      "emulatorCount": 1,
+      "signalsPerEmulator": 256,
+      "sourceSampleIntervalMs": 10,
+      "pollIntervalSeconds": 0.1,
+      "measuredElapsedSeconds": 10.739,
+      "acceptedBatchesDuringWindow": 598,
+      "acceptedSignalValuesPerSecond": 14255.275,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "finalStates": [
+        "DISCONNECTED"
+      ],
+      "apiLatency": {
+        "samples": 62,
+        "p50Ms": 6.213,
+        "p95Ms": 353.306
+      },
+      "collectorPollLatency": {
+        "samples": 14,
+        "p50Ms": 438.171,
+        "p95Ms": 1227.429
+      },
+      "apiCpuPercentOfOneCore": 28.954,
+      "emulatorsCpuPercentOfOneCore": 15.277,
+      "apiPeakSampledWorkingSetMiB": 75.215,
+      "emulatorsPeakSampledWorkingSetMiB": 31.449,
+      "archiveIntegrity": "ok",
+      "archiveGapRanges": 0,
+      "contiguousCommittedPrefixes": true,
+      "totalArchivedBatches": 1012,
+      "archiveBytes": 20832256,
+      "warmupSeconds": 3,
+      "beginningDataAgeMs": [
+        1876.468
+      ],
+      "endingDataAgeMs": [
+        6671.587
+      ],
+      "endingPendingBatches": [
+        385
+      ],
+      "archiveCommitLatency": {
+        "samples": 14,
+        "p50Ms": 143.42,
+        "p95Ms": 704.697
+      },
+      "observedDataAge": {
+        "samples": 62,
+        "p50Ms": 2607.601,
+        "p95Ms": 5563.702
+      },
+      "ownedChildrenCleanedUp": true
+    },
+    {
+      "emulatorCount": 2,
+      "signalsPerEmulator": 256,
+      "sourceSampleIntervalMs": 10,
+      "pollIntervalSeconds": 0.1,
+      "measuredElapsedSeconds": 10.001,
+      "acceptedBatchesDuringWindow": 1242,
+      "acceptedSignalValuesPerSecond": 31793.589,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "finalStates": [
+        "STALE",
+        "STALE"
+      ],
+      "apiLatency": {
+        "samples": 50,
+        "p50Ms": 15.042,
+        "p95Ms": 214.464
+      },
+      "collectorPollLatency": {
+        "samples": 29,
+        "p50Ms": 661.744,
+        "p95Ms": 969.764
+      },
+      "apiCpuPercentOfOneCore": 52.81,
+      "emulatorsCpuPercentOfOneCore": 27.342,
+      "apiPeakSampledWorkingSetMiB": 84.977,
+      "emulatorsPeakSampledWorkingSetMiB": 55.199,
+      "archiveIntegrity": "ok",
+      "archiveGapRanges": 0,
+      "contiguousCommittedPrefixes": true,
+      "totalArchivedBatches": 1702,
+      "archiveBytes": 35016704,
+      "warmupSeconds": 3,
+      "beginningDataAgeMs": [
+        8024.827,
+        8262.827
+      ],
+      "endingDataAgeMs": [
+        12201.276,
+        11979.276
+      ],
+      "endingPendingBatches": [
+        1115,
+        1094
+      ],
+      "archiveCommitLatency": {
+        "samples": 29,
+        "p50Ms": 147.389,
+        "p95Ms": 448.195
+      },
+      "observedDataAge": {
+        "samples": 100,
+        "p50Ms": 10318.117,
+        "p95Ms": 11882.439
+      },
+      "ownedChildrenCleanedUp": true
+    },
+    {
+      "emulatorCount": 4,
+      "signalsPerEmulator": 256,
+      "sourceSampleIntervalMs": 10,
+      "pollIntervalSeconds": 0.1,
+      "measuredElapsedSeconds": 10.278,
+      "acceptedBatchesDuringWindow": 1058,
+      "acceptedSignalValuesPerSecond": 26352.74,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "finalStates": [
+        "DISCONNECTED",
+        "DISCONNECTED",
+        "STALE",
+        "DISCONNECTED"
+      ],
+      "apiLatency": {
+        "samples": 45,
+        "p50Ms": 11.985,
+        "p95Ms": 393.135
+      },
+      "collectorPollLatency": {
+        "samples": 27,
+        "p50Ms": 837.484,
+        "p95Ms": 1243.358
+      },
+      "apiCpuPercentOfOneCore": 51.385,
+      "emulatorsCpuPercentOfOneCore": 54.578,
+      "apiPeakSampledWorkingSetMiB": 103.012,
+      "emulatorsPeakSampledWorkingSetMiB": 113.078,
+      "archiveIntegrity": "ok",
+      "archiveGapRanges": 0,
+      "contiguousCommittedPrefixes": true,
+      "totalArchivedBatches": 1610,
+      "archiveBytes": 33132544,
+      "warmupSeconds": 3,
+      "beginningDataAgeMs": [
+        5396.349,
+        6332.349,
+        6295.349,
+        6297.349
+      ],
+      "endingDataAgeMs": [
+        13383.595,
+        14319.595,
+        12902.595,
+        14284.595
+      ],
+      "endingPendingBatches": [
+        905,
+        1063,
+        1154,
+        1217
+      ],
+      "archiveCommitLatency": {
+        "samples": 27,
+        "p50Ms": 233.73,
+        "p95Ms": 607.344
+      },
+      "observedDataAge": {
+        "samples": 180,
+        "p50Ms": 9353.809,
+        "p95Ms": 13349.142
+      },
+      "ownedChildrenCleanedUp": true
+    }
+  ]
+}

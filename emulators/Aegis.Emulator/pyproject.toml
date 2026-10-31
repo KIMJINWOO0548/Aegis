@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aegis-equipment-emulator"
+version = "0.1.0"
+description = "Independent read-only local synthetic equipment emulator"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+aegis-emulator = "aegis_emulator.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aegis_emulator*"]

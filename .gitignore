@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+**/bin/
+**/obj/
+.vs/
+.env
+runtime/
+TestResults/
+artifacts/
+ui/node_modules/
+ui/dist/
+ui/.pnpm-store/
+.playwright-mcp/
+ui/*.tsbuildinfo
+docs/evidence/portfolio/demo-frames/frame-*

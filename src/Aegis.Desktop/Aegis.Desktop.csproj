@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="[1.0.4258.31]" />
+    <ProjectReference Include="../Aegis.Contracts/Aegis.Contracts.csproj" />
+    <Resource Include="Assets/pump-hero.png" />
+    <Resource Include="Assets/Fonts/*.otf" />
+    <None Update="Assets/Icons/LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Assets/Fonts/LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

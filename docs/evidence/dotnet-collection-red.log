@@ -1,0 +1,34 @@
+  Aegis.Contracts -> C:\Users\김진우\Desktop\Aegis\src\Aegis.Contracts\bin\Debug\net10.0\Aegis.Contracts.dll
+  Aegis.Worker -> C:\Users\김진우\Desktop\Aegis\src\Aegis.Worker\bin\Debug\net10.0\Aegis.Worker.dll
+  Aegis.Contracts.Tests -> C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\bin\Debug\net10.0\Aegis.Contracts.Tests.dll
+C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\bin\Debug\net10.0\Aegis.Contracts.Tests.dll(.NETCoreApp,Version=v10.0)에 대한 테스트 실행
+지정된 패턴과 일치한 총 테스트 파일 수는 1개입니다.
+[xUnit.net 00:00:01.95]     Aegis.Contracts.Tests.ContractSerializationTests.Root_observation_array_validates_each_item(version: "3.4.0", value: null) [FAIL]
+[xUnit.net 00:00:02.01]     Aegis.Contracts.Tests.ContractSerializationTests.Root_observation_array_validates_each_item(version: "3.3.0", value: 9.6999999999999993) [FAIL]
+[xUnit.net 00:00:02.04]     Aegis.Contracts.Tests.ContractSerializationTests.Root_observation_array_rejects_null_items_on_read_and_write [FAIL]
+  실패 Aegis.Contracts.Tests.ContractSerializationTests.Root_observation_array_validates_each_item(version: "3.4.0", value: null) [1 s]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.Text.Json.JsonException)
+  스택 추적:
+     at Aegis.Contracts.Tests.ContractSerializationTests.Root_observation_array_validates_each_item(String version, Nullable`1 value) in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\ContractSerializationTests.cs:line 99
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+  실패 Aegis.Contracts.Tests.ContractSerializationTests.Root_observation_array_validates_each_item(version: "3.3.0", value: 9.6999999999999993) [2 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.Text.Json.JsonException)
+  스택 추적:
+     at Aegis.Contracts.Tests.ContractSerializationTests.Root_observation_array_validates_each_item(String version, Nullable`1 value) in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\ContractSerializationTests.cs:line 99
+   at InvokeStub_ContractSerializationTests.Root_observation_array_validates_each_item(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  실패 Aegis.Contracts.Tests.ContractSerializationTests.Root_observation_array_rejects_null_items_on_read_and_write [9 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.Text.Json.JsonException)
+  스택 추적:
+     at Aegis.Contracts.Tests.ContractSerializationTests.Root_observation_array_rejects_null_items_on_read_and_write() in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\ContractSerializationTests.cs:line 105
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+실패!  - 실패:     3, 통과:     1, 건너뜀:     0, 전체:     4, 기간: 1 s - Aegis.Contracts.Tests.dll (net10.0)

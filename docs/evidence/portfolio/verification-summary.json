@@ -1,0 +1,81 @@
+{
+  "generatedAtUtc": "2026-10-19T14:10:06.4463084Z",
+  "checks": [
+    {
+      "name": "contract-drift",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 0.398,
+      "log": "fresh-copy-logs/contract-drift.log"
+    },
+    {
+      "name": "contract-v34",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 0.819,
+      "log": "fresh-copy-logs/contract-v34.log"
+    },
+    {
+      "name": "python-pytest",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 121.949,
+      "log": "fresh-copy-logs/python-pytest.log"
+    },
+    {
+      "name": "emulator-unittest",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 10.53,
+      "log": "fresh-copy-logs/emulator-unittest.log"
+    },
+    {
+      "name": "dotnet-restore",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 6.416,
+      "log": "fresh-copy-logs/dotnet-restore.log"
+    },
+    {
+      "name": "dotnet-release-build",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 6.272,
+      "log": "fresh-copy-logs/dotnet-release-build.log"
+    },
+    {
+      "name": "dotnet-tests",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 11.727,
+      "log": "fresh-copy-logs/dotnet-tests.log"
+    }
+  ],
+  "overallStatus": "passed",
+  "context": "New virtual environment in a separate Unicode/space source folder on the same Windows host; pip/NuGet caches used. Invoked from outside that folder. Not a clean VM or remote CI run.",
+  "pythonTests": {
+    "tests": "248",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  "dotnetCounters": {
+    "total": "74",
+    "executed": "74",
+    "passed": "74",
+    "failed": "0",
+    "error": "0",
+    "timeout": "0",
+    "aborted": "0",
+    "inconclusive": "0",
+    "passedButRunAborted": "0",
+    "notRunnable": "0",
+    "notExecuted": "0",
+    "disconnected": "0",
+    "warning": "0",
+    "completed": "0",
+    "inProgress": "0",
+    "pending": "0"
+  },
+  "sourceMirrorVerified": true
+}

@@ -1,0 +1,40 @@
+name: Aegis Windows checks
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.18.0'
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+      - name: Prepare project environment
+        shell: pwsh
+        run: ./scripts/setup.ps1
+      - name: Run the local verification suite
+        if: always()
+        shell: pwsh
+        run: ./scripts/verify.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-check-evidence
+          path: |
+            TestResults/
+            artifacts/checks/
+          if-no-files-found: warn

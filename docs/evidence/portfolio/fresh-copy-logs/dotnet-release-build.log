@@ -1,0 +1,10 @@
+  Aegis.Contracts -> C:\Users\김진우\Desktop\Aegis\runtime\지원 검증 copy\src\Aegis.Contracts\bin\Release\net10.0\Aegis.Contracts.dll
+  Aegis.Desktop -> C:\Users\김진우\Desktop\Aegis\runtime\지원 검증 copy\src\Aegis.Desktop\bin\Release\net10.0-windows\Aegis.Desktop.dll
+  Aegis.Worker -> C:\Users\김진우\Desktop\Aegis\runtime\지원 검증 copy\src\Aegis.Worker\bin\Release\net10.0\Aegis.Worker.dll
+  Aegis.Contracts.Tests -> C:\Users\김진우\Desktop\Aegis\runtime\지원 검증 copy\tests\Aegis.Contracts.Tests\bin\Release\net10.0\Aegis.Contracts.Tests.dll
+
+빌드했습니다.
+    경고 0개
+    오류 0개
+
+경과 시간: 00:00:04.99

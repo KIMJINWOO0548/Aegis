@@ -1,0 +1,14 @@
+[
+  {
+    "file": "src/aegis/collector.py",
+    "sha256": "cdd5e44fa7cf0aba6c77adce13bffa4570124a933723141352264a65f827550b"
+  },
+  {
+    "file": "src/aegis/archive.py",
+    "sha256": "254975c05dc0973c247f4b63472705df0b6e0ace15df4533ee7961c444759f72"
+  },
+  {
+    "file": "emulators/Aegis.Emulator/aegis_emulator/core.py",
+    "sha256": "db84708f8bc17398fada66f21377c1f231b3d823b908418283e351515a270b55"
+  }
+]

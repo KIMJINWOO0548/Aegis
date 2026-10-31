@@ -1,0 +1,20 @@
+<Window x:Class="Aegis.Desktop.DashboardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Aegis · 설비 신호 관측" Width="1440" Height="900" MinWidth="640" MinHeight="480"
+        Background="#F4F6FB" WindowStartupLocation="CenterScreen"
+        Loaded="WindowLoaded" Closed="WindowClosed">
+    <Grid>
+        <wv:WebView2 x:Name="Dashboard" DefaultBackgroundColor="#F4F6FB" />
+        <Border x:Name="ConnectionPanel" Background="#F4F6FB" Padding="48">
+            <StackPanel MaxWidth="520" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="AEGIS" Foreground="#2563EB" FontSize="18" FontWeight="Bold" />
+                <TextBlock Text="설비 관측 대시보드" Foreground="#17233B" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,16" />
+                <TextBlock x:Name="ConnectionMessage" Text="로컬 대시보드에 연결하고 있습니다." Foreground="#536079" TextWrapping="Wrap" FontSize="15" />
+                <Button Content="다시 연결" Click="RetryClicked" Margin="0,24,0,8" HorizontalAlignment="Left" Padding="20,10" />
+                <Button Content="기존 모니터 열기" Click="LegacyClicked" HorizontalAlignment="Left" Padding="20,10" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

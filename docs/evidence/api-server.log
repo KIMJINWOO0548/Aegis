@@ -1,0 +1,22 @@
+INFO:     Started server process [3292]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
+Accept failed on a socket
+socket: <asyncio.TransportSocket fd=876, family=2, type=1, proto=6, laddr=('127.0.0.1', 8765)>
+Traceback (most recent call last):
+  File "C:\Users\김진우\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\proactor_events.py", line 846, in loop
+    conn, addr = f.result()
+                 ^^^^^^^^^^
+  File "C:\Users\김진우\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\windows_events.py", line 803, in _poll
+    value = callback(transferred, key, ov)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\김진우\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\windows_events.py", line 555, in finish_accept
+    ov.getresult()
+OSError: [WinError 64] 지정된 네트워크 이름을 더 이상 사용할 수 없습니다
+Task exception was never retrieved
+future: <Task finished name='Task-4' coro=<IocpProactor.accept.<locals>.accept_coro() done, defined at C:\Users\김진우\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\windows_events.py:563> exception=OSError(22, '지정된 네트워크 이름을 더 이상 사용할 수 없습니다', None, 64, None)>
+Traceback (most recent call last):
+  File "C:\Users\김진우\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\windows_events.py", line 566, in accept_coro
+    await future
+OSError: [WinError 64] 지정된 네트워크 이름을 더 이상 사용할 수 없습니다

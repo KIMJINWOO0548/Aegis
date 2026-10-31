@@ -1,0 +1,88 @@
+{
+  "scope": "Real separate Python emulator and API processes on IPv4 loopback; synthetic signals only.",
+  "deviceIds": [
+    "EQ-SUPPLY-01",
+    "EQ-SUPPLY-02"
+  ],
+  "beforeStop": [
+    {
+      "deviceId": "EQ-SUPPLY-01",
+      "state": "CONNECTED",
+      "lastReceivedAtUtc": "2026-10-20T11:43:01.105470+00:00",
+      "lastSequence": 4,
+      "acceptedBatches": 2,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "pollLatencyMs": 16.6,
+      "reasonCode": null
+    },
+    {
+      "deviceId": "EQ-SUPPLY-02",
+      "state": "CONNECTED",
+      "lastReceivedAtUtc": "2026-10-20T11:43:01.227452+00:00",
+      "lastSequence": 4,
+      "acceptedBatches": 2,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "pollLatencyMs": 44.133,
+      "reasonCode": null
+    }
+  ],
+  "whileStopped": [
+    {
+      "deviceId": "EQ-SUPPLY-01",
+      "state": "DISCONNECTED",
+      "lastReceivedAtUtc": "2026-10-20T11:43:01.105470+00:00",
+      "lastSequence": 4,
+      "acceptedBatches": 2,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "pollLatencyMs": 506.156,
+      "reasonCode": "POLL_TIMEOUT"
+    },
+    {
+      "deviceId": "EQ-SUPPLY-02",
+      "state": "CONNECTED",
+      "lastReceivedAtUtc": "2026-10-20T11:43:02.212013+00:00",
+      "lastSequence": 5,
+      "acceptedBatches": 3,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "pollLatencyMs": 12.784,
+      "reasonCode": null
+    }
+  ],
+  "afterRestart": [
+    {
+      "deviceId": "EQ-SUPPLY-01",
+      "state": "CONNECTED",
+      "lastReceivedAtUtc": "2026-10-20T11:43:04.173842+00:00",
+      "lastSequence": 0,
+      "acceptedBatches": 3,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "pollLatencyMs": 62.846,
+      "reasonCode": null
+    },
+    {
+      "deviceId": "EQ-SUPPLY-02",
+      "state": "CONNECTED",
+      "lastReceivedAtUtc": "2026-10-20T11:43:03.239444+00:00",
+      "lastSequence": 6,
+      "acceptedBatches": 4,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "pollLatencyMs": 29.434,
+      "reasonCode": null
+    }
+  ],
+  "stopThroughRecoveryElapsedSeconds": 2.922,
+  "verified": [
+    "two fresh eight-signal sources",
+    "unavailable source has no GOOD readings",
+    "other source continues",
+    "new run accepts sequence reset",
+    "no fixture warnings"
+  ],
+  "ownedChildrenCleanedUp": true
+}

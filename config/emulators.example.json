@@ -1,0 +1,6 @@
+{
+  "sources": [
+    {"deviceId": "EQ-SUPPLY-01", "baseUrl": "http://127.0.0.1:8771", "tokenEnvironment": "AEGIS_EMULATOR_TOKEN"},
+    {"deviceId": "EQ-SUPPLY-02", "baseUrl": "http://127.0.0.1:8772", "tokenEnvironment": "AEGIS_EMULATOR_TOKEN"}
+  ]
+}

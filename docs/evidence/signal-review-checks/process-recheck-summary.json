@@ -1,0 +1,38 @@
+{
+  "scope": "One bounded recheck of six failed process tests, no code/timeout changes.",
+  "passed": 0,
+  "failed": 6,
+  "cases": [
+    {
+      "case": "test_module_workers_keep_peer_running_restart_cursor_and_exit_with_supervisor",
+      "status": "failed",
+      "message": "PermissionError: [WinError 32] 다른 프로세스가 파일을 사용 중이기 때문에 프로세스가 액세스 할 수 없습니다: 'C:\\\\Users\\\\김진우\\\\AppData\\\\Local\\\\Temp\\\\aegis-emulator-irxum4q1'"
+    },
+    {
+      "case": "test_locked_module_archive_does_not_block_peer_commits",
+      "status": "failed",
+      "message": "TimeoutError: Local stack condition did not become ready: ConnectError"
+    },
+    {
+      "case": "test_real_workers_restart_independently_and_stop_on_parent_pipe_eof",
+      "status": "failed",
+      "message": "OSError: [WinError 10014] 호출에 대한 포인터 인수를 사용하려는 동안 시스템에서 잘못된 포인터 주소를 감지했습니다"
+    },
+    {
+      "case": "test_worker_retries_after_stderr_path_open_failure_and_recovers_when_repaired",
+      "status": "failed",
+      "message": "OSError: [WinError 10014] 호출에 대한 포인터 인수를 사용하려는 동안 시스템에서 잘못된 포인터 주소를 감지했습니다"
+    },
+    {
+      "case": "test_hundreds_of_signals_survive_api_restart_and_keep_subsecond_fault",
+      "status": "failed",
+      "message": "TimeoutError: Local stack condition did not become ready: ConnectError"
+    },
+    {
+      "case": "test_demo_cli_keeps_raw_archive_after_owned_processes_exit",
+      "status": "failed",
+      "message": "subprocess.TimeoutExpired: Command '['C:\\\\Users\\\\김진우\\\\Desktop\\\\Aegis\\\\.venv\\\\Scripts\\\\python.exe', 'scripts/run_emulator_demo.py', '--headless', '--count', '1', '--seconds', '1', '--signal-count', '256', '--interval-ms', '100', '--archive', 'C:\\\\Users\\\\김진우\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-김진우\\\\pytest-132\\\\test_demo_cli_keeps_raw_archiv0\\\\retained.sqlite3']' timed out after 25 seconds"
+    }
+  ],
+  "harnessOutputNote": "XML and UTF-8 log were saved; printing captured output to cp949 stdout subsequently failed with UnicodeEncodeError. XML is the test result authority."
+}

@@ -1,0 +1,508 @@
+contractVersion: 3.4.0
+product: AegisInsight
+initialDevice: EQ-SUPPLY-01
+simulatorOnly: true
+physicalDevicePermissions:
+- READ
+- SUBSCRIBE
+forbiddenLiveOps:
+- WRITE
+- CALL
+- RESET
+- START
+- STOP
+- ACK_DEVICE_ALARM
+modelLifecycle:
+- NO_MODEL
+- SHADOW
+- ADVISORY
+- DEGRADED
+- DISABLED
+observationEvaluation:
+- INSUFFICIENT_DATA
+- NORMAL
+- ANOMALOUS
+- UNAVAILABLE
+warningLifecycle:
+- OPEN
+- ACKNOWLEDGED
+- RESOLVED
+- MANUAL_REVIEW
+validationLevel:
+- SPECIFIED
+- IMPLEMENTED
+- VERIFIED_SIM
+- PUBLIC_DATA_CHECKED
+- PRESENTABLE
+- VERIFIED_PILOT
+- RELEASED
+observationQuality:
+- GOOD
+- STALE
+- BAD
+- MISSING
+modeIds:
+- PRODUCTION
+- SETUP
+- MAINTENANCE
+fixtureIds:
+  thinDemo:
+  - DEG-02
+  postDemo:
+  - NOR-01
+  - DEG-01
+  - DEG-03
+  - SEN-01
+  - CMD-01
+  - AI-01
+  - SYS-01
+observationSchema:
+  required:
+  - schemaVersion
+  - observationId
+  - deviceId
+  - signalKey
+  - value
+  - unit
+  - observedAtUtc
+  - receivedAtUtc
+  - quality
+  - deviceStateVersion
+  - modeId
+  signalKeys: &id001
+  - setpointFlowLpm
+  - actualFlowLpm
+  - supplyPressureKpa
+  - valveCommandPct
+  - valveFeedbackPct
+  - motorCurrentAmp
+  - temperatureC
+  - cycleCount
+  timeFormat: ISO8601_UTC_WITH_OFFSET
+modelOutput:
+  required:
+  - schemaVersion
+  - deviceId
+  - modelLifecycle
+  - observationEvaluation
+  - modelVersion
+  - windowEndUtc
+  - evidenceSignalKeys
+  - dataQuality
+  score:
+    displayName: normalReferencePercentile
+    range:
+    - 0
+    - 100
+    semantics: percentile_of_anomaly_score_against_heldout_normal_reference
+    probability: false
+  onInsufficientData: null_score_and_no_ml_warning
+mlConfigInitialHypothesis:
+  inferenceWindowSeconds: 60
+  longWindowSeconds: 300
+  updateSeconds: 30
+  embargoSeconds: 300
+  ewmaAlpha: 0.2
+  consecutiveWindows: 3
+  degradedMissingRatioThreshold: 0.1
+  degradedMissingConsecutiveWindows: 3
+  driftPSIThreshold: 0.25
+  driftConsecutiveWindows: 3
+  calibrationMustBeFrozenBeforeEvaluation: true
+observationExample:
+  schemaVersion: 3.4.0
+  observationId: obs-000042
+  deviceId: EQ-SUPPLY-01
+  signalKey: actualFlowLpm
+  value: 9.7
+  unit: L/min
+  observedAtUtc: '2026-10-16T00:00:00Z'
+  receivedAtUtc: '2026-10-16T00:00:00.087Z'
+  quality: GOOD
+  deviceStateVersion: 41
+  modeId: PRODUCTION
+apiErrorRequiredFields:
+- code
+- message
+- requestId
+apiRoutesThinDemo:
+- GET /v1/health
+- GET /v1/devices
+- GET /v1/devices/{id}/observations
+- GET /v1/devices/{id}/health
+- GET /v1/warnings
+- POST /v1/warnings/{id}/ack
+- POST /v1/lab/scenarios/DEG-02/start
+- GET /v1/devices/{id}/trends
+- GET /v1/warnings/{id}/timeline
+readOnlyInvariant: No protocol write/call capability exists on any Aegis Insight live adapter
+ackInvariant: Acknowledging a maintenance recommendation never sends a device command
+syntheticEvaluationDisclosure: 합성 데이터 평가는 파이프라인 회귀 시험이며 현장 성능이 아닙니다. 외부 공개 데이터 평가도 대상 고객 설비의 조기 예지 성능을 보증하지 않습니다.
+observability:
+  schemaVersion: 3.4.0
+  eventRequiredFields:
+  - schemaVersion
+  - eventId
+  - occurredAtUtc
+  - component
+  - eventName
+  - severity
+  - traceId
+  - outcome
+  eventOptionalFields:
+  - deviceId
+  - warningId
+  - incidentId
+  - requestId
+  - runId
+  - modelVersion
+  - sourceVersion
+  - durationMs
+  - reasonCode
+  - safeContext
+  - sourceSequence
+  - configRevision
+  - aggregationVersion
+  - dataWindowStartUtc
+  - dataWindowEndUtc
+  - observationGapCount
+  - queryResolution
+  - droppedCount
+  - storageBytes
+  severities:
+  - DEBUG
+  - INFO
+  - WARN
+  - ERROR
+  - CRITICAL
+  components:
+  - wpf_ui
+  - collector
+  - local_api
+  - ml_worker
+  - simulator
+  - storage
+  outcomes:
+  - SUCCESS
+  - FAILED
+  - SKIPPED
+  - UNKNOWN
+  eventNames:
+  - COLLECTOR_STARTED
+  - POLL_TIMEOUT
+  - SIGNAL_QUALITY_CHANGED
+  - COLLECTOR_RESTARTED
+  - ML_MODEL_LOADED
+  - ML_EVALUATION_UNAVAILABLE
+  - EWMA_WARNING_RAISED
+  - ML_DEGRADED
+  - API_REQUEST_FAILED
+  - UI_BACKEND_DISCONNECTED
+  - UI_BACKEND_RECONNECTED
+  - WARNING_ACKNOWLEDGED
+  - ACK_REJECTED
+  - CONFIG_CHANGED
+  - SUPPORT_BUNDLE_EXPORTED
+  - STORAGE_WRITE_FAILED
+  - LOGGING_DEGRADED
+  - LOG_DROPPED_COUNT
+  - OBSERVATION_GAP_DETECTED
+  - AGGREGATION_STARTED
+  - AGGREGATION_COMPLETED
+  - AGGREGATION_FAILED
+  - RETENTION_CLEANUP_COMPLETED
+  - ML_THRESHOLD_CHANGED
+  - ML_DRIFT_DETECTED
+  - TREND_QUERY_FAILED
+  - TREND_QUERY_TRUNCATED
+  - SERVICE_STARTED
+  - SERVICE_STOPPED
+  - SERVICE_RECOVERED
+  correlationRules:
+    warningCorrelationKey: warningId
+    crossProcessTraceKey: traceId
+    perRequestKey: requestId
+    timestamps: UTC_ISO8601_WITH_OFFSET
+    durations: MONOTONIC_ELAPSED_MS
+  noSensitiveFields:
+  - password
+  - api_key
+  - access_token
+  - authorization
+  - cookie
+  - raw_prompt
+  - raw_payload
+  - full_email
+  - customer_secret
+  - private_path
+  storage:
+    diagnostics: local_rotating_jsonl
+    audit: sqlite_transactional_with_mutation
+    observations: sqlite_timeseries_separate_from_logs
+    remoteUploadDefault: false
+  initialRetentionHypotheses:
+    jsonlMaxMBPerFile: 10
+    jsonlFilesPerComponent: 5
+    diagnosticDays: 14
+    auditDays: 90
+    rawObservationHours: 72
+    aggregateDays: 90
+    oneMinuteAggregateDays: 90
+    oneHourAggregateDays: 365
+    warningSnapshotDays: 14
+  incidentLoggingPolicy: transition_only_not_each_1hz_signal_sample
+  warningAckRule: ack_and_audit_in_one_durable_transaction_or_no_success
+  bundleRule: local_preview_explicit_user_consent_no_secrets_no_automatic_remote_upload
+  sampleEvent:
+    schemaVersion: 3.4.0
+    eventId: evt-demo-042
+    occurredAtUtc: '2026-10-16T00:01:30Z'
+    component: ml_worker
+    eventName: EWMA_WARNING_RAISED
+    severity: WARN
+    traceId: trace-demo-02
+    outcome: SUCCESS
+    deviceId: EQ-SUPPLY-01
+    warningId: warn-demo-02
+    modelVersion: ewma-demo-1
+    reasonCode: FLOW_ERROR_TREND
+    safeContext:
+      signalKeys:
+      - actualFlowLpm
+      - setpointFlowLpm
+      quality: GOOD
+  timeSeriesPolicy: raw_observations_separate_from_event_logs; no_info_per_sample; gaps_explicit
+trendContract:
+  schemaVersion: 3.4.0
+  sourceValues:
+  - SIMULATOR
+  - READ_ONLY
+  resolutions:
+  - auto
+  - raw
+  - 1m
+  - 1h
+  maxPointsPerSeries: 1500
+  thinDemoQueryMaxSeconds: 3600
+  thinDemoMaxSignals: 2
+  signalKeys: *id001
+  derivedSignals:
+  - flowTrackingErrorLpm
+  - flowErrorEwmaLpm
+  - normalReferencePercentile
+  aggregateRequiredFields:
+  - deviceId
+  - signalKey
+  - modeId
+  - bucketStartUtc
+  - unit
+  - sampleCount
+  - expectedCount
+  - validCount
+  - missingCount
+  - badCount
+  - staleCount
+  - min
+  - max
+  - avg
+  - first
+  - last
+  - sum
+  - sumSquares
+  - aggregationVersion
+  - isComplete
+  trendResponseRequiredFields:
+  - schemaVersion
+  - deviceId
+  - source
+  - resolution
+  - window
+  - generatedAtUtc
+  - isComplete
+  - gaps
+  - series
+  - warningMarkers
+  missingDataPolicy: GAP_NOT_ZERO_NO_SILENT_INTERPOLATION
+  aggregateCalculation: weighted_good_quality_samples_keep_minmax
+  timeBucket: UTC
+  modelScoreLabel: normalReferencePercentile_is_not_failure_probability
+  retentionDefaults:
+    rawHours: 72
+    aggregate1mDays: 90
+    aggregate1hDays: 365
+    warningSnapshotDays: 14
+  sampleResponse:
+    schemaVersion: 3.4.0
+    deviceId: EQ-SUPPLY-01
+    source: SIMULATOR
+    resolution: raw
+    window:
+      fromUtc: '2026-10-16T00:00:00Z'
+      toUtc: '2026-10-16T00:05:00Z'
+    generatedAtUtc: '2026-10-16T00:05:02Z'
+    isComplete: false
+    gaps:
+    - fromUtc: '2026-10-16T00:02:20Z'
+      toUtc: '2026-10-16T00:02:25Z'
+      reason: SIGNAL_MISSING
+    series:
+    - signalKey: actualFlowLpm
+      unit: L/min
+      points:
+      - t: '2026-10-16T00:00:00Z'
+        v: 9.8
+        quality: GOOD
+    warningMarkers:
+    - warningId: warn-demo-02
+      atUtc: '2026-10-16T00:04:30Z'
+      type: EARLY_WARNING
+runtimeMetricIds:
+- collector_poll_latency_ms
+- collector_receive_delay_ms
+- collector_missing_ratio
+- device_disconnect_count
+- ml_inference_latency_ms
+- ml_normal_reference_percentile
+- db_write_duration_ms
+- db_storage_bytes
+- db_wal_bytes
+- log_dropped_total
+- api_error_count
+- warning_ack_delay_s
+trendFixtureIds:
+- TRD-01
+- TRD-02
+- TRD-03
+- TRD-04
+- TRD-05
+- TRD-06
+- TRD-07
+- TRD-08
+- TRD-09
+- TRD-10
+- TRD-11
+- TRD-12
+- TRD-13
+- TRD-14
+apiRoutesPostDemo:
+- GET /v1/devices/{id}/trend-summary
+- GET /v1/events
+- GET /v1/health/metrics
+- POST /v1/support/bundles
+advisoryManagement:
+  scope: ANALYTICS_ONLY_NO_PLC_ACK_OR_WRITE
+  advisoryType: ML_EARLY_WARNING
+  distinctFrom: PLC_PROCESS_OR_SAFETY_ALARM
+  entryConditions:
+    minConsecutiveGoodWindows: 3
+    requiresModeReference: true
+    baselineVersionRequired: true
+  exitConditions:
+    hysteresisRequired: true
+    minConsecutiveRecoveryWindows: 3
+  episodeCorrelation:
+  - deviceId
+  - modeId
+  - advisoryType
+  - modelVersion
+  - groupingWindow
+  presentationState:
+  - VISIBLE
+  - GROUPED
+  - COOLDOWN
+  neverAutoSuppress:
+  - PLC_ALARM
+  - SAFETY_ALARM
+  - INCREASED_SEVERITY
+  ackMeaning: MAINTENANCE_ADVICE_ACK_ONLY_NOT_FAULT_RESOLVED
+  newMetricIds:
+  - advisories_per_device_day
+  - repeats_per_episode
+  - time_to_ack_seconds
+  - unacknowledged_age_seconds
+  - operator_confirmed_actionable_ratio
+  newEventNames:
+  - ADVISORY_EPISODE_GROUPED
+  - ADVISORY_RECOVERY_CONFIRMED
+  - ADVISORY_DISPLAY_COOLDOWN
+  - SOURCE_QUEUE_OVERFLOW
+  - EVIDENCE_CAPTURE_PARTIAL
+  - EVIDENCE_CAPTURE_EXPIRED
+  noPresumedFieldPrecision: true
+evidencePacket:
+  identifier: warningId
+  required:
+  - warningId
+  - episodeId
+  - rootTraceId
+  - deviceId
+  - modeId
+  - modelVersion
+  - configRevision
+  - normalReferenceVersion
+  - captureStatus
+  - capturedThroughUtc
+  - qualitySummary
+  captureStates:
+  - COMPLETE
+  - PARTIAL
+  - EXPIRED
+  - UNAVAILABLE
+  doesNotDuplicateRawSensorRows: true
+externalEvaluation:
+  preferredDataset: 'UCI Hydraulic Condition Monitoring #447'
+  cycleDurationSeconds: 60
+  sourceKind: REAL_HYDRAULIC_TEST_RIG
+  license: CC BY 4.0 attribution
+  labels: cyclewise_component_conditions
+  noClaim: FIELD_RUL_OR_ACTUAL_EARLY_LEAD_TIME
+  secondaryDataset: NASA C-MAPSS simulation optional
+  splitPolicy: GROUP_AND_TIME_WITH_EMBARGO
+otPilot:
+  defaultEnabled: false
+  requiresWrittenApproval: true
+  opcuaServicesAllowed:
+  - Read
+  - CreateSubscription
+  - CreateMonitoredItems
+  - Publish
+  - DeleteMonitoredItems
+  - DeleteSubscriptions
+  opcuaServicesForbidden:
+  - Write
+  - Call
+  mustValidateCertificateTrustList: true
+  mustLogQueueOverflow: true
+  modbusFunctionCodesAllowed:
+  - 1
+  - 2
+  - 3
+  - 4
+  modbusFunctionCodesForbidden:
+  - 5
+  - 6
+  - 15
+  - 16
+  - 23
+  pollIntervalMinMsHypothesis: 1000
+  perDeviceMaxOutstandingReadsHypothesis: 1
+  connectionCountHypothesis: 1
+  note: PLC/OT owner approval takes precedence over template numbers
+v34FixtureIds:
+- ALM-01
+- ALM-02
+- ALM-03
+- ALM-04
+- MLX-01
+- MLX-02
+- OBS-01
+- OBS-02
+- OBS-03
+- OBS-04
+- SEC-01
+- OPS-01
+apiRoutesV34PostDemo:
+- GET /v1/warnings/analytics
+- GET /v1/warnings/{id}/evidence
+- GET /v1/ops/data-quality
+- GET /v1/ops/alarm-kpis

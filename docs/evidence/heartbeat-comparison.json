@@ -1,0 +1,18 @@
+{
+  "python": {
+    "exitCode": 0,
+    "eventCount": 2,
+    "heartbeatCount": 3,
+    "probeElapsedMs": 1788.83,
+    "reportedDurationMs": 61.01230000058422,
+    "traceId": "ac901964-a7a3-453c-9941-4641655b6d30"
+  },
+  "dotnet": {
+    "exitCode": 0,
+    "eventCount": 2,
+    "heartbeatCount": 3,
+    "probeElapsedMs": 994.42,
+    "reportedDurationMs": 303.3303,
+    "traceId": "ac901964-a7a3-453c-9941-4641655b6d30"
+  }
+}

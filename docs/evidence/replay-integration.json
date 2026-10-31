@@ -1,0 +1,71 @@
+{
+  "scope": "Real separate processes; 2 logical modules of one synthetic equipment, 256 signals each, 10ms sampling.",
+  "sourceSampleIntervalMs": 10,
+  "collectorPollIntervalMs": 100,
+  "transientDurationMs": 100,
+  "apiRestartCatchupMs": 1411.987,
+  "before": [
+    {
+      "deviceId": "EQ-SUPPLY-01",
+      "state": "CONNECTED",
+      "lastReceivedAtUtc": "2026-10-19T10:51:29.355265+00:00",
+      "lastSequence": 151,
+      "acceptedBatches": 152,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "pollLatencyMs": 49.48,
+      "reasonCode": null
+    },
+    {
+      "deviceId": "EQ-SUPPLY-02",
+      "state": "CONNECTED",
+      "lastReceivedAtUtc": "2026-10-19T10:51:29.340589+00:00",
+      "lastSequence": 150,
+      "acceptedBatches": 151,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "pollLatencyMs": 31.251,
+      "reasonCode": null
+    }
+  ],
+  "after": [
+    {
+      "deviceId": "EQ-SUPPLY-01",
+      "state": "CONNECTED",
+      "lastReceivedAtUtc": "2026-10-19T10:51:31.171133+00:00",
+      "lastSequence": 243,
+      "acceptedBatches": 92,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "pollLatencyMs": 252.267,
+      "reasonCode": null
+    },
+    {
+      "deviceId": "EQ-SUPPLY-02",
+      "state": "CONNECTED",
+      "lastReceivedAtUtc": "2026-10-19T10:51:31.097352+00:00",
+      "lastSequence": 242,
+      "acceptedBatches": 92,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "pollLatencyMs": 230.672,
+      "reasonCode": null
+    }
+  ],
+  "rawArchive": [
+    {
+      "deviceId": "EQ-SUPPLY-01",
+      "batches": 290,
+      "signalValues": 74240
+    },
+    {
+      "deviceId": "EQ-SUPPLY-02",
+      "batches": 243,
+      "signalValues": 62208
+    }
+  ],
+  "subsecondFaultSamples": 30,
+  "archiveGaps": 0,
+  "integrity": "ok",
+  "ownedChildrenCleanedUp": true
+}

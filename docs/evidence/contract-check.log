@@ -1,0 +1,3 @@
+PASS: generated Python/C# contracts match YAML
+PASS: YAML/generated enums, required fields, nested OpenAPI schemas, thin-demo routes and samples
+PASS: reference SQL syntax only; no product database or hardware connection

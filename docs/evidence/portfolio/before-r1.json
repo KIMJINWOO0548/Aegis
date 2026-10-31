@@ -1,0 +1,78 @@
+{
+  "generatedAtUtc": "2026-10-19T13:56:18.916827+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.14",
+  "logicalCpuCount": 8,
+  "scope": "Synthetic replay acquisition and SQLite WAL/FULL; WPF/advisory excluded.",
+  "limits": "Short single trials; not saturation, soak, hard real-time or customer hardware performance. Working set is sampled. Replay preserves committed prefixes; final source tails are not claimed drained.",
+  "runs": [
+    {
+      "emulatorCount": 4,
+      "signalsPerEmulator": 256,
+      "sourceSampleIntervalMs": 10,
+      "pollIntervalSeconds": 0.1,
+      "measuredElapsedSeconds": 15.0,
+      "acceptedBatchesDuringWindow": 5942,
+      "acceptedSignalValuesPerSecond": 101406.902,
+      "rejectedBatches": 0,
+      "droppedBatches": 0,
+      "finalStates": [
+        "CONNECTED",
+        "CONNECTED",
+        "CONNECTED",
+        "CONNECTED"
+      ],
+      "apiLatency": {
+        "samples": 140,
+        "p50Ms": 2.667,
+        "p95Ms": 3.919
+      },
+      "collectorPollLatency": {
+        "samples": 296,
+        "p50Ms": 58.044,
+        "p95Ms": 162.206
+      },
+      "apiCpuPercentOfOneCore": 3.75,
+      "emulatorsCpuPercentOfOneCore": 65.206,
+      "apiPeakSampledWorkingSetMiB": 54.023,
+      "emulatorsPeakSampledWorkingSetMiB": 110.406,
+      "moduleWorkersCpuPercentOfOneCore": 146.454,
+      "moduleWorkersPeakSampledWorkingSetMiB": 251.414,
+      "archiveIntegrity": "ok",
+      "archiveGapRanges": 0,
+      "contiguousCommittedPrefixes": true,
+      "totalArchivedBatches": 8203,
+      "archiveBytes": 168751104,
+      "warmupSeconds": 3,
+      "beginningDataAgeMs": [
+        238.672,
+        168.672,
+        188.672,
+        138.672
+      ],
+      "endingDataAgeMs": [
+        242.203,
+        182.203,
+        182.203,
+        163.204
+      ],
+      "endingPendingBatches": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "archiveCommitLatency": {
+        "samples": 296,
+        "p50Ms": 16.712,
+        "p95Ms": 50.413
+      },
+      "observedDataAge": {
+        "samples": 560,
+        "p50Ms": 245.012,
+        "p95Ms": 384.906
+      },
+      "ownedChildrenCleanedUp": true
+    }
+  ]
+}

@@ -1,0 +1,706 @@
+openapi: 3.0.3
+info:
+  title: Aegis Insight Thin Demo API
+  version: 3.4.0
+  description: Simulator-only, read-only Insight demo. Trend endpoint bounded; physical device commands forbidden.
+servers:
+- url: http://127.0.0.1:8765
+security:
+- LocalToken: []
+paths:
+  /v1/health:
+    get:
+      operationId: getHealth
+      responses:
+        '200':
+          description: Process/service health
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - status
+                - schemaVersion
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - OK
+                    - DEGRADED
+                    - OFFLINE
+                  schemaVersion:
+                    type: string
+  /v1/devices:
+    get:
+      operationId: listDevices
+      responses:
+        '200':
+          description: Available virtual devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - deviceId
+                  - readOnly
+                  - source
+                  properties:
+                    deviceId:
+                      type: string
+                    readOnly:
+                      type: boolean
+                    source:
+                      type: string
+                      enum:
+                      - SIMULATOR
+  /v1/devices/{id}/observations:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: listObservations
+      responses:
+        '200':
+          description: Row-based signal data, most recent batch
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Observation'
+  /v1/devices/{id}/health:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getDeviceHealth
+      responses:
+        '200':
+          description: ML runtime state and evaluated data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceHealth'
+  /v1/warnings:
+    get:
+      operationId: listWarnings
+      responses:
+        '200':
+          description: Warning history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Warning'
+  /v1/warnings/{id}/ack:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+    post:
+      operationId: acknowledgeRecommendation
+      description: Human acknowledgment ONLY. Never calls a device command.
+      responses:
+        '200':
+          description: Acknowledged or replayed same result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Warning'
+        '409':
+          description: Warning already resolved or stale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/lab/scenarios/DEG-02/start:
+    parameters:
+    - name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+    post:
+      operationId: startVirtualDeg02
+      description: Only permitted for local SIMULATOR source in development mode.
+      responses:
+        '202':
+          description: Virtual scenario started
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - scenarioId
+                - runId
+                - source
+                properties:
+                  scenarioId:
+                    type: string
+                    enum:
+                    - DEG-02
+                  runId:
+                    type: string
+                  source:
+                    type: string
+                    enum:
+                    - SIMULATOR
+        '403':
+          description: Not a simulator or not development mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/devices/{id}/trends:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getDeviceTrend
+      summary: Bounded sensor trend with gaps, markers and actual resolution
+      parameters:
+      - name: signals
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Comma separated max 2 signal keys in thin-demo
+      - name: fromUtc
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: toUtc
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: resolution
+        in: query
+        schema:
+          type: string
+          enum:
+          - auto
+          - raw
+          - 1m
+          - 1h
+          default: auto
+      - name: maxPoints
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1500
+          default: 1500
+      responses:
+        '200':
+          description: Bounded time-series with gaps and warning markers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendResponse'
+        '422':
+          description: Too large query or invalid time/signal; no unlimited scan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/warnings/{id}/timeline:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getWarningTimeline
+      summary: Linked sensor/ML/ACK timeline; no real equipment actuation
+      responses:
+        '200':
+          description: Timeline with stable warningId, observation source and quality
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WarningTimeline'
+        '404':
+          description: Unknown warning or unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+components:
+  securitySchemes:
+    LocalToken:
+      type: apiKey
+      in: header
+      name: X-Aegis-Token
+  schemas:
+    TimeWindow:
+      type: object
+      additionalProperties: false
+      required: [fromUtc, toUtc]
+      properties:
+        fromUtc: {type: string, format: date-time}
+        toUtc: {type: string, format: date-time}
+    TrendGap:
+      type: object
+      additionalProperties: false
+      required: [fromUtc, toUtc, reason]
+      properties:
+        fromUtc: {type: string, format: date-time}
+        toUtc: {type: string, format: date-time}
+        reason: {type: string}
+    TrendPoint:
+      type: object
+      additionalProperties: false
+      required: [t, v, quality]
+      properties:
+        t: {type: string, format: date-time}
+        v: {type: number, nullable: true}
+        quality:
+          type: string
+          enum: [GOOD, STALE, BAD, MISSING]
+    TrendSeries:
+      type: object
+      additionalProperties: false
+      required: [signalKey, unit, points]
+      properties:
+        signalKey:
+          type: string
+          enum: [setpointFlowLpm, actualFlowLpm, supplyPressureKpa, valveCommandPct, valveFeedbackPct, motorCurrentAmp, temperatureC, cycleCount]
+        unit: {type: string}
+        points:
+          type: array
+          maxItems: 1500
+          items: {$ref: '#/components/schemas/TrendPoint'}
+    WarningMarker:
+      type: object
+      additionalProperties: false
+      required: [warningId, atUtc, type]
+      properties:
+        warningId: {type: string}
+        atUtc: {type: string, format: date-time}
+        type: {type: string}
+    TrendResponse:
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, deviceId, source, resolution, window, generatedAtUtc, isComplete, gaps, series, warningMarkers]
+      properties:
+        schemaVersion: {type: string, enum: [3.4.0]}
+        deviceId: {type: string}
+        source:
+          type: string
+          enum: [SIMULATOR, READ_ONLY]
+        resolution:
+          type: string
+          enum: [raw, 1m, 1h]
+        window: {$ref: '#/components/schemas/TimeWindow'}
+        generatedAtUtc: {type: string, format: date-time}
+        isComplete: {type: boolean}
+        gaps:
+          type: array
+          items: {$ref: '#/components/schemas/TrendGap'}
+        series:
+          type: array
+          items: {$ref: '#/components/schemas/TrendSeries'}
+        warningMarkers:
+          type: array
+          items: {$ref: '#/components/schemas/WarningMarker'}
+    WarningTimeline:
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, warningId, events, generatedAtUtc]
+      properties:
+        schemaVersion: {type: string, enum: [3.4.0]}
+        warningId: {type: string}
+        events:
+          type: array
+          items: {$ref: '#/components/schemas/StructuredEvent'}
+        generatedAtUtc: {type: string, format: date-time}
+    StructuredEvent:
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, occurredAtUtc, component, eventName, severity, traceId, outcome]
+      properties:
+        schemaVersion: {type: string, enum: [3.4.0]}
+        eventId: {type: string}
+        occurredAtUtc: {type: string, format: date-time}
+        component:
+          type: string
+          enum: [wpf_ui, collector, local_api, ml_worker, simulator, storage]
+        eventName:
+          type: string
+          enum: [COLLECTOR_STARTED, POLL_TIMEOUT, SIGNAL_QUALITY_CHANGED, COLLECTOR_RESTARTED, ML_MODEL_LOADED, ML_EVALUATION_UNAVAILABLE, EWMA_WARNING_RAISED, ML_DEGRADED, API_REQUEST_FAILED, UI_BACKEND_DISCONNECTED, UI_BACKEND_RECONNECTED, WARNING_ACKNOWLEDGED, ACK_REJECTED, CONFIG_CHANGED, SUPPORT_BUNDLE_EXPORTED, STORAGE_WRITE_FAILED, LOGGING_DEGRADED, LOG_DROPPED_COUNT, OBSERVATION_GAP_DETECTED, AGGREGATION_STARTED, AGGREGATION_COMPLETED, AGGREGATION_FAILED, RETENTION_CLEANUP_COMPLETED, ML_THRESHOLD_CHANGED, ML_DRIFT_DETECTED, TREND_QUERY_FAILED, TREND_QUERY_TRUNCATED, SERVICE_STARTED, SERVICE_STOPPED, SERVICE_RECOVERED, ADVISORY_EPISODE_GROUPED, ADVISORY_RECOVERY_CONFIRMED, ADVISORY_DISPLAY_COOLDOWN, SOURCE_QUEUE_OVERFLOW, EVIDENCE_CAPTURE_PARTIAL, EVIDENCE_CAPTURE_EXPIRED]
+        severity:
+          type: string
+          enum: [DEBUG, INFO, WARN, ERROR, CRITICAL]
+        traceId: {type: string}
+        outcome:
+          type: string
+          enum: [SUCCESS, FAILED, SKIPPED, UNKNOWN]
+        deviceId: {type: string, nullable: true}
+        warningId: {type: string, nullable: true}
+        incidentId: {type: string, nullable: true}
+        requestId: {type: string, nullable: true}
+        runId: {type: string, nullable: true}
+        modelVersion: {type: string, nullable: true}
+        sourceVersion: {type: string, nullable: true}
+        durationMs: {type: number, minimum: 0, nullable: true}
+        reasonCode: {type: string, nullable: true}
+        safeContext: {type: object, additionalProperties: true, nullable: true}
+        sourceSequence: {type: integer, minimum: 0, nullable: true}
+        configRevision: {type: string, nullable: true}
+        aggregationVersion: {type: string, nullable: true}
+        dataWindowStartUtc: {type: string, format: date-time, nullable: true}
+        dataWindowEndUtc: {type: string, format: date-time, nullable: true}
+        observationGapCount: {type: integer, minimum: 0, nullable: true}
+        queryResolution:
+          type: string
+          enum: [auto, raw, 1m, 1h]
+          nullable: true
+        droppedCount: {type: integer, minimum: 0, nullable: true}
+        storageBytes: {type: integer, minimum: 0, nullable: true}
+    Observation:
+      type: object
+      additionalProperties: false
+      required:
+      - schemaVersion
+      - observationId
+      - deviceId
+      - signalKey
+      - value
+      - unit
+      - observedAtUtc
+      - receivedAtUtc
+      - quality
+      - deviceStateVersion
+      - modeId
+      properties:
+        schemaVersion:
+          type: string
+          enum: [3.4.0]
+        observationId:
+          type: string
+        deviceId:
+          type: string
+        signalKey:
+          $ref: '#/components/schemas/SignalKey'
+        value:
+          type: number
+          nullable: true
+          description: Null for unavailable measurements; GOOD requires a finite number.
+        unit:
+          type: string
+        observedAtUtc:
+          type: string
+          format: date-time
+        receivedAtUtc:
+          type: string
+          format: date-time
+        quality:
+          type: string
+          enum:
+          - GOOD
+          - STALE
+          - BAD
+          - MISSING
+        deviceStateVersion:
+          type: integer
+          minimum: 0
+        modeId:
+          type: string
+          enum:
+          - PRODUCTION
+          - SETUP
+          - MAINTENANCE
+    DeviceHealth:
+      type: object
+      additionalProperties: false
+      required:
+      - schemaVersion
+      - deviceId
+      - modelLifecycle
+      - observationEvaluation
+      - modelVersion
+      - windowEndUtc
+      - evidenceSignalKeys
+      - dataQuality
+      properties:
+        schemaVersion:
+          type: string
+          enum: [3.4.0]
+        deviceId:
+          type: string
+        modelLifecycle:
+          type: string
+          enum:
+          - NO_MODEL
+          - SHADOW
+          - ADVISORY
+          - DEGRADED
+          - DISABLED
+        observationEvaluation:
+          type: string
+          enum:
+          - INSUFFICIENT_DATA
+          - NORMAL
+          - ANOMALOUS
+          - UNAVAILABLE
+        modelVersion:
+          type: string
+          nullable: true
+        windowEndUtc:
+          type: string
+          format: date-time
+        evidenceSignalKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignalKey'
+        dataQuality:
+          type: string
+          enum:
+          - GOOD
+          - STALE
+          - BAD
+          - MISSING
+        normalReferencePercentile:
+          type: number
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Rank against a held-out normal reference; NOT a failure probability.
+    Warning:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - deviceId
+      - state
+      - createdAtUtc
+      - recommendationId
+      properties:
+        id:
+          type: string
+        deviceId:
+          type: string
+        state:
+          type: string
+          enum:
+          - OPEN
+          - ACKNOWLEDGED
+          - RESOLVED
+          - MANUAL_REVIEW
+        createdAtUtc:
+          type: string
+          format: date-time
+        recommendationId:
+          type: string
+        acknowledgedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+    ApiError:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    ModelLifecycle:
+      type: string
+      enum:
+      - NO_MODEL
+      - SHADOW
+      - ADVISORY
+      - DEGRADED
+      - DISABLED
+
+    ObservationEvaluation:
+      type: string
+      enum:
+      - INSUFFICIENT_DATA
+      - NORMAL
+      - ANOMALOUS
+      - UNAVAILABLE
+
+    WarningLifecycle:
+      type: string
+      enum:
+      - OPEN
+      - ACKNOWLEDGED
+      - RESOLVED
+      - MANUAL_REVIEW
+
+    ValidationLevel:
+      type: string
+      enum:
+      - SPECIFIED
+      - IMPLEMENTED
+      - VERIFIED_SIM
+      - PUBLIC_DATA_CHECKED
+      - PRESENTABLE
+      - VERIFIED_PILOT
+      - RELEASED
+
+    ObservationQuality:
+      type: string
+      enum:
+      - GOOD
+      - STALE
+      - BAD
+      - MISSING
+
+    ModeId:
+      type: string
+      enum:
+      - PRODUCTION
+      - SETUP
+      - MAINTENANCE
+
+    SignalKey:
+      type: string
+      enum:
+      - setpointFlowLpm
+      - actualFlowLpm
+      - supplyPressureKpa
+      - valveCommandPct
+      - valveFeedbackPct
+      - motorCurrentAmp
+      - temperatureC
+      - cycleCount
+
+    DerivedSignalKey:
+      type: string
+      enum:
+      - flowTrackingErrorLpm
+      - flowErrorEwmaLpm
+      - normalReferencePercentile
+
+    Source:
+      type: string
+      enum:
+      - SIMULATOR
+      - READ_ONLY
+
+    Resolution:
+      type: string
+      enum:
+      - auto
+      - raw
+      - 1m
+      - 1h
+
+    Severity:
+      type: string
+      enum:
+      - DEBUG
+      - INFO
+      - WARN
+      - ERROR
+      - CRITICAL
+
+    Component:
+      type: string
+      enum:
+      - wpf_ui
+      - collector
+      - local_api
+      - ml_worker
+      - simulator
+      - storage
+
+    Outcome:
+      type: string
+      enum:
+      - SUCCESS
+      - FAILED
+      - SKIPPED
+      - UNKNOWN
+
+    EventName:
+      type: string
+      enum:
+      - COLLECTOR_STARTED
+      - POLL_TIMEOUT
+      - SIGNAL_QUALITY_CHANGED
+      - COLLECTOR_RESTARTED
+      - ML_MODEL_LOADED
+      - ML_EVALUATION_UNAVAILABLE
+      - EWMA_WARNING_RAISED
+      - ML_DEGRADED
+      - API_REQUEST_FAILED
+      - UI_BACKEND_DISCONNECTED
+      - UI_BACKEND_RECONNECTED
+      - WARNING_ACKNOWLEDGED
+      - ACK_REJECTED
+      - CONFIG_CHANGED
+      - SUPPORT_BUNDLE_EXPORTED
+      - STORAGE_WRITE_FAILED
+      - LOGGING_DEGRADED
+      - LOG_DROPPED_COUNT
+      - OBSERVATION_GAP_DETECTED
+      - AGGREGATION_STARTED
+      - AGGREGATION_COMPLETED
+      - AGGREGATION_FAILED
+      - RETENTION_CLEANUP_COMPLETED
+      - ML_THRESHOLD_CHANGED
+      - ML_DRIFT_DETECTED
+      - TREND_QUERY_FAILED
+      - TREND_QUERY_TRUNCATED
+      - SERVICE_STARTED
+      - SERVICE_STOPPED
+      - SERVICE_RECOVERED
+      - ADVISORY_EPISODE_GROUPED
+      - ADVISORY_RECOVERY_CONFIRMED
+      - ADVISORY_DISPLAY_COOLDOWN
+      - SOURCE_QUEUE_OVERFLOW
+      - EVIDENCE_CAPTURE_PARTIAL
+      - EVIDENCE_CAPTURE_EXPIRED
+
+    PresentationState:
+      type: string
+      enum:
+      - VISIBLE
+      - GROUPED
+      - COOLDOWN
+
+    CaptureState:
+      type: string
+      enum:
+      - COMPLETE
+      - PARTIAL
+      - EXPIRED
+      - UNAVAILABLE

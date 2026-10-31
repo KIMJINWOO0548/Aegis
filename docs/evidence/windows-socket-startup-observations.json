@@ -1,0 +1,17 @@
+{
+  "scope": "Bounded diagnosis of intermittent Windows socket/event-loop startup failures; no system settings changed.",
+  "retainedFailureReport": "emulator-python-tests-runtime-failure.xml",
+  "failedFullRun": {
+    "passed": 244,
+    "failed": 2,
+    "replayValidationTest": "Failed before coroutine execution: socketpair -> socket.listen -> WinError 10014.",
+    "workerRestartTest": "Expected absolute restart count 1 but observed 3. Worker stderr showed two failures during Proactor loop initialization; the original OSError number was not retained, so matching it to 10014 is an inference."
+  },
+  "isolatedSequentialProbes": {
+    "bindListenClose": {"attempts": 300, "failures": 0},
+    "socketpair": {"attempts": 300, "failures": 0},
+    "proactorCreateClose": {"attempts": 200, "failures": 0}
+  },
+  "followup": "Worker stderr now records only exception type and winerror number, without configuration values or tokens. Restart test measures exactly one restart relative to the count at first readiness. No Windows networking reset, security change, global socket monkeypatch, or automatic reboot was performed.",
+  "limit": "Probes did not reproduce the failure or establish its cause, absence, or a fix. See the latest normal test report separately."
+}

@@ -1,0 +1,33 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.14, pytest-9.1.1, pluggy-1.7.0
+rootdir: C:\Users\������\Desktop\Aegis\runtime\���� ���� copy
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.15.1
+collected 248 items
+
+tests\test_api.py ...................................................    [ 20%]
+tests\test_api_process.py .                                              [ 20%]
+tests\test_archive.py ....................                               [ 29%]
+tests\test_collector.py .......................                          [ 38%]
+tests\test_contracts.py ......................................           [ 53%]
+tests\test_delivery.py .                                                 [ 54%]
+tests\test_emulator_integration.py ...                                   [ 55%]
+tests\test_evaluation.py ...............................                 [ 67%]
+tests\test_fault_response.py ...                                         [ 68%]
+tests\test_heartbeat.py .....                                            [ 70%]
+tests\test_live_api.py ..                                                [ 71%]
+tests\test_module_processes.py .                                         [ 72%]
+tests\test_observability.py .......                                      [ 75%]
+tests\test_processes.py ..............................................   [ 93%]
+tests\test_replay_collector.py ..............                            [ 99%]
+tests\test_replay_process.py ..                                          [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\������\Desktop\Aegis\runtime\���� ���� copy\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: C:\Users\������\Desktop\Aegis\runtime\���� ���� copy\TestResults\python.xml -
+================= 248 passed, 1 warning in 120.08s (0:02:00) ==================

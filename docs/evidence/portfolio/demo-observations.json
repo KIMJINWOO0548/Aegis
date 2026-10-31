@@ -1,0 +1,43 @@
+{
+  "scope": "Three real emulator/collector processes, WPF data-quality demonstration; no hardware.",
+  "sampleIntervalMs": 100,
+  "modules": [
+    {
+      "deviceId": "EQ-SUPPLY-01",
+      "batches": 1026,
+      "signalsPerBatch": 256,
+      "rawFlowStates": {
+        "GOOD": 300,
+        "MISSING": 300,
+        "BAD": 276,
+        "OUT_OF_RANGE": 150
+      },
+      "archiveIntegrity": "ok",
+      "contiguousFromZero": true
+    },
+    {
+      "deviceId": "EQ-SUPPLY-02",
+      "batches": 1029,
+      "signalsPerBatch": 256,
+      "rawFlowStates": {
+        "GOOD": 1029
+      },
+      "archiveIntegrity": "ok",
+      "contiguousFromZero": true
+    },
+    {
+      "deviceId": "EQ-SUPPLY-03",
+      "batches": 1029,
+      "signalsPerBatch": 256,
+      "rawFlowStates": {
+        "GOOD": 1029
+      },
+      "archiveIntegrity": "ok",
+      "contiguousFromZero": true
+    }
+  ],
+  "allFourRawFlowStatesRetained": true,
+  "screenRecording": "Selected real UI screenshots; GIF is a phase-ordered 12-second replay, not continuous screen recording.",
+  "observedLimit": "record-05 screenshot also shows a transient POLL_TIMEOUT/STALE condition; retained separately.",
+  "grouping": "OUT_OF_RANGE is a report grouping for raw quality GOOD with negative flow. Source quality/value are unchanged in raw DB."
+}

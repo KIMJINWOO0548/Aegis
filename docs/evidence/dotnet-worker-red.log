@@ -1,0 +1,111 @@
+  복원할 프로젝트를 확인하는 중...
+  C:\Users\김진우\Desktop\Aegis\src\Aegis.Worker\Aegis.Worker.csproj을(를) 7.82초 동안 복원했습니다.
+  C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\Aegis.Contracts.Tests.csproj을(를) 7.83초 동안 복원했습니다.
+  복원할 3 프로젝트의 1이(가) 최신 상태입니다.
+  Aegis.Contracts -> C:\Users\김진우\Desktop\Aegis\src\Aegis.Contracts\bin\Debug\net10.0\Aegis.Contracts.dll
+  Aegis.Worker -> C:\Users\김진우\Desktop\Aegis\src\Aegis.Worker\bin\Debug\net10.0\Aegis.Worker.dll
+  Aegis.Contracts.Tests -> C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\bin\Debug\net10.0\Aegis.Contracts.Tests.dll
+C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\bin\Debug\net10.0\Aegis.Contracts.Tests.dll(.NETCoreApp,Version=v10.0)에 대한 테스트 실행
+지정된 패턴과 일치한 총 테스트 파일 수는 1개입니다.
+[xUnit.net 00:00:02.95]     Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--count", value: "invalid") [FAIL]
+[xUnit.net 00:00:02.98]     Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--count", value: "0") [FAIL]
+[xUnit.net 00:00:02.98]     Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--interval-ms", value: "10001") [FAIL]
+[xUnit.net 00:00:02.98]     Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--count", value: "-1") [FAIL]
+[xUnit.net 00:00:02.98]     Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--interval-ms", value: "0") [FAIL]
+[xUnit.net 00:00:02.99]     Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--count", value: "101") [FAIL]
+[xUnit.net 00:00:02.99]     Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--trace-id", value: "not-a-uuid") [FAIL]
+[xUnit.net 00:00:02.99]     Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--unknown", value: "3") [FAIL]
+[xUnit.net 00:00:03.00]     Aegis.Contracts.Tests.WorkerTests.Worker_rejects_duplicate_or_missing_options [FAIL]
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--count", value: "invalid") [385 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentException)
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(String key, String value) in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 35
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--count", value: "0") [7 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentException)
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(String key, String value) in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 35
+   at InvokeStub_WorkerTests.Worker_rejects_invalid_input_without_echoing_it(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--interval-ms", value: "10001") [< 1 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentException)
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(String key, String value) in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 35
+   at InvokeStub_WorkerTests.Worker_rejects_invalid_input_without_echoing_it(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--count", value: "-1") [< 1 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentException)
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(String key, String value) in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 35
+   at InvokeStub_WorkerTests.Worker_rejects_invalid_input_without_echoing_it(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--interval-ms", value: "0") [< 1 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentException)
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(String key, String value) in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 35
+   at InvokeStub_WorkerTests.Worker_rejects_invalid_input_without_echoing_it(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--count", value: "101") [< 1 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentException)
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(String key, String value) in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 35
+   at InvokeStub_WorkerTests.Worker_rejects_invalid_input_without_echoing_it(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--trace-id", value: "not-a-uuid") [< 1 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentException)
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(String key, String value) in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 35
+   at InvokeStub_WorkerTests.Worker_rejects_invalid_input_without_echoing_it(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(key: "--unknown", value: "3") [< 1 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentException)
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_rejects_invalid_input_without_echoing_it(String key, String value) in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 35
+   at InvokeStub_WorkerTests.Worker_rejects_invalid_input_without_echoing_it(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_rejects_duplicate_or_missing_options [< 1 ms]
+  오류 메시지:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ArgumentException)
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_rejects_duplicate_or_missing_options() in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 42
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:03.03]     Aegis.Contracts.Tests.WorkerTests.Worker_accepts_a_bounded_run_and_preserves_trace [FAIL]
+[xUnit.net 00:00:03.95]     Aegis.Contracts.Tests.WorkerTests.Worker_emits_correlated_start_and_stop_events_then_exits [FAIL]
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_accepts_a_bounded_run_and_preserves_trace [21 ms]
+  오류 메시지:
+   Assert.Equal() Failure: Values differ
+Expected: 20
+Actual:   1000
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_accepts_a_bounded_run_and_preserves_trace() in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 20
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  실패 Aegis.Contracts.Tests.WorkerTests.Worker_emits_correlated_start_and_stop_events_then_exits [948 ms]
+  오류 메시지:
+   Assert.Equal() Failure: Values differ
+Expected: 2
+Actual:   0
+  스택 추적:
+     at Aegis.Contracts.Tests.WorkerTests.Worker_emits_correlated_start_and_stop_events_then_exits() in C:\Users\김진우\Desktop\Aegis\tests\Aegis.Contracts.Tests\WorkerTests.cs:line 59
+--- End of stack trace from previous location ---
+
+실패!  - 실패:    11, 통과:     0, 건너뜀:     0, 전체:    11, 기간: 1 s - Aegis.Contracts.Tests.dll (net10.0)

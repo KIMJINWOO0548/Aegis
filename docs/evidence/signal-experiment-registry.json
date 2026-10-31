@@ -1,0 +1,52 @@
+{
+  "experiments": [
+    {
+      "id": "signed-windows-1",
+      "protocol": "docs/superpowers/specs/2026-10-20-signal-combination-experiment.md",
+      "heldOutSeeds": [
+        49001,
+        49002,
+        49003,
+        49004,
+        49005,
+        49006,
+        49007,
+        49008,
+        49009,
+        49010,
+        49011,
+        49012,
+        49013,
+        49014,
+        49015,
+        49016,
+        49017,
+        49018,
+        49019,
+        49020
+      ],
+      "tuningRuns": 0,
+      "status": "completed",
+      "startedAtUtc": "2026-10-31T14:14:56.174566+00:00",
+      "sourceSha256": {
+        "scripts\\validate_signal_combination.py": "ce7b9245e64326c19b8c416a4748c926d86149b3ae41c5c5e5731689fcd2e376",
+        "scripts\\signal_combination.py": "16b0499d83dac97eda29a811627e3f0cca3604f00250b4bbc20bbe1ffd560d61",
+        "src\\aegis\\signal_review.py": "f8fc8e5fe6a31f05b9ac68badc725f961e4fa79912a80a8c7e463efcca345496",
+        "src\\aegis\\evaluation.py": "2c9d0f86ed45ce352b119998a31f42f84877b8fae073691e3d8a7f2cc95ed415",
+        "docs\\superpowers\\specs\\2026-10-20-signal-combination-experiment.md": "fd51a3993e4be857259e45081d10fa981b339aa1085c05b14231f5dec458dd0d"
+      },
+      "executionAttempts": [
+        {
+          "startedAtUtc": "2026-10-22T14:56:40.684961+00:00",
+          "status": "interrupted",
+          "reason": "Previous tool host generation ended without an evidence file; no experiment process remains. All five frozen source hashes verified identical before recovery.",
+          "recoveryRecordedAtUtc": "2026-10-31T14:14:51.278215+00:00"
+        }
+      ],
+      "completedAtUtc": "2026-10-31T14:17:45.784504+00:00",
+      "evidence": "docs\\evidence\\signal-combination.json",
+      "promotionGatePassed": false,
+      "runtimePromoted": false
+    }
+  ]
+}

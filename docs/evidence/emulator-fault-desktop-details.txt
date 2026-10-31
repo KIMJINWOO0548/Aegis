@@ -1,0 +1,71 @@
+Window: "Aegis Insight — 장비 상태", App: Aegis.Desktop.exe.
+	0 창 Aegis Insight — 장비 상태 Secondary Actions: Raise
+		1 단추를 선택합니다 최소화 Description: 최소화
+			2 이미지
+		3 단추를 선택합니다 최대화 Description: 최대화 ID: MaximizeButton
+			4 이미지 ID: MaximizeImage
+		5 단추를 선택합니다 창 닫기 Description: 닫기
+			6 이미지
+		7 텍스트 AEGIS INSIGHT
+		8 텍스트 장비 상태
+		9 창
+			10 이미지 ID: HeroArtwork
+			11 텍스트 선택된 장비
+			12 콤보 상자 에뮬레이터 장비 선택 ID: DeviceSelector
+			13 텍스트 EQ-SUPPLY-01 ID: DeviceIdText
+			14 텍스트 EMULATOR ID: ModeBadgeText
+			15 이미지
+			16 텍스트 에뮬레이터 연결 ID: HeadlineText
+			17 텍스트 최신 신호를 수신 중입니다. 관측 데이터 품질과 유량 분석 결과를 아래에서 확인하세요. ID: DescriptionText
+			18 이미지
+			19 텍스트 연결 상태
+			20 텍스트 연결됨 ID: TransportText
+			21 이미지
+			22 텍스트 분석 상태
+			23 텍스트 EWMA · 평가 불가 ID: AnalysisStateText
+			24 이미지
+			25 텍스트 데이터 출처
+			26 텍스트 시뮬레이터 ID: SourceText
+			27 이미지
+			28 텍스트 최근 관측
+			29 텍스트 관측 2026-10-19 07:20:41 +09:00 · 수신 07:20:41 ID: ObservationTimeText
+			30 이미지
+			31 텍스트 데이터 품질
+			32 텍스트 BAD · 유효하지 않은 신호 ID: QualityText
+			33 텍스트 최신 신호 8개
+			34 텍스트 신호 / 단위
+			35 텍스트 관측값
+			36 텍스트 품질
+			37 목록 뷰 선택한 장비의 최신 신호 ID: SignalList
+				556 dataitem SignalReading { SignalKey = setpointFlowLpm, Value = 10.070752, Unit = L/min, Quality = GOOD, Issue = }
+					557 텍스트 setpointFlowLpm L/min
+					558 텍스트 10.071
+					559 텍스트 GOOD
+					560 텍스트
+				405 dataitem SignalReading { SignalKey = actualFlowLpm, Value = , Unit = L/min, Quality = BAD, Issue = BAD · 신호 품질이 유효하지 않습니다. 센서와 수집 연결을 확인하세요. }
+				561 dataitem SignalReading { SignalKey = supplyPressureKpa, Value = 252.830061, Unit = kPa, Quality = GOOD, Issue = }
+					562 텍스트 supplyPressureKpa kPa
+					563 텍스트 252.83
+					564 텍스트 GOOD
+					565 텍스트
+				566 dataitem
+			54 텍스트 수신 381 · 거부 0 · 누락 0 · 순번 380 · 응답 67.3 ms ID: ConnectionStatsText
+			55 텍스트 개발용 유량 분석
+			56 텍스트 ewma-flow-dev-1 · 유효 샘플 0/60 · 유량 오차 EWMA — L/min · 연결 또는 신호 품질을 확인하세요. 현재 정상 판정은 없습니다. ID: AnalysisDetailsText
+			57 텍스트 활성 경고 0개 ID: WarningText
+			58 텍스트 60초 창 · 30초마다 평가 · EWMA 1.5 L/min 초과 3회에 점검 권고. 학습된 ML 모델이 아닙니다.
+			59 단추를 선택합니다 연결 안내 보기
+				60 이미지
+				61 텍스트 연결 안내 보기
+			62 단추를 선택합니다 장비 상태 화면 닫기
+				63 텍스트 닫기
+			64 이미지
+			65 텍스트 시뮬레이터 데이터를 개발용 EWMA 규칙으로 분석합니다. 학습된 ML 모델이나 실제 설비의 정상 판정이 아닙니다. ID: NoticeText
+			66 스크롤 막대 (settable, float) Value: 48 ID: VerticalScrollBar
+				67 단추를 선택합니다 (disabled) ID: PART_LineUpButton
+				68 단추를 선택합니다 (disabled) ID: PageUp
+				69 단추를 선택합니다 (disabled) ID: PageDown
+				70 엄지 (disabled)
+				71 단추를 선택합니다 (disabled) ID: PART_LineDownButton
+
+The focused UI element is 0 창 Aegis Insight — 장비 상태 Secondary Actions: Raise.

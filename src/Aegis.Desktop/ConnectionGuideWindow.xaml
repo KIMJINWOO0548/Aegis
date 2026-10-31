@@ -1,0 +1,18 @@
+<Window x:Class="Aegis.Desktop.ConnectionGuideWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="에뮬레이터 연결 안내" Width="540" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" FontFamily="{StaticResource AppFont}"
+        FontSize="15" Language="ko-KR" Background="White" Foreground="{StaticResource InkBrush}"
+        TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
+    <StackPanel Margin="28">
+        <TextBlock Text="에뮬레이터 연결 안내" FontSize="23" FontWeight="Bold" />
+        <TextBlock Text="별도 에뮬레이터를 실행한 뒤 로컬 API를 --emulators 설정 파일로 시작하세요." FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,20,0,0" />
+        <TextBlock Text="앱 실행 환경에 API와 같은 AEGIS_API_TOKEN(32자 이상)을 설정하고 앱을 다시 실행하세요. 기본 주소는 http://127.0.0.1:8765이며, AEGIS_API_URL로 루프백 주소와 포트를 지정할 수 있습니다."
+                   TextWrapping="Wrap" LineHeight="25" Margin="0,12,0,0" />
+        <TextBlock Text="실행 명령과 설정 파일 형식은 README.md에서 확인하세요. API를 --evaluate로 실행하면 개발용 EWMA 유량 분석을 확인할 수 있습니다. 학습된 ML 모델은 아니며, 분석이 꺼져 있으면 NO_MODEL로 표시합니다."
+                   TextWrapping="Wrap" LineHeight="25" Foreground="{StaticResource MutedBrush}" Margin="0,16,0,24" />
+        <Button Content="확인" Style="{StaticResource PrimaryButton}" MinWidth="100" HorizontalAlignment="Right"
+                IsDefault="True" IsCancel="True" AutomationProperties.Name="연결 안내 닫기" />
+    </StackPanel>
+</Window>

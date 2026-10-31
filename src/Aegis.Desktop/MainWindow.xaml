@@ -1,0 +1,150 @@
+<Window x:Class="Aegis.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="Aegis Insight — 장비 상태" Width="980" Height="720"
+        MinWidth="640" MinHeight="480" FontFamily="{StaticResource AppFont}" FontSize="15"
+        Language="ko-KR" Background="#FDFEFF" Foreground="{StaticResource InkBrush}"
+        WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType"
+        SizeChanged="WindowSizeChanged" StateChanged="WindowStateChanged" Loaded="WindowLoaded">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="48" ResizeBorderThickness="6" GlassFrameThickness="0" UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+    <Border BorderBrush="#D9E2EC" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="48" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+            <Border Background="#F3F6FA" BorderBrush="{StaticResource RuleBrush}" BorderThickness="0,0,0,1">
+                <DockPanel Margin="26,0,12,0">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button Style="{StaticResource CaptionButton}" Click="MinimizeWindow" ToolTip="최소화" AutomationProperties.Name="최소화">
+                            <Image Source="{StaticResource MinimizeIcon}" />
+                        </Button>
+                        <Button x:Name="MaximizeButton" Style="{StaticResource CaptionButton}" Click="ToggleMaximize" ToolTip="최대화" AutomationProperties.Name="최대화">
+                            <Image x:Name="MaximizeImage" Source="{StaticResource MaximizeIcon}" />
+                        </Button>
+                        <Button Style="{StaticResource CaptionButton}" Click="CloseWindow" ToolTip="닫기" AutomationProperties.Name="창 닫기">
+                            <Image Source="{StaticResource CloseIcon}" />
+                        </Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock FontFamily="Segoe UI" FontSize="20"><Run Text="AEGIS" FontWeight="Bold" /><Run Text=" INSIGHT" /></TextBlock>
+                        <Border Width="1" Height="22" Background="#CED8E3" Margin="20,0" />
+                        <TextBlock Text="장비 상태" FontSize="20" FontWeight="Bold" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="35,30,35,18">
+                    <Grid>
+                        <Canvas IsHitTestVisible="False">
+                            <Image x:Name="HeroArtwork" Source="Assets/pump-hero.png" Width="365" Height="350"
+                                   Canvas.Right="-8" Canvas.Top="-4" Opacity="0.62" />
+                        </Canvas>
+                        <StackPanel MaxWidth="530" HorizontalAlignment="Stretch">
+                            <TextBlock Text="선택된 장비" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" />
+                            <ComboBox x:Name="DeviceSelector" DisplayMemberPath="DeviceId" SelectedValuePath="DeviceId"
+                                      SelectionChanged="DeviceSelectionChanged" Width="260" MinHeight="32" HorizontalAlignment="Left"
+                                      Margin="0,8,0,3" AutomationProperties.Name="에뮬레이터 장비 선택" />
+                            <WrapPanel Margin="0,3,0,0">
+                                <TextBlock x:Name="DeviceIdText" Text="선택 전" FontFamily="Segoe UI" FontSize="36" FontWeight="Bold" />
+                                <Border Background="#E4EFFA" CornerRadius="16" Padding="13,5" Margin="14,8,0,6">
+                                    <TextBlock x:Name="ModeBadgeText" Text="확인 전" FontSize="13" FontWeight="SemiBold" Foreground="#32689B" />
+                                </Border>
+                            </WrapPanel>
+                            <Border Height="1" Background="{StaticResource RuleBrush}" Margin="0,15,0,0" />
+                            <Grid Margin="0,44,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <Border Width="70" Height="70" Background="#E8EDF3" CornerRadius="35" VerticalAlignment="Top">
+                                    <Image Source="{StaticResource LinkIcon}" Width="35" Height="35" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="22,2,0,0">
+                                    <TextBlock x:Name="HeadlineText" Text="데이터 연결 전" FontSize="40" FontWeight="Bold" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="DescriptionText" Text="로컬 API 연결을 확인하고 있습니다." FontSize="20" Foreground="{StaticResource MutedBrush}"
+                                               TextWrapping="Wrap" LineHeight="26" Margin="0,10,0,0" />
+                                </StackPanel>
+                            </Grid>
+                            <UniformGrid Columns="3" Margin="0,42,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Border Width="44" Height="44" CornerRadius="22" Background="#EDF1F6"><Image Source="{StaticResource LinkIcon}" Width="23" Height="23" /></Border>
+                                    <StackPanel Margin="14,0,0,0"><TextBlock Text="연결 상태" FontSize="14" Foreground="{StaticResource MutedBrush}" /><TextBlock x:Name="TransportText" Text="확인 전" FontSize="18" FontWeight="Bold" Margin="0,5,0,0" /></StackPanel>
+                                </StackPanel>
+                                <Border BorderBrush="{StaticResource RuleBrush}" BorderThickness="1,0,0,0" Padding="15,0,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Width="44" Height="44" CornerRadius="22" Background="#EDF1F6"><Image Source="{StaticResource AnalysisIcon}" Width="23" Height="23" /></Border>
+                                        <StackPanel Margin="14,0,0,0"><TextBlock Text="분석 상태" FontSize="14" Foreground="{StaticResource MutedBrush}" /><TextBlock x:Name="AnalysisStateText" Text="NO_MODEL" TextWrapping="Wrap" MaxWidth="95" FontSize="16" FontWeight="Bold" Margin="0,5,0,0" /></StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border BorderBrush="{StaticResource RuleBrush}" BorderThickness="1,0,0,0" Padding="15,0,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Width="44" Height="44" CornerRadius="22" Background="#EDF1F6"><Image Source="{StaticResource DatabaseIcon}" Width="23" Height="23" /></Border>
+                                        <StackPanel Margin="14,0,0,0"><TextBlock Text="데이터 출처" FontSize="14" Foreground="{StaticResource MutedBrush}" /><TextBlock x:Name="SourceText" Text="확인 전" FontSize="18" FontWeight="Bold" Margin="0,5,0,0" /></StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+                        </StackPanel>
+                    </Grid>
+                    <Border BorderBrush="{StaticResource RuleBrush}" BorderThickness="0,1" Padding="0,11" Margin="0,44,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="44" /><ColumnDefinition Width="142" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <Border Width="36" Height="36" CornerRadius="18" Background="#EDF1F6"><Image Source="{StaticResource ClockIcon}" Width="20" Height="20" /></Border>
+                            <TextBlock Grid.Column="1" Text="최근 관측" FontSize="15" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                            <TextBlock x:Name="ObservationTimeText" Grid.Column="2" Text="수신 전" FontSize="18" VerticalAlignment="Center" TextWrapping="Wrap" />
+                        </Grid>
+                    </Border>
+                    <Border BorderBrush="{StaticResource RuleBrush}" BorderThickness="0,0,0,1" Padding="0,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="44" /><ColumnDefinition Width="142" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <Border Width="36" Height="36" CornerRadius="18" Background="#EDF1F6"><Image Source="{StaticResource DocumentIcon}" Width="20" Height="20" /></Border>
+                            <TextBlock Grid.Column="1" Text="데이터 품질" FontSize="15" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                            <TextBlock x:Name="QualityText" Grid.Column="2" Text="아직 평가하지 않음" FontSize="18" VerticalAlignment="Center" TextWrapping="Wrap" />
+                        </Grid>
+                    </Border>
+                    <StackPanel x:Name="SignalsPanel" Visibility="Collapsed" Margin="0,20,0,0">
+                        <TextBlock Text="최신 신호 8개" FontSize="18" FontWeight="Bold" />
+                        <Grid Margin="0,10,0,6">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="120" /><ColumnDefinition Width="90" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="신호 / 단위" Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock Grid.Column="1" Text="관측값" Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock Grid.Column="2" Text="품질" Foreground="{StaticResource MutedBrush}" />
+                        </Grid>
+                        <ItemsControl x:Name="SignalList" AutomationProperties.Name="선택한 장비의 최신 신호">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{StaticResource RuleBrush}" BorderThickness="0,0,0,1" Padding="0,7">
+                                      <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="120" /><ColumnDefinition Width="90" /></Grid.ColumnDefinitions>
+                                            <TextBlock TextWrapping="Wrap"><Run Text="{Binding SignalKey}" /><Run Text="  " /><Run Text="{Binding Unit}" Foreground="{StaticResource MutedBrush}" /></TextBlock>
+                                            <TextBlock Grid.Column="1" Text="{Binding Value, StringFormat={}{0:0.###}, TargetNullValue=—}" FontWeight="SemiBold" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Quality}" />
+                                        </Grid>
+                                        <TextBlock Text="{Binding Issue}" Foreground="#99521D" FontSize="13" TextWrapping="Wrap" />
+                                      </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock x:Name="ConnectionStatsText" FontSize="13" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,10,0,0" />
+                    </StackPanel>
+                    <StackPanel x:Name="AnalysisPanel" Visibility="Collapsed" Margin="0,20,0,0">
+                        <TextBlock Text="개발용 유량 분석" FontSize="18" FontWeight="Bold" />
+                        <TextBlock x:Name="AnalysisDetailsText" TextWrapping="Wrap" Margin="0,8,0,0" />
+                        <TextBlock x:Name="WarningText" TextWrapping="Wrap" Margin="0,8,0,0" Foreground="#99521D" />
+                        <TextBlock Text="60초 창 · 30초마다 평가 · EWMA 1.5 L/min 초과 3회에 점검 권고. 학습된 ML 모델이 아닙니다."
+                                   TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,22,0,0">
+                        <Button Style="{StaticResource PrimaryButton}" Click="ShowConnectionGuide" TabIndex="0" AutomationProperties.Name="연결 안내 보기">
+                            <StackPanel Orientation="Horizontal"><Image Source="{StaticResource LinkWhiteIcon}" Width="21" Height="21" Margin="0,0,12,0" /><TextBlock Text="연결 안내 보기" /></StackPanel>
+                        </Button>
+                        <Button Content="닫기" Style="{StaticResource SecondaryButton}" Margin="12,0,0,0" MinWidth="96" Click="CloseWindow" TabIndex="1" AutomationProperties.Name="장비 상태 화면 닫기" />
+                    </StackPanel>
+                    <Border Background="#EDF6FE" CornerRadius="7" Padding="15,12" Margin="-14,20,-14,0">
+                        <DockPanel><Image Source="{StaticResource InfoIcon}" Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Top" /><TextBlock x:Name="NoticeText" Text="연결 확인 전입니다. 에뮬레이터 데이터는 실제 설비 데이터가 아닙니다." FontSize="13" Foreground="#2E6191" TextWrapping="Wrap" /></DockPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</Window>

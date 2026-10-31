@@ -1,0 +1,64 @@
+{
+  "scope": "Real independent emulator, module acquisition/archive/review process and API; synthetic input only.",
+  "intervalMs": 50,
+  "signalsPerModule": 256,
+  "review": {
+    "deviceId": "EQ-SUPPLY-01",
+    "algorithmVersion": "flow-review-dev-1",
+    "state": "REVIEW_REQUIRED",
+    "observedAtUtc": "2026-10-31T14:32:21.170000Z",
+    "rawErrorLpm": -0.06202799999999975,
+    "trendErrorLpm": -0.07842600000000033,
+    "residualMadLpm": 0.10727799999999998,
+    "contextSampleCount": 20,
+    "contextSpanMs": 950.0,
+    "contextReason": null,
+    "eventCount": 1,
+    "omittedEventCount": 0,
+    "events": [
+      {
+        "eventId": 1,
+        "disposition": "UNRESOLVED",
+        "startObservationId": "254139db-9fe5-4267-939b-ab927ddf2013:105:actualFlowLpm",
+        "lastObservationId": "254139db-9fe5-4267-939b-ab927ddf2013:106:actualFlowLpm",
+        "startAtUtc": "2026-10-31T14:32:19.570000Z",
+        "lastAtUtc": "2026-10-31T14:32:19.620000Z",
+        "closedAtUtc": "2026-10-31T14:32:19.670000Z",
+        "endReason": "RETURNED_TO_CONTEXT",
+        "sampleCount": 2,
+        "rawErrorMinLpm": -2.9502490000000003,
+        "rawErrorMaxLpm": -2.8228229999999996,
+        "peakDeviationLpm": 2.8576425,
+        "baselineErrorLpm": -0.09260650000000048,
+        "thresholdLpm": 0.565811999999994,
+        "maxSampleIntervalMs": 50.0,
+        "relatedSignalKeys": [
+          "supplyPressureKpa"
+        ]
+      }
+    ]
+  },
+  "ingestion": {
+    "deviceId": "EQ-SUPPLY-01",
+    "equipmentId": "CMP-DEMO-01",
+    "moduleId": "MODULE-01",
+    "transport": "replay",
+    "archiveEnabled": true,
+    "signalCount": 256,
+    "acceptedSignalValues": 35328,
+    "archiveCommitMs": 145.983,
+    "latestAvailableSequence": 146,
+    "pendingBatches": 9,
+    "observedLagMs": 1220.984,
+    "lastObservedAtUtc": "2026-10-31T14:32:21.170000+00:00",
+    "lastCommittedRunId": "254139db-9fe5-4267-939b-ab927ddf2013",
+    "lastCommittedSequence": 137,
+    "workerPid": 8228,
+    "restartCount": 1,
+    "workerState": "RUNNING"
+  },
+  "archivedBatches": 138,
+  "contiguousRawPrefix": true,
+  "rawPeakQuality": "GOOD",
+  "ownedProcessesStopped": true
+}

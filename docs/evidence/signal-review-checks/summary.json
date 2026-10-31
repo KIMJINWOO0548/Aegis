@@ -1,0 +1,60 @@
+{
+  "generatedAtUtc": "2026-10-20T11:50:22.6211990Z",
+  "checks": [
+    {
+      "name": "contract-drift",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 0.751,
+      "log": "contract-drift.log"
+    },
+    {
+      "name": "contract-v34",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 2.005,
+      "log": "contract-v34.log"
+    },
+    {
+      "name": "python-pytest",
+      "status": "failed",
+      "exitCode": 1,
+      "durationSeconds": 382.386,
+      "log": "python-pytest.log"
+    },
+    {
+      "name": "emulator-unittest",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 30.384,
+      "log": "emulator-unittest.log"
+    },
+    {
+      "name": "dotnet-restore",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 15.71,
+      "log": "dotnet-restore.log"
+    },
+    {
+      "name": "dotnet-release-build",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 22.151,
+      "log": "dotnet-release-build.log"
+    },
+    {
+      "name": "dotnet-tests",
+      "status": "passed",
+      "exitCode": 0,
+      "durationSeconds": 24.603,
+      "log": "dotnet-tests.log"
+    }
+  ],
+  "overallStatus": "failed",
+  "scope": "Full local verifier; Python 280 passed / 6 failed. No hardware or remote CI.",
+  "newSignalReviewTests": {
+    "passed": 38,
+    "failed": 0
+  }
+}

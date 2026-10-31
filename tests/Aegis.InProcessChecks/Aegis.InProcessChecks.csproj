@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><IsPackable>false</IsPackable></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Aegis.Contracts.Tests/Aegis.Contracts.Tests.csproj" />
+    <ProjectReference Include="../Aegis.SignalProcessing.Tests/Aegis.SignalProcessing.Tests.csproj" />
+  </ItemGroup>
+</Project>

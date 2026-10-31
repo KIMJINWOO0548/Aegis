@@ -1,0 +1,105 @@
+{
+  "scope": "Real separate processes; 60-second quality scenario, normal peer.",
+  "observedPhases": {
+    "MISSING": {
+      "diagnostics": {
+        "deviceId": "EQ-SUPPLY-01",
+        "enabled": true,
+        "modelVersion": "ewma-flow-dev-1",
+        "evaluation": "INSUFFICIENT_DATA",
+        "sampleCount": 0,
+        "flowErrorEwmaLpm": null,
+        "issues": [
+          {
+            "signalKey": "actualFlowLpm",
+            "reasonCode": "MISSING",
+            "message": "\uc2e0\ud638 \ud488\uc9c8\uc774 \uc720\ud6a8\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. \uc13c\uc11c\uc640 \uc218\uc9d1 \uc5f0\uacb0\uc744 \ud655\uc778\ud558\uc138\uc694."
+          }
+        ]
+      },
+      "health": {
+        "schemaVersion": "3.4.0",
+        "deviceId": "EQ-SUPPLY-01",
+        "modelLifecycle": "ADVISORY",
+        "observationEvaluation": "INSUFFICIENT_DATA",
+        "modelVersion": "ewma-flow-dev-1",
+        "windowEndUtc": "2026-10-20T11:43:34.816000Z",
+        "evidenceSignalKeys": [],
+        "dataQuality": "MISSING",
+        "normalReferencePercentile": null
+      }
+    },
+    "BAD": {
+      "diagnostics": {
+        "deviceId": "EQ-SUPPLY-01",
+        "enabled": true,
+        "modelVersion": "ewma-flow-dev-1",
+        "evaluation": "INSUFFICIENT_DATA",
+        "sampleCount": 0,
+        "flowErrorEwmaLpm": null,
+        "issues": [
+          {
+            "signalKey": "actualFlowLpm",
+            "reasonCode": "BAD",
+            "message": "\uc2e0\ud638 \ud488\uc9c8\uc774 \uc720\ud6a8\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. \uc13c\uc11c\uc640 \uc218\uc9d1 \uc5f0\uacb0\uc744 \ud655\uc778\ud558\uc138\uc694."
+          }
+        ]
+      },
+      "health": {
+        "schemaVersion": "3.4.0",
+        "deviceId": "EQ-SUPPLY-01",
+        "modelLifecycle": "ADVISORY",
+        "observationEvaluation": "INSUFFICIENT_DATA",
+        "modelVersion": "ewma-flow-dev-1",
+        "windowEndUtc": "2026-10-20T11:43:49.816000Z",
+        "evidenceSignalKeys": [],
+        "dataQuality": "BAD",
+        "normalReferencePercentile": null
+      }
+    },
+    "OUT_OF_RANGE": {
+      "diagnostics": {
+        "deviceId": "EQ-SUPPLY-01",
+        "enabled": true,
+        "modelVersion": "ewma-flow-dev-1",
+        "evaluation": "INSUFFICIENT_DATA",
+        "sampleCount": 0,
+        "flowErrorEwmaLpm": null,
+        "issues": [
+          {
+            "signalKey": "actualFlowLpm",
+            "reasonCode": "OUT_OF_RANGE",
+            "message": "\uac1c\ubc1c\uc6a9 \ud5c8\uc6a9 \ubc94\uc704\ub97c \ubc97\uc5b4\ub0ac\uc2b5\ub2c8\ub2e4. \uc13c\uc11c \uac12\uacfc \ub2e8\uc704\u00b7\ubcf4\uc815\uc744 \ud655\uc778\ud558\uc138\uc694."
+          }
+        ]
+      },
+      "health": {
+        "schemaVersion": "3.4.0",
+        "deviceId": "EQ-SUPPLY-01",
+        "modelLifecycle": "ADVISORY",
+        "observationEvaluation": "INSUFFICIENT_DATA",
+        "modelVersion": "ewma-flow-dev-1",
+        "windowEndUtc": "2026-10-20T11:43:50.816000Z",
+        "evidenceSignalKeys": [],
+        "dataQuality": "BAD",
+        "normalReferencePercentile": null
+      }
+    }
+  },
+  "rawOutOfRange": {
+    "schemaVersion": "3.4.0",
+    "observationId": "cccde214-2d67-41e0-8da5-9987ba86f4e5:45:actualFlowLpm",
+    "deviceId": "EQ-SUPPLY-01",
+    "signalKey": "actualFlowLpm",
+    "value": -5.0,
+    "unit": "L/min",
+    "observedAtUtc": "2026-10-20T11:43:50.816000Z",
+    "receivedAtUtc": "2026-10-20T11:43:51.367705Z",
+    "quality": "GOOD",
+    "deviceStateVersion": 1,
+    "modeId": "PRODUCTION"
+  },
+  "normalPeer": "EQ-SUPPLY-02",
+  "noMlWarningFromInvalidInput": true,
+  "ownedChildrenCleanedUp": true
+}

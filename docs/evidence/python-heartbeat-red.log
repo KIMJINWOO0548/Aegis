@@ -1,0 +1,88 @@
+FFFFF                                                                    [100%]
+================================== FAILURES ===================================
+_________ test_python_heartbeat_emits_correlated_lifecycle_and_exits __________
+
+    def test_python_heartbeat_emits_correlated_lifecycle_and_exits():
+        trace = "ac901964-a7a3-453c-9941-4641655b6d30"
+        result = subprocess.run([
+            sys.executable, "-m", "aegis.heartbeat", "--count", "3", "--interval-ms", "1",
+            "--trace-id", trace,
+        ], capture_output=True, text=True, timeout=15)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: C:\Users\������\Desktop\Aegis\.venv\Scripts\python.exe: No module named aegis.heartbeat
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe', '-m', 'aegis.heartbeat', '--count...e=1, stdout='', stderr='C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe: No module named aegis.heartbeat\n').returncode
+
+tests\test_heartbeat.py:14: AssertionError
+______ test_python_heartbeat_rejects_unbounded_or_unsafe_options[args0] _______
+
+args = ['--count', '0']
+
+    @pytest.mark.parametrize("args", [
+        ["--count", "0"], ["--count", "1001"], ["--interval-ms", "-1"],
+        ["--trace-id", "Bearer-SENSITIVE_CANARY"],
+    ])
+    def test_python_heartbeat_rejects_unbounded_or_unsafe_options(args):
+        result = subprocess.run([sys.executable, "-m", "aegis.heartbeat", *args],
+                                capture_output=True, text=True, timeout=15)
+>       assert result.returncode == 2
+E       AssertionError: assert 1 == 2
+E        +  where 1 = CompletedProcess(args=['C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe', '-m', 'aegis.heartbeat', '--count...e=1, stdout='', stderr='C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe: No module named aegis.heartbeat\n').returncode
+
+tests\test_heartbeat.py:31: AssertionError
+______ test_python_heartbeat_rejects_unbounded_or_unsafe_options[args1] _______
+
+args = ['--count', '1001']
+
+    @pytest.mark.parametrize("args", [
+        ["--count", "0"], ["--count", "1001"], ["--interval-ms", "-1"],
+        ["--trace-id", "Bearer-SENSITIVE_CANARY"],
+    ])
+    def test_python_heartbeat_rejects_unbounded_or_unsafe_options(args):
+        result = subprocess.run([sys.executable, "-m", "aegis.heartbeat", *args],
+                                capture_output=True, text=True, timeout=15)
+>       assert result.returncode == 2
+E       AssertionError: assert 1 == 2
+E        +  where 1 = CompletedProcess(args=['C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe', '-m', 'aegis.heartbeat', '--count...e=1, stdout='', stderr='C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe: No module named aegis.heartbeat\n').returncode
+
+tests\test_heartbeat.py:31: AssertionError
+______ test_python_heartbeat_rejects_unbounded_or_unsafe_options[args2] _______
+
+args = ['--interval-ms', '-1']
+
+    @pytest.mark.parametrize("args", [
+        ["--count", "0"], ["--count", "1001"], ["--interval-ms", "-1"],
+        ["--trace-id", "Bearer-SENSITIVE_CANARY"],
+    ])
+    def test_python_heartbeat_rejects_unbounded_or_unsafe_options(args):
+        result = subprocess.run([sys.executable, "-m", "aegis.heartbeat", *args],
+                                capture_output=True, text=True, timeout=15)
+>       assert result.returncode == 2
+E       AssertionError: assert 1 == 2
+E        +  where 1 = CompletedProcess(args=['C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe', '-m', 'aegis.heartbeat', '--inter...e=1, stdout='', stderr='C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe: No module named aegis.heartbeat\n').returncode
+
+tests\test_heartbeat.py:31: AssertionError
+______ test_python_heartbeat_rejects_unbounded_or_unsafe_options[args3] _______
+
+args = ['--trace-id', 'Bearer-SENSITIVE_CANARY']
+
+    @pytest.mark.parametrize("args", [
+        ["--count", "0"], ["--count", "1001"], ["--interval-ms", "-1"],
+        ["--trace-id", "Bearer-SENSITIVE_CANARY"],
+    ])
+    def test_python_heartbeat_rejects_unbounded_or_unsafe_options(args):
+        result = subprocess.run([sys.executable, "-m", "aegis.heartbeat", *args],
+                                capture_output=True, text=True, timeout=15)
+>       assert result.returncode == 2
+E       AssertionError: assert 1 == 2
+E        +  where 1 = CompletedProcess(args=['C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe', '-m', 'aegis.heartbeat', '--trace...e=1, stdout='', stderr='C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe: No module named aegis.heartbeat\n').returncode
+
+tests\test_heartbeat.py:31: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_heartbeat.py::test_python_heartbeat_emits_correlated_lifecycle_and_exits
+FAILED tests/test_heartbeat.py::test_python_heartbeat_rejects_unbounded_or_unsafe_options[args0]
+FAILED tests/test_heartbeat.py::test_python_heartbeat_rejects_unbounded_or_unsafe_options[args1]
+FAILED tests/test_heartbeat.py::test_python_heartbeat_rejects_unbounded_or_unsafe_options[args2]
+FAILED tests/test_heartbeat.py::test_python_heartbeat_rejects_unbounded_or_unsafe_options[args3]
+5 failed in 1.01s

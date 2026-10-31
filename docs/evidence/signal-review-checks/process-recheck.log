@@ -1,0 +1,693 @@
+FFFFFF                                                                   [100%]
+================================== FAILURES ===================================
+_ test_module_workers_keep_peer_running_restart_cursor_and_exit_with_supervisor _
+
+count = 2, evaluate = True, scenarios = ['TRANSIENT', 'NORMAL'], replay = True
+signal_count = 256, interval_ms = 20, poll_ms = 100
+archive_path = WindowsPath('C:/Users/������/AppData/Local/Temp/pytest-of-������/pytest-132/test_module_workers_keep_peer_0/modules')
+isolate = True
+
+    @contextmanager
+    def running_stack(count, *, evaluate=False, scenarios=None, replay=False, signal_count=8,
+                      interval_ms=1000, poll_ms=100, archive_path=None, isolate=False):
+        validate_run(count, 1)
+        scenarios = scenarios or ["NORMAL"] * count
+        if len(scenarios) != count or any(value not in {"NORMAL", "DEG-02", "DATA-QUALITY", "TRANSIENT", "NOISY-FLOW"} for value in scenarios):
+            raise ValueError("Select one supported scenario per emulator.")
+        if type(signal_count) is not int or not 8 <= signal_count <= 512 or type(interval_ms) is not int or not 1 <= interval_ms <= 60000 or type(poll_ms) is not int or not 50 <= poll_ms <= 60000:
+            raise ValueError("Use 8..512 numeric signals, 1..60000ms sampling and 50..60000ms polling.")
+        if not replay and (signal_count != 8 or interval_ms != 1000 or archive_path is not None):
+            raise ValueError("Custom sampling/signals/archive require replay ingestion.")
+        children, outputs = [], []
+        with tempfile.TemporaryDirectory(prefix="aegis-emulator-") as directory:
+            workspace = Path(directory)
+            ports = _ports(count + 1)
+            ids = [f"EQ-SUPPLY-{index + 1:02d}" for index in range(count)]
+            env = dict(os.environ, AEGIS_API_TOKEN=secrets.token_hex(32),
+                       AEGIS_EMULATOR_TOKEN=secrets.token_hex(32), PYTHONIOENCODING="utf-8")
+            # Child code paths are explicit; no editable installation or current-directory imports required.
+            env["PYTHONPATH"] = os.pathsep.join([str(ROOT / "src"), *site.getsitepackages()])
+            creation_flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+    
+            def launch(arguments, cwd, label):
+                output = (workspace / f"{label}-{len(children)}.log").open("w", encoding="utf-8")
+                outputs.append(output)
+                # The Windows venv redirector spawns a child; use the real interpreter for ownership and CPU/RSS.
+                process = subprocess.Popen([getattr(sys, "_base_executable", sys.executable), *arguments], cwd=cwd, env=env,
+                                           stdout=output, stderr=output, creationflags=creation_flags)
+                children.append(process)
+                return process
+    
+            emulators = [None] * count
+    
+            def start_emulator(index):
+                if emulators[index] is not None and emulators[index].poll() is None:
+                    raise RuntimeError("Emulator is already running.")
+                emulators[index] = launch(["-m", "aegis_emulator", "--device-id", ids[index],
+                    "--port", str(ports[index]), "--seed", str(index + 1), "--interval-ms", str(interval_ms),
+                    "--signal-count", str(signal_count),
+                    "--scenario", scenarios[index]],
+                    ROOT / "emulators/Aegis.Emulator", f"emulator-{index}")
+                return emulators[index]
+    
+            def stop_emulator(index):
+                _stop(emulators[index])
+    
+            stack = SimpleNamespace(device_ids=ids, processes=children, start_emulator=start_emulator,
+                                    stop_emulator=stop_emulator, environment=env)
+            class StackView:
+                def __getattr__(self, name):
+                    if name == "active_processes":
+                        return [p for p in children if p.poll() is None]
+                    return getattr(stack, name)
+            view = StackView()
+            try:
+                for index in range(count):
+                    start_emulator(index)
+                config = workspace / "sources.json"
+                sources = [{"deviceId": device, "baseUrl": f"http://127.0.0.1:{ports[index]}",
+                    "tokenEnvironment": "AEGIS_EMULATOR_TOKEN"} for index, device in enumerate(ids)]
+                if replay:
+                    for index, source in enumerate(sources):
+                        source.update(transport="replay", pollIntervalMs=poll_ms,
+                                      equipmentId="CMP-DEMO-01", moduleId=f"MODULE-{index + 1:02d}")
+                config.write_text(json.dumps({"sources": sources}), encoding="utf-8")
+                api_arguments = ["-m", "aegis.api", "--emulators", str(config), "--port", str(ports[-1])]
+                stack.archive_path = Path(archive_path).resolve() if archive_path else workspace / "runtime/raw.sqlite3"
+                if replay:
+                    api_arguments.extend(["--archive-directory" if isolate else "--archive", str(stack.archive_path)])
+                if isolate:
+                    api_arguments.append("--isolate")
+                if evaluate:
+                    api_arguments.append("--evaluate")
+                stack.api = None
+                def start_api():
+                    if stack.api is not None and stack.api.poll() is None:
+                        raise RuntimeError("API is already running.")
+                    stack.api = launch(api_arguments, workspace, "api")
+                    return stack.api
+                stack.start_api = start_api
+                stack.worker_pids = set()
+                def stop_api():
+                    if isolate and stack.api.poll() is None and hasattr(stack, "client"):
+                        try:
+                            stack.worker_pids.update(row["workerPid"] for row in stack.client.get("/v1/ingestion").json() if row["workerPid"])
+                        except (httpx.HTTPError, RuntimeError):
+                            pass
+                    _stop(stack.api)
+                    for pid in stack.worker_pids:
+                        wait_pid_exit(pid)
+                stack.stop_api = stop_api
+                start_api()
+                stack.api_url = f"http://127.0.0.1:{ports[-1]}"
+                with httpx.Client(base_url=stack.api_url, headers={"X-Aegis-Token": env["AEGIS_API_TOKEN"]},
+                                  timeout=3, trust_env=False, follow_redirects=False) as client:
+                    stack.client = client
+>                   wait_until(lambda: client.get("/v1/health").status_code == 200, children, seconds=20)
+
+scripts\benchmark_emulators.py:201: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+predicate = <function running_stack.<locals>.<lambda> at 0x000002081D6FC9A0>
+processes = [<Popen: returncode: 1 args: ['C:\\Users\\������\\.cache\\codex-runtimes\\codex-...>, <Popen: returncode: 1 args: ['C:\\U...\\.cache\\codex-runtimes\\codex-...>, <Popen: returncode: 1 args: ['C:\\Users\\������\\.cache\\codex-runtimes\\codex-...>]
+seconds = 20
+
+    def wait_until(predicate, processes, seconds=15):
+        deadline = time.monotonic() + seconds
+        last_error = None
+        while time.monotonic() < deadline:
+            if any(process.poll() is not None for process in processes):
+                raise RuntimeError("An owned emulator/API process exited unexpectedly.")
+            try:
+                value = predicate()
+                if value:
+                    return value
+            except (httpx.HTTPError, ValueError, KeyError) as error:
+                last_error = type(error).__name__
+            time.sleep(.1)
+>       raise TimeoutError(f"Local stack condition did not become ready: {last_error or 'condition false'}")
+E       TimeoutError: Local stack condition did not become ready: ConnectError
+
+scripts\benchmark_emulators.py:51: TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+path = 'C:\\Users\\������\\AppData\\Local\\Temp\\aegis-emulator-irxum4q1'
+onexc = <function TemporaryDirectory._rmtree.<locals>.onexc at 0x000002081D6FF880>
+
+    def _rmtree_unsafe(path, onexc):
+        def onerror(err):
+            onexc(os.scandir, err.filename, err)
+        results = os.walk(path, topdown=False, onerror=onerror, followlinks=os._walk_symlinks_as_files)
+        for dirpath, dirnames, filenames in results:
+            for name in dirnames:
+                fullname = os.path.join(dirpath, name)
+                try:
+                    os.rmdir(fullname)
+                except OSError as err:
+                    onexc(os.rmdir, fullname, err)
+            for name in filenames:
+                fullname = os.path.join(dirpath, name)
+                try:
+                    os.unlink(fullname)
+                except OSError as err:
+                    onexc(os.unlink, fullname, err)
+        try:
+>           os.rmdir(path)
+E           PermissionError: [WinError 32] �ٸ� ���μ����� ������ ��� ���̱� ������ ���μ����� �׼��� �� �� �����ϴ�: 'C:\\Users\\������\\AppData\\Local\\Temp\\aegis-emulator-irxum4q1'
+
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\shutil.py:637: PermissionError
+
+During handling of the above exception, another exception occurred:
+
+func = <built-in function rmdir>
+path = 'C:\\Users\\������\\AppData\\Local\\Temp\\aegis-emulator-irxum4q1'
+exc = PermissionError(13, '�ٸ� ���μ����� ������ ��� ���̱� ������ ���μ����� �׼��� �� �� �����ϴ�')
+
+    def onexc(func, path, exc):
+        if isinstance(exc, PermissionError):
+            if repeated and path == name:
+                if ignore_errors:
+                    return
+                raise
+    
+            try:
+                if path != name:
+                    _resetperms(_os.path.dirname(path))
+                _resetperms(path)
+    
+                try:
+>                   _os.unlink(path)
+E                   PermissionError: [WinError 5] �׼����� �źεǾ����ϴ�: 'C:\\Users\\������\\AppData\\Local\\Temp\\aegis-emulator-irxum4q1'
+
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\tempfile.py:909: PermissionError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = WindowsPath('C:/Users/������/AppData/Local/Temp/pytest-of-������/pytest-132/test_module_workers_keep_peer_0')
+
+    def test_module_workers_keep_peer_running_restart_cursor_and_exit_with_supervisor(tmp_path):
+        archive_root = tmp_path / "modules"
+>       with running_stack(2, replay=True, isolate=True, signal_count=256, interval_ms=20, poll_ms=100,
+                           scenarios=["TRANSIENT", "NORMAL"], archive_path=archive_root, evaluate=True) as stack:
+
+tests\test_module_processes.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+scripts\benchmark_emulators.py:117: in running_stack
+    with tempfile.TemporaryDirectory(prefix="aegis-emulator-") as directory:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\tempfile.py:950: in __exit__
+    self.cleanup()
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\tempfile.py:954: in cleanup
+    self._rmtree(self.name, ignore_errors=self._ignore_cleanup_errors)
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\tempfile.py:934: in _rmtree
+    _shutil.rmtree(name, onexc=onexc)
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\shutil.py:781: in rmtree
+    return _rmtree_unsafe(path, onexc)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\shutil.py:639: in _rmtree_unsafe
+    onexc(os.rmdir, path, err)
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\tempfile.py:924: in onexc
+    cls._rmtree(path, ignore_errors=ignore_errors,
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\tempfile.py:934: in _rmtree
+    _shutil.rmtree(name, onexc=onexc)
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\shutil.py:781: in rmtree
+    return _rmtree_unsafe(path, onexc)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\shutil.py:639: in _rmtree_unsafe
+    onexc(os.rmdir, path, err)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = 'C:\\Users\\������\\AppData\\Local\\Temp\\aegis-emulator-irxum4q1'
+onexc = <function TemporaryDirectory._rmtree.<locals>.onexc at 0x000002081D6FF740>
+
+    def _rmtree_unsafe(path, onexc):
+        def onerror(err):
+            onexc(os.scandir, err.filename, err)
+        results = os.walk(path, topdown=False, onerror=onerror, followlinks=os._walk_symlinks_as_files)
+        for dirpath, dirnames, filenames in results:
+            for name in dirnames:
+                fullname = os.path.join(dirpath, name)
+                try:
+                    os.rmdir(fullname)
+                except OSError as err:
+                    onexc(os.rmdir, fullname, err)
+            for name in filenames:
+                fullname = os.path.join(dirpath, name)
+                try:
+                    os.unlink(fullname)
+                except OSError as err:
+                    onexc(os.unlink, fullname, err)
+        try:
+>           os.rmdir(path)
+E           PermissionError: [WinError 32] �ٸ� ���μ����� ������ ��� ���̱� ������ ���μ����� �׼��� �� �� �����ϴ�: 'C:\\Users\\������\\AppData\\Local\\Temp\\aegis-emulator-irxum4q1'
+
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\shutil.py:637: PermissionError
+---------------------------- Captured stderr call -----------------------------
+Aegis Emulator EQ-SUPPLY-01: http://127.0.0.1:60169/v1/snapshot (read-only)
+
+Aegis Emulator EQ-SUPPLY-02: http://127.0.0.1:60170/v1/snapshot (read-only)
+
+INFO:     Started server process [23176]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:60171 (Press CTRL+C to quit)
+
+___________ test_locked_module_archive_does_not_block_peer_commits ____________
+
+tmp_path = WindowsPath('C:/Users/������/AppData/Local/Temp/pytest-of-������/pytest-132/test_locked_module_archive_doe0')
+
+    def test_locked_module_archive_does_not_block_peer_commits(tmp_path):
+>       with running_stack(2, replay=True, isolate=True, signal_count=256, interval_ms=50,
+                           archive_path=tmp_path / "modules") as stack:
+
+tests\test_processes.py:217: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+scripts\benchmark_emulators.py:201: in running_stack
+    wait_until(lambda: client.get("/v1/health").status_code == 200, children, seconds=20)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+predicate = <function running_stack.<locals>.<lambda> at 0x000002081D7627A0>
+processes = [<Popen: returncode: 1 args: ['C:\\Users\\������\\.cache\\codex-runtimes\\codex-...>, <Popen: returncode: 1 args: ['C:\\U...\\.cache\\codex-runtimes\\codex-...>, <Popen: returncode: 1 args: ['C:\\Users\\������\\.cache\\codex-runtimes\\codex-...>]
+seconds = 20
+
+    def wait_until(predicate, processes, seconds=15):
+        deadline = time.monotonic() + seconds
+        last_error = None
+        while time.monotonic() < deadline:
+            if any(process.poll() is not None for process in processes):
+                raise RuntimeError("An owned emulator/API process exited unexpectedly.")
+            try:
+                value = predicate()
+                if value:
+                    return value
+            except (httpx.HTTPError, ValueError, KeyError) as error:
+                last_error = type(error).__name__
+            time.sleep(.1)
+>       raise TimeoutError(f"Local stack condition did not become ready: {last_error or 'condition false'}")
+E       TimeoutError: Local stack condition did not become ready: ConnectError
+
+scripts\benchmark_emulators.py:51: TimeoutError
+---------------------------- Captured stderr call -----------------------------
+Aegis Emulator EQ-SUPPLY-01: http://127.0.0.1:60911/v1/snapshot (read-only)
+
+Aegis Emulator EQ-SUPPLY-02: http://127.0.0.1:60912/v1/snapshot (read-only)
+
+INFO:     Started server process [22408]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [WinError 10014] ȣ�⿡ ���� ������ �μ��� ����Ϸ��� ���� �ý��ۿ��� �߸��� ������ �ּҸ� �����߽��ϴ�
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+
+_____ test_real_workers_restart_independently_and_stop_on_parent_pipe_eof _____
+
+tmp_path = WindowsPath('C:/Users/������/AppData/Local/Temp/pytest-of-������/pytest-132/test_real_workers_restart_inde0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002081CFB2D80>
+
+    def test_real_workers_restart_independently_and_stop_on_parent_pipe_eof(tmp_path, monkeypatch):
+        monkeypatch.setenv("AEGIS_EMULATOR_TOKEN", TOKEN)
+    
+        async def check():
+            collector = ProcessCollector([source(), source("CMP-01.CMC-01", 19102)], tmp_path)
+            await collector.start()
+            try:
+                deadline = time.monotonic() + 15
+                while not all(worker.summary is not None for worker in collector._workers):
+                    assert time.monotonic() < deadline, "Worker summaries did not arrive."
+                    await asyncio.sleep(.05)
+                old = [worker.process for worker in collector._workers]
+                before_restarts = collector.ingestion()[0]["restartCount"]
+                old[0].kill()
+                deadline = time.monotonic() + 15
+                while (collector.ingestion()[0]["workerPid"] in {None, old[0].pid}
+                       or collector._workers[0].state != "RUNNING"):
+                    assert time.monotonic() < deadline, "Crashed worker did not restart and publish a summary."
+                    await asyncio.sleep(.05)
+                assert collector._workers[1].process.pid == old[1].pid
+                assert old[1].poll() is None
+                assert collector.ingestion()[0]["restartCount"] == before_restarts + 1
+                owned = [*old, collector._workers[0].process]
+            finally:
+                await collector.stop()
+            assert all(process.poll() is not None for process in owned)
+            assert all(process.returncode == 0 for process in owned[1:])
+    
+        # API uses this loop on Windows; asyncio subprocess APIs cannot work on it.
+>       with asyncio.Runner(loop_factory=asyncio.SelectorEventLoop) as runner:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_processes.py:269: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py:58: in __enter__
+    self._lazy_init()
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py:144: in _lazy_init
+    self._loop = self._loop_factory()
+                 ^^^^^^^^^^^^^^^^^^^^
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\selector_events.py:66: in __init__
+    self._make_self_pipe()
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\selector_events.py:120: in _make_self_pipe
+    self._ssock, self._csock = socket.socketpair()
+                               ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+family = <AddressFamily.AF_INET: 2>, type = <SocketKind.SOCK_STREAM: 1>
+proto = 0
+
+    def _fallback_socketpair(family=AF_INET, type=SOCK_STREAM, proto=0):
+        if family == AF_INET:
+            host = _LOCALHOST
+        elif family == AF_INET6:
+            host = _LOCALHOST_V6
+        else:
+            raise ValueError("Only AF_INET and AF_INET6 socket address families "
+                             "are supported")
+        if type != SOCK_STREAM:
+            raise ValueError("Only SOCK_STREAM socket type is supported")
+        if proto != 0:
+            raise ValueError("Only protocol zero is supported")
+    
+        # We create a connected TCP socket. Note the trick with
+        # setblocking(False) that prevents us from having to create a thread.
+        lsock = socket(family, type, proto)
+        try:
+            lsock.bind((host, 0))
+            lsock.listen()
+            # On IPv6, ignore flow_info and scope_id
+            addr, port = lsock.getsockname()[:2]
+            csock = socket(family, type, proto)
+            try:
+                csock.setblocking(False)
+                try:
+>                   csock.connect((addr, port))
+E                   OSError: [WinError 10014] ȣ�⿡ ���� ������ �μ��� ����Ϸ��� ���� �ý��ۿ��� �߸��� ������ �ּҸ� �����߽��ϴ�
+
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socket.py:623: OSError
+_ test_worker_retries_after_stderr_path_open_failure_and_recovers_when_repaired _
+
+tmp_path = WindowsPath('C:/Users/������/AppData/Local/Temp/pytest-of-������/pytest-132/test_worker_retries_after_stde0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002081D71AAB0>
+
+    def test_worker_retries_after_stderr_path_open_failure_and_recovers_when_repaired(tmp_path, monkeypatch):
+        monkeypatch.setenv("AEGIS_EMULATOR_TOKEN", TOKEN)
+    
+        async def check():
+            collector = ProcessCollector([source()], tmp_path)
+            blocked_path = collector._workers[0].archive.with_suffix(".stderr.log")
+            blocked_path.mkdir()
+            await collector.start()
+            try:
+                await asyncio.sleep(.05)
+                assert not collector._tasks[0].done()
+                assert collector.ingestion()[0]["workerState"] == "UNAVAILABLE"
+                blocked_path.rmdir()
+                deadline = time.monotonic() + 10
+                while collector._workers[0].summary is None:
+                    assert time.monotonic() < deadline, "Worker did not recover after its stderr path was repaired."
+                    await asyncio.sleep(.05)
+                assert collector._workers[0].process.poll() is None
+                assert collector.ingestion()[0]["restartCount"] == 1
+                assert TOKEN not in blocked_path.read_text(encoding="utf-8")
+            finally:
+                await collector.stop()
+    
+>       with asyncio.Runner(loop_factory=asyncio.SelectorEventLoop) as runner:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_processes.py:323: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py:58: in __enter__
+    self._lazy_init()
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py:144: in _lazy_init
+    self._loop = self._loop_factory()
+                 ^^^^^^^^^^^^^^^^^^^^
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\selector_events.py:66: in __init__
+    self._make_self_pipe()
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\selector_events.py:120: in _make_self_pipe
+    self._ssock, self._csock = socket.socketpair()
+                               ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+family = <AddressFamily.AF_INET: 2>, type = <SocketKind.SOCK_STREAM: 1>
+proto = 0
+
+    def _fallback_socketpair(family=AF_INET, type=SOCK_STREAM, proto=0):
+        if family == AF_INET:
+            host = _LOCALHOST
+        elif family == AF_INET6:
+            host = _LOCALHOST_V6
+        else:
+            raise ValueError("Only AF_INET and AF_INET6 socket address families "
+                             "are supported")
+        if type != SOCK_STREAM:
+            raise ValueError("Only SOCK_STREAM socket type is supported")
+        if proto != 0:
+            raise ValueError("Only protocol zero is supported")
+    
+        # We create a connected TCP socket. Note the trick with
+        # setblocking(False) that prevents us from having to create a thread.
+        lsock = socket(family, type, proto)
+        try:
+            lsock.bind((host, 0))
+>           lsock.listen()
+E           OSError: [WinError 10014] ȣ�⿡ ���� ������ �μ��� ����Ϸ��� ���� �ý��ۿ��� �߸��� ������ �ּҸ� �����߽��ϴ�
+
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socket.py:616: OSError
+____ test_hundreds_of_signals_survive_api_restart_and_keep_subsecond_fault ____
+
+tmp_path = WindowsPath('C:/Users/������/AppData/Local/Temp/pytest-of-������/pytest-132/test_hundreds_of_signals_survi0')
+
+    def test_hundreds_of_signals_survive_api_restart_and_keep_subsecond_fault(tmp_path):
+        archive = tmp_path / "raw.sqlite3"
+        with running_stack(2, replay=True, signal_count=256, interval_ms=10, poll_ms=100,
+                           scenarios=["TRANSIENT", "NORMAL"], archive_path=archive, evaluate=True) as stack:
+            def caught_up():
+                rows = stack.client.get("/v1/connections").json()
+                return rows if len(rows) == 2 and all(row["state"] in {"CONNECTED", "STALE"} and row["lastSequence"] >= 150 for row in rows) else None
+            before = wait_until(caught_up, stack.active_processes, seconds=20)
+            metadata = stack.client.get("/v1/ingestion").json()
+            assert all(row["signalCount"] == 256 and row["archiveEnabled"] and row["equipmentId"] == "CMP-DEMO-01" for row in metadata)
+            stack.stop_api()
+            time.sleep(.5)
+            started = time.perf_counter()
+            stack.start_api()
+            def resumed():
+                rows = stack.client.get("/v1/connections").json()
+                return rows if len(rows) == 2 and all(row["state"] in {"CONNECTED", "STALE"} and row["lastSequence"] > old["lastSequence"] + 50
+                                                    for row, old in zip(rows, before)) else None
+            try:
+>               after = wait_until(resumed, stack.active_processes, seconds=20)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_replay_process.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+predicate = <function test_hundreds_of_signals_survive_api_restart_and_keep_subsecond_fault.<locals>.resumed at 0x000002081D6FF6A0>
+processes = [<Popen: returncode: 1 args: ['C:\\Users\\������\\.cache\\codex-runtimes\\codex-...>, <Popen: returncode: 1 args: ['C:\\U...\\.cache\\codex-runtimes\\codex-...>, <Popen: returncode: 1 args: ['C:\\Users\\������\\.cache\\codex-runtimes\\codex-...>]
+seconds = 20
+
+    def wait_until(predicate, processes, seconds=15):
+        deadline = time.monotonic() + seconds
+        last_error = None
+        while time.monotonic() < deadline:
+            if any(process.poll() is not None for process in processes):
+                raise RuntimeError("An owned emulator/API process exited unexpectedly.")
+            try:
+                value = predicate()
+                if value:
+                    return value
+            except (httpx.HTTPError, ValueError, KeyError) as error:
+                last_error = type(error).__name__
+            time.sleep(.1)
+>       raise TimeoutError(f"Local stack condition did not become ready: {last_error or 'condition false'}")
+E       TimeoutError: Local stack condition did not become ready: ConnectError
+
+scripts\benchmark_emulators.py:51: TimeoutError
+---------------------------- Captured stdout call -----------------------------
+Restart connection states: [{'deviceId': 'EQ-SUPPLY-01', 'state': 'DISCONNECTED', 'lastReceivedAtUtc': None, 'lastSequence': None, 'acceptedBatches': 0, 'rejectedBatches': 0, 'droppedBatches': 0, 'pollLatencyMs': 863.598, 'reasonCode': 'POLL_TIMEOUT'}, {'deviceId': 'EQ-SUPPLY-02', 'state': 'CONNECTING', 'lastReceivedAtUtc': None, 'lastSequence': None, 'acceptedBatches': 0, 'rejectedBatches': 0, 'droppedBatches': 0, 'pollLatencyMs': None, 'reasonCode': None}]
+Restart ingestion states: [{'deviceId': 'EQ-SUPPLY-01', 'equipmentId': 'CMP-DEMO-01', 'moduleId': 'MODULE-01', 'transport': 'replay', 'archiveEnabled': True, 'signalCount': 0, 'acceptedSignalValues': 0, 'archiveCommitMs': None, 'latestAvailableSequence': None, 'pendingBatches': None, 'observedLagMs': None, 'lastObservedAtUtc': None, 'lastCommittedRunId': '5b9a0ee2-e2ba-4173-a9bb-ae6f43e0e077', 'lastCommittedSequence': 459}, {'deviceId': 'EQ-SUPPLY-02', 'equipmentId': 'CMP-DEMO-01', 'moduleId': 'MODULE-02', 'transport': 'replay', 'archiveEnabled': True, 'signalCount': 0, 'acceptedSignalValues': 0, 'archiveCommitMs': None, 'latestAvailableSequence': None, 'pendingBatches': None, 'observedLagMs': None, 'lastObservedAtUtc': None, 'lastCommittedRunId': '6d73342b-048c-445d-9d99-b59c40fc8356', 'lastCommittedSequence': 321}]
+---------------------------- Captured stderr call -----------------------------
+���� ������� ȣ��Ʈ �ý����� ����Ʈ������ ���� �ߴܵǾ����ϴ�
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 50894)
+Traceback (most recent call last):
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\http\server.py", line 440, in handle
+    self.handle_one_request()
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\http\server.py", line 428, in handle_one_request
+    method()
+  File "C:\Users\������\Desktop\Aegis\emulators\Aegis.Emulator\aegis_emulator\core.py", line 204, in do_GET
+    self.send_json(200, page)
+  File "C:\Users\������\Desktop\Aegis\emulators\Aegis.Emulator\aegis_emulator\core.py", line 166, in send_json
+    self.wfile.write(encoded)
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] ���� ������ ������� ȣ��Ʈ �ý����� ����Ʈ������ ���� �ߴܵǾ����ϴ�
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 50996)
+Traceback (most recent call last):
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\http\server.py", line 440, in handle
+    self.handle_one_request()
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\http\server.py", line 408, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socket.py", line 720, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] ���� ������ ���� ȣ��Ʈ�� ���� ������ ������ϴ�
+----------------------------------------
+
+���� ������� ȣ��Ʈ �ý����� ����Ʈ������ ���� �ߴܵǾ����ϴ�
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 50961)
+Traceback (most recent call last):
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\http\server.py", line 440, in handle
+    self.handle_one_request()
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\http\server.py", line 428, in handle_one_request
+    method()
+  File "C:\Users\������\Desktop\Aegis\emulators\Aegis.Emulator\aegis_emulator\core.py", line 204, in do_GET
+    self.send_json(200, page)
+  File "C:\Users\������\Desktop\Aegis\emulators\Aegis.Emulator\aegis_emulator\core.py", line 166, in send_json
+    self.wfile.write(encoded)
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] ���� ������ ������� ȣ��Ʈ �ý����� ����Ʈ������ ���� �ߴܵǾ����ϴ�
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 50997)
+Traceback (most recent call last):
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\http\server.py", line 440, in handle
+    self.handle_one_request()
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\http\server.py", line 408, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\socket.py", line 720, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] ���� ������ ���� ȣ��Ʈ�� ���� ������ ������ϴ�
+----------------------------------------
+
+INFO:     Started server process [19748]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:50714 (Press CTRL+C to quit)
+
+INFO:     Started server process [8320]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:50714 (Press CTRL+C to quit)
+
+_________ test_demo_cli_keeps_raw_archive_after_owned_processes_exit __________
+
+tmp_path = WindowsPath('C:/Users/������/AppData/Local/Temp/pytest-of-������/pytest-132/test_demo_cli_keeps_raw_archiv0')
+
+    def test_demo_cli_keeps_raw_archive_after_owned_processes_exit(tmp_path):
+        root = Path(__file__).resolve().parents[1]
+        archive = tmp_path / "retained.sqlite3"
+>       result = subprocess.run([sys.executable, "scripts/run_emulator_demo.py", "--headless", "--count", "1",
+            "--seconds", "1", "--signal-count", "256", "--interval-ms", "100",
+            "--archive", str(archive)], cwd=root, capture_output=True, text=True, timeout=25)
+
+tests\test_replay_process.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Popen: returncode: 1 args: ['C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts...>
+input = None, endtime = 291001.343, orig_timeout = 25
+
+    def _communicate(self, input, endtime, orig_timeout):
+        # Start reader threads feeding into a list hanging off of this
+        # object, unless they've already been started.
+        if self.stdout and not hasattr(self, "_stdout_buff"):
+            self._stdout_buff = []
+            self.stdout_thread = \
+                    threading.Thread(target=self._readerthread,
+                                     args=(self.stdout, self._stdout_buff))
+            self.stdout_thread.daemon = True
+            self.stdout_thread.start()
+        if self.stderr and not hasattr(self, "_stderr_buff"):
+            self._stderr_buff = []
+            self.stderr_thread = \
+                    threading.Thread(target=self._readerthread,
+                                     args=(self.stderr, self._stderr_buff))
+            self.stderr_thread.daemon = True
+            self.stderr_thread.start()
+    
+        if self.stdin:
+            self._stdin_write(input)
+    
+        # Wait for the reader threads, or time out.  If we time out, the
+        # threads remain reading and the fds left open in case the user
+        # calls communicate again.
+        if self.stdout is not None:
+            self.stdout_thread.join(self._remaining_time(endtime))
+            if self.stdout_thread.is_alive():
+>               raise TimeoutExpired(self.args, orig_timeout)
+E               subprocess.TimeoutExpired: Command '['C:\\Users\\������\\Desktop\\Aegis\\.venv\\Scripts\\python.exe', 'scripts/run_emulator_demo.py', '--headless', '--count', '1', '--seconds', '1', '--signal-count', '256', '--interval-ms', '100', '--archive', 'C:\\Users\\������\\AppData\\Local\\Temp\\pytest-of-������\\pytest-132\\test_demo_cli_keeps_raw_archiv0\\retained.sqlite3']' timed out after 25 seconds
+
+..\..\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py:1630: TimeoutExpired
+============================== warnings summary ===============================
+tests/test_replay_process.py::test_hundreds_of_signals_survive_api_restart_and_keep_subsecond_fault
+  C:\Users\������\Desktop\Aegis\.venv\Lib\site-packages\_pytest\unraisableexception.py:67: PytestUnraisableExceptionWarning: Exception ignored in: <function BaseEventLoop.__del__ at 0x000002081C59FE20>
+  
+  Traceback (most recent call last):
+    File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\base_events.py", line 732, in __del__
+      self.close()
+    File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\selector_events.py", line 104, in close
+      self._close_self_pipe()
+    File "C:\Users\������\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\selector_events.py", line 111, in _close_self_pipe
+      self._remove_reader(self._ssock.fileno())
+                          ^^^^^^^^^^^
+  AttributeError: '_WindowsSelectorEventLoop' object has no attribute '_ssock'
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_module_processes.py::test_module_workers_keep_peer_running_restart_cursor_and_exit_with_supervisor
+FAILED tests/test_processes.py::test_locked_module_archive_does_not_block_peer_commits
+FAILED tests/test_processes.py::test_real_workers_restart_independently_and_stop_on_parent_pipe_eof
+FAILED tests/test_processes.py::test_worker_retries_after_stderr_path_open_failure_and_recovers_when_repaired
+FAILED tests/test_replay_process.py::test_hundreds_of_signals_survive_api_restart_and_keep_subsecond_fault
+FAILED tests/test_replay_process.py::test_demo_cli_keeps_raw_archive_after_owned_processes_exit
+6 failed, 1 warning in 140.91s (0:02:20)

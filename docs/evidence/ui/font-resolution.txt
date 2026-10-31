@@ -1,0 +1,17 @@
+WPF font resource verification, 2026-10-18
+
+Probe: .NET 10/WPF console; load built Aegis.Desktop.dll as Application.ResourceAssembly;
+load compiled Styles.xaml; obtain the actual AppFont resource; test Typeface.TryGetGlyphTypeface.
+No window was created and no system fonts were installed.
+
+Before: AppFont.Source=pack://application:,,,/Assets/Fonts/#Pretendard
+Normal=False; SemiBold=False; Bold=False
+
+After: AppFont.Source=./Assets/Fonts/#Pretendard
+BaseUri=pack://application:,,,/Aegis.Desktop;component/Styles.xaml
+Normal=True; ActualWeight=Normal; FontUri=pack://application:,,,/Aegis.Desktop;component/Assets/Fonts/pretendard-regular.otf
+SemiBold=True; ActualWeight=SemiBold; FontUri=pack://application:,,,/Aegis.Desktop;component/Assets/Fonts/pretendard-semibold.otf
+Bold=True; ActualWeight=Bold; FontUri=pack://application:,,,/Aegis.Desktop;component/Assets/Fonts/pretendard-bold.otf
+
+Reference: https://learn.microsoft.com/en-us/dotnet/desktop/wpf/advanced/packaging-fonts-with-applications
+WPF requires a relative font reference resolved against the application/dictionary base URI.

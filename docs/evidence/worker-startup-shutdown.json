@@ -1,0 +1,10 @@
+{
+  "scope": "Deterministic local reproduction of stop immediately after a restarted worker PID is created, before its first summary.",
+  "injectedRestartStartupDelaySeconds": 8,
+  "restartStateAtStop": "STARTING",
+  "stopElapsedSeconds": 5.02,
+  "peerReturnCode": 0,
+  "restartedWorkerReturnCode": 1,
+  "allOwnedExited": true,
+  "interpretation": "The bounded five-second shutdown falls back to killing an initializing worker. A PID alone does not establish readiness for an exit-zero graceful shutdown assertion. Retained earlier failure stderr was empty, so this reproduces the race without claiming to reconstruct that run's exact scheduler timing."
+}
