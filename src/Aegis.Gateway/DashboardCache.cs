@@ -15,6 +15,7 @@ public sealed record DashboardDevice(string DeviceId, string? EquipmentId, strin
 public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory clients, ArchiveReview archive,
     IHubContext<DashboardHub> hub) : BackgroundService
 {
+    private const int MaxWarningsPerDevice = 32;
     private static readonly object Inference = new { state = "NOT_REGISTERED", message = "No validated ONNX model is registered." };
     private DashboardSnapshot _latest = Empty("CONFIGURATION_REQUIRED");
     private readonly SemaphoreSlim _refresh = new(1, 1);
@@ -67,9 +68,15 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
             if (ids.Count != devices.Count) throw new InvalidDataException();
             var connections = Index(await GetAsync("v1/connections", deadline.Token), ids);
             var ingestions = Index(await GetAsync("v1/ingestion", deadline.Token), ids);
-            var warnings = WireValidation.Array(await GetAsync("v1/warnings", deadline.Token), 32);
+            var warnings = WireValidation.Array(await GetAsync("v1/warnings", deadline.Token), MaxWarningsPerDevice * ids.Count);
             ContractJson.Deserialize<Warning[]>(warnings.ToJsonString());
-            foreach (var warning in warnings) if (!ids.Contains(WireValidation.String(warning!, "deviceId"))) throw new InvalidDataException();
+            var warningCounts = ids.ToDictionary(id => id, _ => 0, StringComparer.Ordinal);
+            foreach (var warning in warnings)
+            {
+                var deviceId = WireValidation.String(warning!, "deviceId");
+                if (!warningCounts.TryGetValue(deviceId, out var count) || count >= MaxWarningsPerDevice) throw new InvalidDataException();
+                warningCounts[deviceId] = count + 1;
+            }
             var result = new List<DashboardDevice>(32);
             archive.Retain(ids);
             foreach (var id in ids)
