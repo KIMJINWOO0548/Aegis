@@ -1,5 +1,9 @@
 # Aegis Insight
 
+## Retained-summary investigation — 2026-11-06
+
+Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).
+
 노이즈가 많은 장비 신호에서 짧은 변화를 보존하고 판단 근거를 검토하는 로컬 개발 프로젝트입니다. CMP의 CMC·PMC·스케줄러 같은 모듈을 독립 프로세스로 수집하고, 수백 개 숫자 태그의 원본을 SQLite에 기록합니다. React·TypeScript의 밝은 화면을 ASP.NET Core·SignalR·Windows WebView2에 결합했습니다.
 
 **범위:** 합성 에뮬레이터를 이용한 개발용 프로토타입입니다. 실장비 연결, 고객 데이터, 현장 성능 검증, 판매 실적은 포함하지 않습니다. 개발용 EWMA는 점검 참고이며 학습된 고장 예측 모델이 아닙니다.

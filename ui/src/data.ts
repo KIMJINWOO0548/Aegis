@@ -32,20 +32,20 @@ export const signalLabels:Record<string,string>={setpointFlowLpm:'설정 유량'
 export const fresh=(stamp:string,now:number)=>now-Date.parse(stamp)<3000&&now-Date.parse(stamp)>=-1000;
 export function isCurrent(snapshot:Snapshot|null,device:Device|undefined,now=Date.now(),transport=true):boolean {return transport&&!!snapshot&&!!device&&snapshot.upstreamState==='CONNECTED'&&device.connection?.state==='CONNECTED'&&fresh(snapshot.generatedAtUtc,now);}
 export function observationCurrent(snapshot:Snapshot|null,device:Device|undefined,o:Observation,now=Date.now(),transport=true):boolean{return isCurrent(snapshot,device,now,transport)&&o.quality==='GOOD'&&o.value!==null&&fresh(o.observedAtUtc,now);}
-export interface Point {t:number;v:number|null;id:string}
+export interface Point {t:number;v:number|null;id:string;marker?:'gap'|'transport'}
 export type HistoryRange='all'|30|60;
-export function historyWindow(points:Point[],range:HistoryRange):Point[]{
+export function historyWindow(points:readonly Point[],range:HistoryRange):readonly Point[]{
   if(range==='all'||!points.length)return points;
   const start=points[points.length-1].t-range*1000;
   return points.filter(point=>point.t>=start);
 }
 export type History=Record<string,Record<string,Point[]>>;
-export function interruptHistory(history:History,now=Date.now()):History {return Object.fromEntries(Object.entries(history).map(([device,signals])=>[device,Object.fromEntries(Object.entries(signals).map(([signal,points])=>[signal,points.length&&points.at(-1)?.v!==null?[...points,{t:Math.max(now,points.at(-1)!.t+1),v:null,id:`transport:${now}`}].slice(-120):points]))]));}
+export function interruptHistory(history:History,now=Date.now()):History {return Object.fromEntries(Object.entries(history).map(([device,signals])=>[device,Object.fromEntries(Object.entries(signals).map(([signal,points])=>[signal,points.length&&points.at(-1)?.v!==null?[...points,{t:Math.max(now,points.at(-1)!.t+1),v:null,id:`transport:${now}`,marker:'transport' as const}].slice(-120):points]))]));}
 export function appendHistory(history:History,snapshot:Snapshot):History {
   const next:History={};
   for(const d of snapshot.devices){
     const series={...(history[d.deviceId]??{})};
-    for(const o of d.observations){const points=series[o.signalKey]??[];const t=Date.parse(o.observedAtUtc);if(points.some(p=>p.id===o.observationId)||points.length&&t<=points[points.length-1].t)continue;const gap=points.length&&t-points[points.length-1].t>2500?[{t:t-1,v:null,id:`gap:${o.observationId}`}]:[];series[o.signalKey]=[...points,...gap,{t,v:observationCurrent(snapshot,d,o,Date.parse(snapshot.generatedAtUtc))?o.value:null,id:o.observationId}].slice(-120);}
+    for(const o of d.observations){const points=series[o.signalKey]??[];const t=Date.parse(o.observedAtUtc);if(points.some(p=>p.id===o.observationId)||points.length&&t<=points[points.length-1].t)continue;const gap=points.length&&t-points[points.length-1].t>2500?[{t:t-1,v:null,id:`gap:${o.observationId}`,marker:'gap' as const}]:[];series[o.signalKey]=[...points,...gap,{t,v:observationCurrent(snapshot,d,o,Date.parse(snapshot.generatedAtUtc))?o.value:null,id:o.observationId}].slice(-120);}
     next[d.deviceId]=series;
   }
   return next;

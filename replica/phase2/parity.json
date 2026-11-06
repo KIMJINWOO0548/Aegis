@@ -1,0 +1,89 @@
+{
+  "feature_score": 50.0,
+  "counted": 8,
+  "must_have_done": 2,
+  "must_have_total": 4,
+  "by_area": [
+    {
+      "area": "history",
+      "score": 0.0,
+      "features": 1
+    },
+    {
+      "area": "provenance",
+      "score": 0.0,
+      "features": 1
+    },
+    {
+      "area": "collaboration",
+      "score": 0.0,
+      "features": 1
+    },
+    {
+      "area": "investigation",
+      "score": 65.0,
+      "features": 4
+    },
+    {
+      "area": "integrity",
+      "score": 100.0,
+      "features": 1
+    }
+  ],
+  "missing": [
+    {
+      "feature": "Query durable historical data",
+      "area": "history",
+      "priority": "must",
+      "clone": "no",
+      "notes": "Current browser history is memory only"
+    },
+    {
+      "feature": "Select a visible time window",
+      "area": "investigation",
+      "priority": "must",
+      "clone": "partial",
+      "notes": "Documented Grafana pattern; Aegis only last120 memory rows not archive queries"
+    },
+    {
+      "feature": "Share or export investigation",
+      "area": "collaboration",
+      "priority": "should",
+      "clone": "no",
+      "notes": "No external transfer or persistence implemented"
+    },
+    {
+      "feature": "Overlay correlated signal series",
+      "area": "investigation",
+      "priority": "should",
+      "clone": "no",
+      "notes": "Only selected signal; no inferred causal correlation"
+    },
+    {
+      "feature": "Inspect data queries",
+      "area": "provenance",
+      "priority": "could",
+      "clone": "no",
+      "notes": "No query inspector implemented"
+    }
+  ],
+  "skipped": [],
+  "extras": [
+    {
+      "feature": "Freeze independent contextual UI summaries",
+      "area": "investigation",
+      "priority": "must",
+      "clone": "yes",
+      "notes": "Own addition; excluded from reference score"
+    },
+    {
+      "feature": "Accessible inspection of retained null marker meaning",
+      "area": "accessibility",
+      "priority": "must",
+      "clone": "yes",
+      "notes": "Own addition; does not restore quality details never retained"
+    }
+  ],
+  "problems": [],
+  "overall": 50.0
+}

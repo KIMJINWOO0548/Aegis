@@ -1,0 +1,73 @@
+{
+  "scope": "Actual coordinator-host Chrome/Playwright synthetic UI fixture; not equipment, gateway authentication, archive or WebView2 validation",
+  "baseline_commit": "28ae7dbc0da35796ad47ad535b173e2dc79f12a7",
+  "baseline": {
+    "mode": "baseline",
+    "scope": "synthetic browser routes; not real equipment, gateway auth or WebView2",
+    "checks": [
+      {
+        "name": "stable retained series / 3.3s wallclock ticks",
+        "chart_canvas_clears": 3
+      }
+    ],
+    "page_errors": [],
+    "built_index_sha256": "b95548682dd005cb74f2b20fd923182d2ab43515f47f058c71f47a1b0b5f5c76"
+  },
+  "final": {
+    "mode": "current",
+    "scope": "synthetic browser routes; not real equipment, gateway auth or WebView2",
+    "checks": [
+      {
+        "name": "stable retained series / 3.3s wallclock ticks",
+        "chart_canvas_clears": 0
+      },
+      {
+        "name": "actual canvas marker for last isolated valid sample",
+        "matching_pixels": 10,
+        "pass": true
+      },
+      {
+        "name": "keyboard disclosure + pulse/gap/delayed data",
+        "pass": true
+      },
+      {
+        "name": "immutable freeze with continuing synthetic collection + resume",
+        "pass": true
+      },
+      {
+        "name": "signal change resets snapshot and range",
+        "pass": true
+      },
+      {
+        "name": "device change resets snapshot context",
+        "pass": true
+      },
+      {
+        "name": "390px viewport, no page horizontal overflow",
+        "pass": true
+      }
+    ],
+    "page_errors": [],
+    "built_index_sha256": "ac50a2164c79e5b6c2f113dece1daf1041186345c1ed6d29e309e1ce5e65a8d8"
+  },
+  "isolated_marker_regression": {
+    "actual_browser_red_exit": 1,
+    "failure": "Final isolated valid sample is present in data but invisible on canvas",
+    "trace_sha256": "97ba24a64cb1bfadfc171f801d06f55d48aced7d5d9b7a6bb0271a239458f299",
+    "final_green": "Actual marker paint verified; no gap connection/interpolation added"
+  },
+  "screenshots": {
+    "desktop-frozen.png": "e416aa304c2c959eab42e83194aa166cd2eaad4c8777606c2cec1b737063d8b0",
+    "mobile-table.png": "ac80edbdb8e0ff4d3415083a1b69554d4bfe8fea0488098b690cb46c5d88fc44"
+  },
+  "source_sha256": {
+    "ui/src/App.tsx": "9bf88bcc84f0a64d82a74e70aa8eb8b4b2e9137057b7b2a3ecb40eb180385a06",
+    "ui/src/SignalChart.tsx": "a1b8ce50494a401fea3e9ee4db8f2718579609cf10fb40a1d1e5beab35590c7a",
+    "ui/src/data.ts": "28c13ffa8a3b4126e6efcbe6e2569235ce6df27dbe8f0e4ca336df7c40867504",
+    "ui/src/investigation.ts": "1b428346fb56f4cda9233d750ce8b24fe989ef4ffe536188b6c8bc5d63a87e1b",
+    "ui/src/styles.css": "132ef922faa6fee44a74ae812ca6109128d713668131b7e54a5cc2dbb6b1dca7"
+  },
+  "source_script_sha256": "40f3a93c3ef92cc573c532a1af552be667459f2e126a0f26e45aa321d6bcfc29",
+  "performance_interpretation": "Canvas clears during one identical stable-series 3.3s clock-only scenario: 3 to 0. No general latency, throughput, raw-pipeline or competitor-performance claim.",
+  "source_hash_line_endings": "LF as stored by Git; CRLF-only working-tree normalization after build, no content/behavior change"
+}
