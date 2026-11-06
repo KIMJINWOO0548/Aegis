@@ -17,5 +17,6 @@
 @media(max-width:740px){.overview-grid .main-column{grid-template-columns:minmax(0,1fr)}.overview-grid .asset-row{grid-column:auto}.overview-grid .asset-drawing{height:202px}.topbar-tools{flex-wrap:nowrap}.topbar-tools>span{display:none}.search{flex:1}.source-options{max-width:100%}.toolbar-right>select{flex:1;max-width:100%}.nav{min-width:0;max-width:100%}.nav button{flex-shrink:0}.chart-note{max-width:100%}.info-row{flex-wrap:wrap}.panel-heading [data-slot=tabs-list]{flex-wrap:wrap;height:auto}}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:3px}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .metric.panel{padding:18px 19px!important}
+.chart-window{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:11px;color:#5d6d83}.chart-window label{font-weight:600}.chart-window select{font-size:11px;padding:5px 24px 5px 8px;max-width:100%}.chart-window-time{font-size:10px;color:#5d6d83;line-height:1.6;overflow-wrap:anywhere;margin-top:5px}
 @media(max-width:1240px){.metric.panel{padding:15px!important}}
 @media(max-width:1000px){.metric.panel{padding:13px!important}}

@@ -1,0 +1,41 @@
+{
+  "source_url": "https://grafana.com/docs/grafana/latest/visualizations/dashboards/use-dashboards/",
+  "command": "node <local rea 6.8.0 CLI> capture-browser-scenario scenario.json --format json",
+  "exit_code": 0,
+  "top_keys": [
+    "evidence_id",
+    "subject",
+    "provider",
+    "analysis_profile",
+    "predicate_type",
+    "operation",
+    "parameters",
+    "raw_result",
+    "normalized_result",
+    "confidence",
+    "authority",
+    "environment",
+    "limitations",
+    "relationship_coverage",
+    "locations",
+    "evidence_links"
+  ],
+  "browser": {
+    "mode": "launch",
+    "process_ownership": "provider-owned",
+    "cleanup": "terminated-owned-process",
+    "product": "Chromium",
+    "version": "156.0.8078.80"
+  },
+  "status": null,
+  "error": null,
+  "evidence": {
+    "0-accessibility.txt": "b5bce5f33b37201b655147f07186438a1da7fd9510ffd847b9fcd319d9c63b0b",
+    "0-dom.txt": "c53d4a68356e2c40f262fbfd5878daae9fdf3e0676fd54ce028b90d2c590273b",
+    "0-screenshot.png": "38d29929326c4e201fbe50ef057bba75301a173443487a42c22a8d3b645380f7",
+    "1-accessibility.txt": "b5bce5f33b37201b655147f07186438a1da7fd9510ffd847b9fcd319d9c63b0b",
+    "1-dom.txt": "5d3c3977d48ba824342132a15bdf59eeff2ef18076c71bcfc19398000a8c34b0",
+    "1-screenshot.png": "38d29929326c4e201fbe50ef057bba75301a173443487a42c22a8d3b645380f7",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

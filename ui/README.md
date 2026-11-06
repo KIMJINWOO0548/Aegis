@@ -1,5 +1,7 @@
 # Aegis shared dashboard
 
+2026-11-06: signal charts offer all retained summaries or a 30/60-second window anchored to the last retained timestamp, with exact UTC endpoints and displayed/retained counts. Existing history, null gaps, historical/current labels and data-quality rules remain unchanged. The scoped UI suite passes 19 tests and product source typechecking passes using existing installed dependencies. Production build hit a sandbox dependency-path Access denied before bundling; browser/SignalR/WebView2 checks were not run for this increment. See [reference transfer and actual commands](../docs/REFERENCE_TRANSFER_20261106.md).
+
 Project-local React / TypeScript / Tailwind / shadcn UI. Build with `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm build`. The gateway serves `ui/dist` on its own origin. `pnpm dev` serves only the UI; authenticated API and SignalR require the gateway origin, so standalone Vite shows an unavailable/unlock state by design.
 
 Transport: GET `/api/session`, POST `/api/session` with JSON `{token}`, GET `/api/dashboard`, SignalR `/hubs/dashboard` event `snapshot`. Browser authentication uses same-origin cookies; no token URL, localStorage, or SignalR access-token query. WebView2 can arrive already authenticated.
