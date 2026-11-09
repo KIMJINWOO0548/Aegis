@@ -1,5 +1,9 @@
 # Aegis Insight
 
+nullable 원본과 출처 선언은 별도 새 쓰기 계약으로 저장하고 공통 조회로 다시 읽습니다.
+합성 collector 예제와 장애·재시작 시험을 제공하며 기존 스키마를 자동 변경하지 않습니다.
+[새 쓰기 계약·수집/재조회·검증 한계](docs/INPUT_ARCHIVE_20261109.md).
+
 raw-v1과 nullable adapter store는 opt-in 공통 읽기 CLI로 저장 원본을 함께 조회합니다.
 누락된 원본 시각·순번은 채우지 않고 최초 수신 시각 기준과 출처 근거를 구분합니다.
 [읽기 계약·조회 예제·한도와 남은 쓰기 이행](docs/DUAL_STORE_READ_20261109.md).

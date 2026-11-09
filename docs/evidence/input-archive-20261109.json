@@ -1,0 +1,234 @@
+{
+  "scope": "Independent explicit nullable archive write contract, synthetic collector and common read integration",
+  "base": "02b3722f81a98585e7f46a5197106a5c5915aebc",
+  "branch": "improve/nullable-input-archive-20261109",
+  "writeContract": "archive-write-1",
+  "archiveFormat": "input-archive-1",
+  "applicationId": "0x49415231",
+  "queryKind": "INPUT_ARCHIVE_V1",
+  "flow": "SYNTHETIC_FIXTURE -> LOCAL_ARCHIVE_COMMITTED -> stored-record-query-1",
+  "legacyRawV1WriteDelivery": "NOT_CONNECTED",
+  "sourceAcknowledgement": "NOT_SENT",
+  "automaticMigration": false,
+  "automaticDeletion": false,
+  "uiChanged": false,
+  "semantics": {
+    "descriptor": "Immutable explicit adapter/version/delivery stream/origin/evidence/method/read-only source access",
+    "declaredOrigin": [
+      "SYNTHETIC",
+      "DEVICE",
+      "UNKNOWN"
+    ],
+    "originEvidence": "DECLARED_ONLY; not hardware authentication",
+    "actualCollector": "SYNTHETIC_FIXTURE_ONLY; DEVICE/UNKNOWN preservation tested with synthetic objects only",
+    "originalMetadata": "Exact producer sourceMetadata null/status and provided lexical JSON preserved; no generated original timestamp/sequence/run",
+    "firstReceipt": "Separate host UTC receipt captured after read completion; library caller supplies aware datetime",
+    "deliveryIdentity": "Namespaced delivery stream/record/page tokens, never substituted for original source sequence/run",
+    "deduplication": "Same canonical page/record is idempotent, first wire/receipt retained; changed identity rejects entire page",
+    "atomicCommit": "Page/new records/cursor/EOF together in WAL/FULL; validate before COMMIT and confirm specific page and old prefix after COMMIT",
+    "uncertainCommit": "Fence/close and reopen full validation, no source ACK or automatic reset",
+    "query": "Shared connection-only validator in per-store read snapshot; SOURCE coverage not asserted; no cross-store event dedup"
+  },
+  "limits": {
+    "pages": 64,
+    "records": 1024,
+    "databaseBytes": 33554432,
+    "pageBytes": 65536,
+    "descriptorBytes": 4096,
+    "cooperativePhaseSeconds": 5,
+    "sqliteVmStepsPerPhase": 5000000,
+    "busyTimeoutSeconds": 0.2,
+    "fixtureBytes": 1048576,
+    "hardNativeIoDeadline": false,
+    "automaticPruning": false
+  },
+  "verification": {
+    "wholePythonSuite": {
+      "passed": 1212,
+      "skipped": 1,
+      "failures": 0,
+      "errors": 0,
+      "elapsedSeconds": 224.887,
+      "skipDetails": [
+        {
+          "test": "tests.test_delivery::test_verifier_keeps_junit_output_as_one_unicode_path_argument",
+          "reason": "The Windows delivery scripts require PowerShell 7."
+        }
+      ],
+      "testedPythonFiles": 74,
+      "sourceHashesUnchangedDuringRun": true,
+      "allTestedPythonSha256": {
+        "src/aegis/__init__.py": "754aa74235bbb4d61265e3accb499af04b36d2027e7a59de0c9c7dc061b82700",
+        "src/aegis/adapter_input.py": "496dd45866eb86408df339342ef5bc181100de67609bb6b806bb4e4ff26773b5",
+        "src/aegis/adapter_store.py": "78319b5c7ab7702edfe5a46aaf827f5e239672ede78d534cd40142bd716a05f6",
+        "src/aegis/api.py": "3ac499d5b706ddd1dbf1147450c0f297516801efe8ecc575f8bd4f2b0a98ea00",
+        "src/aegis/archive.py": "526d2a0c3091585c70c68945927328b0f8b771e152b551cee6e8067a59b2e0bf",
+        "src/aegis/archive_backup.py": "bdff499eb97b9d8fc4a64ef6a1edde30b456d8b880b5f3e9b6827bfa27514590",
+        "src/aegis/archive_ingest.py": "d90862aeca909219fd244c10726cb3d8c0b0bedb37f34ee4558c82977bcc3fb3",
+        "src/aegis/collector.py": "a51b8f4c85a56f0a7aff4f36d80c7db1d22670bed6c8c14c35f42823546818f6",
+        "src/aegis/contracts.py": "dd0361bfb63a85c2365c25e4df39224ef35ae3544ea4ca65bb7040a67d6088f4",
+        "src/aegis/contracts_generated.py": "dc58e3317253cdc3d7bf4f6084082609fecea429c853ecced10b67189cfaf08e",
+        "src/aegis/evaluation.py": "2c9d0f86ed45ce352b119998a31f42f84877b8fae073691e3d8a7f2cc95ed415",
+        "src/aegis/heartbeat.py": "9af346374faa551b4ddc05d96cdb8ef3e5ad78f4d1413003355d2f8fb8f2d0c7",
+        "src/aegis/input_archive.py": "f4cd7fb273e8ebc93302209fd373c9c4e3e94a1d0b41362dd91d7d1086bc59b3",
+        "src/aegis/limit_rules.py": "d187c56c8cb25de2d73b2392130b4272db52d49025d720c59638cec482a1b18e",
+        "src/aegis/module_worker.py": "74a516ea3061ac601546db911b70329a7d49dfe8acd6c9a4942178dc8e81a6ce",
+        "src/aegis/observability.py": "48e412af56f89174e9ef290f2b53ceaac99fa7ccea7c3e2663f5e732f0a45790",
+        "src/aegis/processes.py": "8ba60d82e273f869dad8058edf81c5fb3073d3fe5cfd20b97d663258d8d1f480",
+        "src/aegis/raw_history.py": "72f303a675a85bf925ced43b32131af668583c8fc0919d2630cfa0e1dde46668",
+        "src/aegis/rule_versions.py": "b4535d927e71ddb742179035dc8ae2ee23f5af2d48a440e7259e504e3336fc4a",
+        "src/aegis/signal_review.py": "f8fc8e5fe6a31f05b9ac68badc725f961e4fa79912a80a8c7e463efcca345496",
+        "src/aegis/storage_diagnostics.py": "610068759fb39470210c3c13bb25cfda83f8346dee16c8ae02e0942d545dbe30",
+        "src/aegis/stored_records.py": "00a5d54bc9eb851b6cb28705e15f1b56972be3c87f25ec1d9d4c47fc8ccbaa14",
+        "tests/startup_recovery_harness.py": "8979e9b0e6c92583c28ce8c2e6078418d669c2a3a3b6466b7447b101bb70640e",
+        "tests/test_adapter_input.py": "516eeb60e8a2bce00241faab38a64746a5db9af8dbdc47d4c8163696380eccbc",
+        "tests/test_adapter_input_cli.py": "1bace4b11a880643cd4d6b2ed4325bd7ba28e6387bec1441bd686d9c14240e4c",
+        "tests/test_adapter_store.py": "8138d5e31ff509d263e030db5c20f3c35a986af0f473bb749797bc0fe13dd4bf",
+        "tests/test_adapter_store_cli.py": "2c8fc8fa9f98096d417cd1b38235ecf193e0f8ad554f21a6602a6defb5be9f61",
+        "tests/test_adapter_store_validation.py": "218dc31e107509d7778e005997ebb5b34cb19e1b934d549fe4c2487192ef7432",
+        "tests/test_api.py": "0bb50b39d8e04da6bec4bc046cf2f097c3d252fd0685fa84b8c23109e5b5fa80",
+        "tests/test_api_process.py": "4b28daec881200dee88fe201c6da87826a99f80bbab05f64e90140ca51cedba7",
+        "tests/test_archive.py": "6eeb9b2c693604d9186ac60f910384e949f8b7214f6abae43a406bb037de3065",
+        "tests/test_archive_backup.py": "adbe7fc368a48239d59c5e04e47b314876a5aff52edc0de84f4e85fddef29af2",
+        "tests/test_archive_backup_cli.py": "dc0c8fe88245b73869eea4cedfa16bde094acaf193dfc6243da313749904c605",
+        "tests/test_archive_ingest.py": "fcdac0b10cb049f867bd72f22ec10f0ac5f11da7296fa9a9d8d99abb0ef06dc9",
+        "tests/test_collector.py": "84f2e91357ee5a761f740716b8989e63876f3e63b00b30fa548c4f14c72e875d",
+        "tests/test_collector_liveness.py": "25779630b83fa6b07e7a6abaebaeecee0cd3ccf99ef60430aa325156992e9488",
+        "tests/test_config_lifecycle.py": "52a0ccc681e0848c39d0e52a08d3b8ebce79d1df9d0c821863b24f20e6255d37",
+        "tests/test_contracts.py": "22b9f965a0301c4a5bd75ff8875e79a4d3ee9db832801303bd42259c6af249f9",
+        "tests/test_delivery.py": "344e0404d8777a02da55feb00e26af59a04437cea66e3c8e260c38f830ff5892",
+        "tests/test_emulator_integration.py": "589dd88ddf98bf5323f8bf3e2e6e274ef85d54e538683397e4a7bdea08955c0b",
+        "tests/test_evaluation.py": "1b15e6510494dc02d487916e9311c46a10f69dcbebee9d21a2c5fb4553768cb3",
+        "tests/test_fault_response.py": "ae3d0799017366ff210be1fea309df42a8e1d0e8ca784735c6c274bf292c1f81",
+        "tests/test_heartbeat.py": "ec165dfd7f2962e75c04004978b4057a1f448584b9d64d3c3c933369559f7cd1",
+        "tests/test_hybrid_demo.py": "a192c1efaf79f8799a07b97f89bb77599aaf421a185142ca506aba3cb3c83ce7",
+        "tests/test_input_archive.py": "fe99de4599c7ad56274ef4ca31e63b5bc932ae90909e57c55c492a5de7b62810",
+        "tests/test_input_archive_query.py": "7c6354c51abeea81d896ae68d0d6323d8ce993be24f389869d8f0d15224e32fd",
+        "tests/test_limit_rules.py": "9356d01e2633905befe69d1df66948d92a8cef988472c70cc06d532b1eb6892d",
+        "tests/test_limit_rules_cli.py": "e421399a741ec6f6d84a65d957f5cbb3e01b30a74a9d418e785ed0cd655e755a",
+        "tests/test_live_api.py": "f1577394a22f2ac958556ff8f003b975a341d79ca0bd8089e51632c3ccbbd19e",
+        "tests/test_module_processes.py": "999e1eed7f5e7d927e117fe6d10383de7f3b7ac736f2611c83fc57d3e1db4a00",
+        "tests/test_observability.py": "ea4ca8e7f00bf6ac94ad4c85271ee3d7a1c4bfed6ea0ab33903cf15b465ef2fd",
+        "tests/test_processes.py": "1e8681b7dada01866160af4fd5b12f68f4b9450bee82a4d99e087636d3654835",
+        "tests/test_raw_history.py": "dd338214ce00d24d275cd5e66183a3aa00fd5fd238e1ec0162d8c20c3fa90d63",
+        "tests/test_raw_history_api.py": "93e695ecb679c9e70d7fd870c68bd9b50a52286f3eeb0c4c1f9fa05b8831fdc8",
+        "tests/test_raw_history_ipc.py": "ef12ad71c42e997277c9b49fd7888a7dfc4d4e8531d507150cd6dcfb4ab81349",
+        "tests/test_raw_history_utc.py": "467e8a1dc5520d606a4452f9368cb56bfb85e759c8e28fd3527cbc018203b038",
+        "tests/test_replay_collector.py": "878dfcb0b55896a6cc5d1518b09089d677b437ea5acff1d53db0d82e9ebad44a",
+        "tests/test_replay_process.py": "c8d7e1789cc0794d5900d6aa7c152ed1690ac877af7404ca7a3526ff806299cf",
+        "tests/test_rule_versions.py": "76d0c98de0e409108c3810cf9c837fdc7e84dd77bbe24e33223062a4d3e4edf0",
+        "tests/test_rule_versions_cli.py": "8de59ad1c6fae12bf6df873198bc02e782e9573b147e2c3701fab3c45d7fc3e4",
+        "tests/test_signal_combination.py": "3d1ac6259b845fa1416445b762105079d8b4be96491a6c57799cec7756f4cdc8",
+        "tests/test_signal_combination_validation.py": "3abfe786eb4fa2b12a891c9fd2cbd5a58355aac396bdd1ed9f8d46c3ffdcb207",
+        "tests/test_signal_review.py": "823b59f1b2c932a8558e9e98d241055c9b171f9e30b3fb2590d68ff88813acdd",
+        "tests/test_signal_review_integration.py": "50c00c5a685153a1b582ddde060266ae1b54e41ced8242ec4921e135680cb1d6",
+        "tests/test_source_context_api.py": "e98afab17bea9f5752947c74e9d0ae97c7bb335dad6100dc39d56dece738fc29",
+        "tests/test_source_integrity.py": "e5bf1939a3aa4c1a9799759dce4403e4ec97d0c7212b885977d9589b9c75ba1b",
+        "tests/test_startup_recovery.py": "9b0de65fe507ab24f63c003cd5dbf800ae08d155e4d3f32e538b57e83e9e307a",
+        "tests/test_storage_diagnostics.py": "105185ab022293bbf4b14902c4667a95209c169612b6c3e9731faae5f7a3cb28",
+        "tests/test_storage_diagnostics_cli.py": "d37bcc06ba78539512d545e16a9ccfdbdbaef28d0e0732e3a34b2fddc0cb4309",
+        "tests/test_storage_failure.py": "3498e018935c9b6e04bdd9636915a7259fcf6479e787af3e45fd128c1c26ae8e",
+        "tests/test_storage_policy_diagnostics.py": "95a71f7e4060808232fdcb53409f5834118562587c55c307528b2484be4aa7a8",
+        "tests/test_stored_records.py": "eb754509aea8691e331ab7bc755e533f34270379cdb07bed305aa43aaa9bd391",
+        "tests/test_stored_records_cli.py": "26278b1e17c95906a92d7b3aca9cec88a29b5747021a3a45bad9e5c1d6a97e8f",
+        "tests/test_worker_recovery.py": "e96d212c9f036d35b790c3944c12ca1ec6b7483ed09949a368b180964b2f8d21"
+      },
+      "existingGeneratedEvidenceRestoredByteForByte": true
+    },
+    "newTests": {
+      "passed": 129,
+      "byModule": {
+        "tests.test_archive_ingest": 34,
+        "tests.test_input_archive_query": 18,
+        "tests.test_input_archive": 77
+      }
+    },
+    "independentReview": {
+      "important_or_blocking": 0,
+      "minor": 0,
+      "independent_passed": 129,
+      "elapsed_seconds": 10.68,
+      "review_regressions_resolved": [
+        "Terminal-token preflight",
+        "Literal UUID descriptor preservation",
+        "Concurrent-writer prefix validation before completion/reporting"
+      ],
+      "reviewed_source_sha256": {
+        "src/aegis/input_archive.py": "f4cd7fb273e8ebc93302209fd373c9c4e3e94a1d0b41362dd91d7d1086bc59b3",
+        "src/aegis/archive_ingest.py": "d90862aeca909219fd244c10726cb3d8c0b0bedb37f34ee4558c82977bcc3fb3",
+        "src/aegis/stored_records.py": "00a5d54bc9eb851b6cb28705e15f1b56972be3c87f25ec1d9d4c47fc8ccbaa14",
+        "docs/INPUT_ARCHIVE_20261109.md": "39821809221cb5e69c091c76a34596d9930b29f31187b740b897ab3398404a5d",
+        "README.md": "43c181a1c7b00edd24ab450df2547b00ac7a6279e8ecdd6e79231e494adc57c3"
+      }
+    },
+    "supplementary": {
+      "emulator": {
+        "label": "emulator",
+        "exit_code": 0,
+        "elapsed_seconds": 5.497
+      },
+      "contracts": {
+        "label": "contracts",
+        "exit_code": 0,
+        "elapsed_seconds": 0.094
+      },
+      "v34": {
+        "label": "v34",
+        "exit_code": 0,
+        "elapsed_seconds": 0.221
+      }
+    },
+    "tdd": {
+      "initialWriterApiRedFailures": 1,
+      "initialQueryRedFailures": 17,
+      "initialQueryExistingOptionRejectionPassed": 1,
+      "initialCollectorRedFailures": 26,
+      "importantReviewRegressionRedFailures": 3
+    }
+  },
+  "regressions": [
+    "nullable originals and exact source offset/large integer values",
+    "declared DEVICE/SYNTHETIC/UNKNOWN and both methods preserved from synthetic inputs",
+    "duplicate and conflict rollback retain first source evidence and host receipt",
+    "COMMIT exception before and after actual commit fences writer",
+    "real child process exit before and after commit reopens atomic state",
+    "actual SQLite BUSY and page-limit SQLITE_FULL plus injected write/receipt/readback faults",
+    "requested page wire/receipt and unchanged precommit page prefix confirmation",
+    "read-only validator and live WAL query snapshot",
+    "old raw-v1/adapter/unknown targets refused before writer opening and original companions preserved",
+    "synthetic collector CLI read/commit/resume and actual common query",
+    "no partial success on invalid source/query or failed output"
+  ],
+  "preservation": {
+    "originalAegisCheckouts": 15,
+    "priorRemoteHeads": 18,
+    "baselineFiles": 445,
+    "unchangedBaselineFilesExceptReadmeAndReadDispatch": 443,
+    "oldSchemaAndSimulatorWriterChanged": false
+  },
+  "exampleSha256": "a100dbce0f154c3eebcffbe46c2475905d598dc082e911e1da0d54b446ab6404",
+  "privacy": {
+    "newData": "Synthetic only",
+    "repositoryVisibilityChecked": "public",
+    "pushPermissionChecked": true,
+    "authenticatedOwnerAndBaseNoreplyIdentityChecked": true,
+    "stagedSecretAndPersonalDataScanRequiredBeforePush": true
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "sqlite": "3.53.1",
+    "platform": "Linux"
+  },
+  "remainingWork": [
+    "Real adapter driver and production worker/native cancellation isolation",
+    "Source acknowledgement and independently authenticated origin",
+    "Open-ended/high-volume operation, archive-specific backup/restore and explicit approved migration"
+  ],
+  "unverified": [
+    "Physical equipment and company libraries/real data",
+    "Windows and Windows services",
+    "Remote CI and UI execution/verification",
+    "Actual host disk exhaustion, power loss, network filesystems and hostile path replacement",
+    "Long-duration/high-volume and production operation"
+  ]
+}

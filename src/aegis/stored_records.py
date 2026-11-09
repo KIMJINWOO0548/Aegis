@@ -16,6 +16,7 @@ import time
 
 from aegis.adapter_input import AdapterError, _encode
 from aegis.adapter_store import validate_adapter_snapshot
+from aegis.input_archive import validate_input_archive_snapshot
 from aegis.archive import COLUMNS
 from aegis.archive_backup import BackupError, _inspect, _discard_failed_stdout
 from aegis.raw_history import RawQueryError, _timestamp, _object, _constant
@@ -32,7 +33,7 @@ MAX_SQL_STEPS = 5_000_000
 ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z')
 STORE_ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,63}\Z')
 HEX = re.compile(r'[0-9a-f]{64}\Z')
-KINDS = {'RAW_V1', 'ADAPTER_STORE_V1'}
+KINDS = {'RAW_V1', 'ADAPTER_STORE_V1', 'INPUT_ARCHIVE_V1'}
 
 
 class QueryError(Exception):
@@ -219,6 +220,37 @@ def _adapter_snapshot(c, budget, pin):
         bindingEvidence='EXPECTED_FIXTURE_SHA_MATCHED' if pin else 'STORED_SELF_CONSISTENCY')
 
 
+def _input_snapshot(c, budget):
+    snapshot = validate_input_archive_snapshot(c, budget)
+    first_pages = {}
+    for wire,wire_sha in c.execute('SELECT wire,wire_sha FROM archive_pages ORDER BY ordinal'):
+        budget.check()
+        page = json.loads(wire)
+        for record in page['records']:
+            first_pages.setdefault(record['recordId'], wire_sha)
+    hashes = dict(c.execute('SELECT record_id,record_sha FROM archive_records'))
+    d = snapshot.descriptor
+    result = []
+    for entry in snapshot.records:
+        budget.check()
+        record = entry['record']
+        p = entry['provenance']
+        result.append(dict(nativeKeyKind='ARCHIVE_DELIVERY_STREAM_RECORD',
+            nativeKey=[d['adapterId'],d['adapterVersion'],d['streamId'],record['recordId']],
+            deviceId=record['deviceId'],sourceMetadata=record['sourceMetadata'],
+            firstReceivedAtUtc=entry['firstReceivedAtUtc'],
+            provenance=dict(declaredOrigin=p['declaredOrigin'],originEvidence=p['originEvidence'],
+                declarationSource='ARCHIVE_WRITE_PAGE',producerDeclaration=p['declaredOrigin'],
+                acquisitionMethod=p['acquisitionMethod'],sourceAccessMode=p['sourceAccessMode'],
+                hardwareIdentityVerified=False),
+            hierarchy=dict(equipmentId=None,moduleId=None,evidence='NOT_RECORDED'),legacyContext=None,
+            signals=record['signals'],evidence=dict(recordSha256=hashes[record['recordId']],
+                representation='ARCHIVE_CANONICAL_RECORD_JSON',pageWireSha256=first_pages[record['recordId']])))
+    return result, dict(gapEvidence=dict(kind='NOT_RECORDED',count=None,
+        scope='NOT_RECORDED',timeCoverage='NOT_ASSERTED'),commitState='LOCAL_COMMITTED_PREFIX',
+        bindingEvidence='DESCRIPTOR_SELF_CONSISTENCY',writeContractVersion='archive-write-1')
+
+
 def query_stored_records(sources, received_from, received_to, *, device_id=None,
                          signals=None, max_records=MAX_RECORDS):
     """Read validated per-store snapshots; fail whole query on any unavailable source."""
@@ -237,8 +269,12 @@ def query_stored_records(sources, received_from, received_to, *, device_id=None,
         for source in sources:
             budget.check()
             with _reader(source,budget) as c:
-                rows, detail = (_raw_snapshot(c,budget) if source['kind']=='RAW_V1'
-                                else _adapter_snapshot(c,budget,source['pin']))
+                if source['kind']=='RAW_V1':
+                    rows, detail = _raw_snapshot(c,budget)
+                elif source['kind']=='ADAPTER_STORE_V1':
+                    rows, detail = _adapter_snapshot(c,budget,source['pin'])
+                else:
+                    rows, detail = _input_snapshot(c,budget)
                 matched = 0
                 for row in rows:
                     budget.check()
@@ -263,6 +299,7 @@ def query_stored_records(sources, received_from, received_to, *, device_id=None,
         result = dict(schemaVersion='stored-record-query-1',timeBasis='FIRST_RECEIPT',
             window=dict(receivedFromUtc=_utc(start),receivedToUtc=_utc(end),bounds='[from,to)'),
             readCompatibility='DUAL_STORE_PROJECTION',adapterToRawV1WriteDelivery='NOT_CONNECTED',
+            inputArchiveReadSupport='INPUT_ARCHIVE_V1',
             sourceAcknowledgement='NOT_SENT',schemaMigrationPerformed=False,
             crossStoreDeduplication='NOT_PERFORMED_DIFFERENT_NAMESPACES',
             snapshotConsistency='PER_STORE_SNAPSHOT_NO_DISTRIBUTED_ATOMICITY',
