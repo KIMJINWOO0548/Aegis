@@ -1,5 +1,12 @@
 # Aegis Insight
 
+## 모듈 생존·유한 복구 — 2026-11-09
+
+Python 모듈 분리 수집에서 내부 작업 종료와 살아 있는 무응답 worker를 감지하고 해당 모듈만
+유한 복구합니다. 정상 무데이터·긴 폴링 대기와 구분하고 기존 원본/커서를 유지합니다.
+[설계·실제 Linux 합성 시험·운영 한계](docs/COLLECTOR_LIVENESS_RECOVERY_20261109.md).
+실제 장비와 Windows 서비스 검증은 별도로 남아 있습니다.
+
 ## Retained-summary investigation — 2026-11-06
 
 Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).

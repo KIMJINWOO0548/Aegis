@@ -200,6 +200,10 @@ class RejectedBatch(ValueError):
     pass
 
 
+class CollectorLivenessError(RuntimeError):
+    """A fixed failure code, independent of source freshness or sample count."""
+
+
 class Collector:
     def __init__(self, sources: list[SourceConfig], environment=None, *, client=None,
                  interval=1.0, timeout=.5, stale_after=3.0, log_path=None,
@@ -228,6 +232,7 @@ class Collector:
         self._client = client
         self._owns_client = client is None
         self._tasks = []
+        self._poll_started = [None for _ in sources]
         self._log_path = log_path
         self._trace = str(uuid4())
         self.logging_degraded = False
@@ -263,8 +268,26 @@ class Collector:
         interval = self.sources[index].pollIntervalMs / 1000 if self.sources[index].pollIntervalMs else self.interval
         while True:
             started = self._clock()
-            await self.poll_once(index)
+            self._poll_started[index] = started
+            try:
+                await self.poll_once(index)
+            finally:
+                self._poll_started[index] = None
             await asyncio.sleep(.01 if self._behind[index] else max(.01, interval - (self._clock() - started)))
+
+    def ensure_live(self):
+        """Used by the module host; no new data is required for a healthy task."""
+        if len(self._tasks) != len(self.sources):
+            raise CollectorLivenessError("COLLECTOR_TASK_STOPPED")
+        for task in self._tasks:
+            if task.done():
+                if not task.cancelled():
+                    task.exception()  # Retrieve failures without logging source/private exception text.
+                raise CollectorLivenessError("COLLECTOR_TASK_STOPPED")
+        now = self._clock()
+        if any(started is not None and now - started > max(10.0, self.timeout * 2)
+               for started in self._poll_started):
+            raise CollectorLivenessError("COLLECTOR_POLL_STALLED")
 
     def _event(self, name, outcome, device, reason=None, signals=None):
         if self._log_path is None:
