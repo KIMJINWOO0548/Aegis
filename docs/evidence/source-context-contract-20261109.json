@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "verification_date_utc": "2026-11-09",
+  "base_branch": "improve/storage-failure-integrity-20261109",
+  "base_sha": "856f7f7f1d55a034185f71d73d6df5f48803b98a",
+  "new_branch": "improve/source-context-contract-20261109",
+  "visibility": "public unchanged",
+  "scope": "Opt-in current-configuration source declarations only. Not per-row/historical provenance or hardware attestation.",
+  "endpoint": "GET /v1/health?includeSourceContext=true",
+  "context_schema": "source-context-1",
+  "legacy_default_and_false_payload_unchanged": true,
+  "canonical_yaml_generated_models_routes_unchanged": true,
+  "metadata_fields_whitelisted": true,
+  "current_declaration": {
+    "origin": "SYNTHETIC",
+    "fixture_method": "FIXED_FIXTURE",
+    "snapshot_method": "SNAPSHOT_POLL",
+    "replay_method": "SOURCE_BUFFER_REPLAY",
+    "access_meaning": "READ_ONLY describes upstream source access; local archive still writes.",
+    "scope": "CURRENT_CONFIGURATION",
+    "archivedRowProvenance": "NOT_INFERRED",
+    "realEquipmentSupported": false,
+    "hardRealtimeGuaranteed": false
+  },
+  "existing_input_contract": {
+    "source_literal": "SIMULATOR",
+    "source_observed_time_run_and_sequence_required": true,
+    "unsupported_real_read_only_and_missing_fields_rejected": true,
+    "receipt_or_local_counter_used_as_missing_source_metadata": false
+  },
+  "environment": {
+    "python": "3.12.14",
+    "new_dependencies_installed": false,
+    "platform": "Linux"
+  },
+  "baseline_reuse": {
+    "exact_verified_base_sha": "856f7f7f1d55a034185f71d73d6df5f48803b98a",
+    "prior_full_suite_counts": {
+      "tests": 366,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "prior_full_suite_passed": 365,
+    "all_prior_tested_python_sources_and_tests_byte_identical": true,
+    "no_dependency_changes": true,
+    "baseline_full_reused_from_immediately_preceding_verified_commit": true,
+    "current_checkout_targeted_baseline_run": "baseline-api"
+  },
+  "test_runs": {
+    "baseline-api": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_api.py",
+        "tests/test_live_api.py",
+        "tests/test_contracts.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.492,
+      "counts": {
+        "tests": 91,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true
+    },
+    "source-integrity-control": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_source_integrity.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.701,
+      "counts": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "interpretation": "16 characterization/control tests passed before API implementation, not feature RED."
+    },
+    "source-context-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_source_context_api.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.398,
+      "counts": {
+        "tests": 10,
+        "failures": 6,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_source_context_api::test_fixture_context_explicitly_separates_synthetic_fixed_data_from_unexposed_sequence",
+          "type": "failure",
+          "message": "KeyError: 'sourceContext'"
+        },
+        {
+          "test": "tests.test_source_context_api::test_mixed_simulator_methods_are_per_source_and_expose_no_configuration_secrets[False]",
+          "type": "failure",
+          "message": "KeyError: 'sourceContext'"
+        },
+        {
+          "test": "tests.test_source_context_api::test_mixed_simulator_methods_are_per_source_and_expose_no_configuration_secrets[True]",
+          "type": "failure",
+          "message": "KeyError: 'sourceContext'"
+        },
+        {
+          "test": "tests.test_source_context_api::test_current_received_simulator_data_never_promotes_declared_origin_or_realtime_guarantee[snapshot-SNAPSHOT_POLL]",
+          "type": "failure",
+          "message": "KeyError: 'sourceContext'"
+        },
+        {
+          "test": "tests.test_source_context_api::test_current_received_simulator_data_never_promotes_declared_origin_or_realtime_guarantee[replay-SOURCE_BUFFER_REPLAY]",
+          "type": "failure",
+          "message": "KeyError: 'sourceContext'"
+        },
+        {
+          "test": "tests.test_source_context_api::test_opt_in_query_is_typed_and_documented_without_new_routes",
+          "type": "failure",
+          "message": "assert (0 == 1)"
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "interpretation": "6 failures from missing sourceContext/query; 4 existing controls passed."
+    },
+    "source-context-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_source_context_api.py",
+        "tests/test_source_integrity.py",
+        "tests/test_api.py",
+        "tests/test_live_api.py",
+        "tests/test_contracts.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.681,
+      "counts": {
+        "tests": 117,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true
+    },
+    "full-verification": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 130.951,
+      "counts": {
+        "tests": 392,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true
+    }
+  },
+  "supplementary": {
+    "emulator-unit": {
+      "exit_code": 0,
+      "elapsed_seconds": 5.67,
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "tests": 26
+    },
+    "generated-contracts": {
+      "exit_code": 0,
+      "elapsed_seconds": 0.069,
+      "command": [
+        "python",
+        "scripts/generate_contracts.py",
+        "--check"
+      ]
+    },
+    "contract-v34": {
+      "exit_code": 0,
+      "elapsed_seconds": 0.263,
+      "command": [
+        "python",
+        "scripts/validate_v34.py"
+      ]
+    }
+  },
+  "preservation": {
+    "base_sha": "856f7f7f1d55a034185f71d73d6df5f48803b98a",
+    "protected_baseline_tracked_files": 373,
+    "all_protected_files_byte_identical": true,
+    "baseline_exceptions": [
+      "README.md",
+      "src/aegis/api.py"
+    ],
+    "filename_inventory_uses_nul_delimiters": true,
+    "existing_heads_unchanged": 8,
+    "base_sha_unchanged": true,
+    "target_absent": true,
+    "previous_five_checkouts_unchanged_and_clean": true
+  },
+  "author_check": {
+    "author_committer_match": true,
+    "origin_owner_name_match": true,
+    "owner_github_noreply": true,
+    "authenticated_origin_owner_match": true,
+    "actual_identity_omitted": true,
+    "source_commit": "856f7f7f1d55a034185f71d73d6df5f48803b98a"
+  },
+  "source_file_fingerprints": {
+    "src/aegis/api.py": {
+      "sha256": "538f3d1868bd7d4fa16af18cc413183dc1a83accbd8362bad4116b13f9d40a3a",
+      "bytes": 17887
+    },
+    "tests/test_source_context_api.py": {
+      "sha256": "e98afab17bea9f5752947c74e9d0ae97c7bb335dad6100dc39d56dece738fc29",
+      "bytes": 7750
+    },
+    "tests/test_source_integrity.py": {
+      "sha256": "e5bf1939a3aa4c1a9799759dce4403e4ec97d0c7212b885977d9589b9c75ba1b",
+      "bytes": 12442
+    }
+  },
+  "rulings": [
+    {
+      "decision": "Opt-in source context only; strict legacy health stays unchanged.",
+      "cost": "Existing native/Gateway/UI do not automatically display the new distinctions."
+    },
+    {
+      "decision": "Keep current required synthetic input envelope and archive identity.",
+      "cost": "Actual equipment and nullable original metadata need versioned envelope, archive and consumer migration."
+    }
+  ],
+  "limitations": [
+    "Current configured-source contract declaration, not physical identity, data freshness or acquisition success.",
+    "ProcessCollector metadata tests do not start workers; no new metadata IPC integration claim.",
+    "No per-record provenance binding or historical origin/method backfill.",
+    "No actual equipment adapter or nullable-source-field support added."
+  ],
+  "not_run": [
+    "Actual equipment/customer data",
+    "Windows/Windows services",
+    "PowerShell7 Windows delivery case",
+    "Dotnet/WPF/WebView2 execution",
+    "Long-duration/capacity/hardware-origin validation"
+  ],
+  "scope_preserved": {
+    "input_or_archive_schema_or_cursor_changed": false,
+    "collector_worker_recovery_or_simulator_code_changed": false,
+    "ui_design_changed": false,
+    "previous_access_denied_preservation_retried_or_bypassed": false,
+    "previous_5075ccd_restoration_or_equivalence_claimed": false
+  },
+  "raw_logs_databases_credentials_or_identity_committed": false,
+  "skip_reason": "Existing Windows PowerShell7 delivery-script case.",
+  "warnings": [
+    "Existing Starlette TestClient/httpx deprecation warning (1)."
+  ],
+  "independent_read_only_review": {
+    "status": "COMPLETE",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "coverage_review_blockers": 0,
+    "reviewer_reran_tests": false,
+    "recorded_python_fingerprints_rechecked": 42,
+    "tracked_baseline_files_compared": 375,
+    "only_tracked_baseline_differences": [
+      "README.md",
+      "src/aegis/api.py"
+    ],
+    "controller_checked_full_result_after_review": true
+  },
+  "git_commit_push_and_remote_sha": "Recorded separately after actual operation; not inferred from this precommit evidence.",
+  "public_diff_scan": {
+    "intended_file_count": 8,
+    "added_diff_privacy_patterns": [
+      "private_key",
+      "github_credential",
+      "aws_key",
+      "email",
+      "private_home_path",
+      "phone"
+    ],
+    "candidate_findings": 0,
+    "raw_logs_databases_actual_credentials_or_identity_staged": false,
+    "synthetic_test_tokens_only": true,
+    "all_tested_python_sources_and_tests_unchanged": true,
+    "git_diff_check_exit_code": 0
+  },
+  "remote_preflight": {
+    "visibility": "public unchanged",
+    "push_permission": true,
+    "authenticated_owner_matches_origin_and_noreply_author": true,
+    "existing_remote_heads_unchanged": 8,
+    "new_target_absent": true,
+    "previous_five_checkouts_unchanged_and_clean": true
+  }
+}

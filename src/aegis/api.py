@@ -75,6 +75,26 @@ def _utc(value: str) -> datetime:
         raise HTTPException(422) from None
 
 
+def _source_context(collector: Collector | None) -> dict:
+    """Describe current configuration, never provenance inferred for archived rows."""
+    if collector is None:
+        sources = [{"deviceId": DEVICE_ID, "declaredOrigin": "SYNTHETIC",
+                    "producerKind": "FIXTURE", "acquisitionMethod": "FIXED_FIXTURE",
+                    "sourceAccessMode": "NOT_APPLICABLE", "originEvidence": "BUILT_IN_FIXTURE",
+                    "sourceTimestampPolicy": "FIXTURE_DEFINED", "sourceSequencePolicy": "NOT_EXPOSED"}]
+    else:
+        methods = {"snapshot": "SNAPSHOT_POLL", "replay": "SOURCE_BUFFER_REPLAY"}
+        # Whitelist metadata: source configuration also contains private URLs and token names.
+        sources = [{"deviceId": source.deviceId, "declaredOrigin": "SYNTHETIC",
+                    "producerKind": "SIMULATOR", "acquisitionMethod": methods[source.transport],
+                    "sourceAccessMode": "READ_ONLY", "originEvidence": "CONTRACT_DECLARED",
+                    "sourceTimestampPolicy": "PRODUCER_REQUIRED", "sourceSequencePolicy": "PRODUCER_REQUIRED"}
+                   for source in collector.sources]
+    return {"schemaVersion": "source-context-1", "scope": "CURRENT_CONFIGURATION",
+            "archivedRowProvenance": "NOT_INFERRED", "realEquipmentSupported": False,
+            "hardRealtimeGuaranteed": False, "sources": sources}
+
+
 def create_app(token: str, log_path: Path | None = None, *, collector: Collector | None = None) -> FastAPI:
     if not isinstance(token, str) or len(token.strip()) < 32 or "\r" in token or "\n" in token:
         raise ValueError("AEGIS_API_TOKEN must contain at least 32 characters.")
@@ -153,12 +173,15 @@ def create_app(token: str, log_path: Path | None = None, *, collector: Collector
         return _error(request, exc.status_code, code, message)
 
     @app.get("/v1/health")
-    async def health():
+    async def health(includeSourceContext: bool = Query(False, description="Include current source declarations; not archived-row provenance.")):
         degraded = app.state.logging_degraded or (collector is not None and (
             collector.logging_degraded or any(row["state"] != "CONNECTED" for row in collector.connections())))
-        return {"status": "DEGRADED" if degraded else "OK", "schemaVersion": VERSION,
-                "stage": "EMULATOR_LINK" if collector else "D0a", "mock": True,
-                "mode": "EMULATORS" if collector else "FIXTURE"}
+        result = {"status": "DEGRADED" if degraded else "OK", "schemaVersion": VERSION,
+                  "stage": "EMULATOR_LINK" if collector else "D0a", "mock": True,
+                  "mode": "EMULATORS" if collector else "FIXTURE"}
+        if includeSourceContext:
+            result["sourceContext"] = _source_context(collector)
+        return result
 
     @app.get("/v1/devices")
     async def devices():
