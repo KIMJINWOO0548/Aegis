@@ -28,6 +28,7 @@ from aegis.contracts import (
 )
 from aegis.observability import make_event, write_event
 from aegis.collector import Collector, load_sources
+from aegis.raw_history import RawQueryError, read_raw_archive
 
 
 DEVICE_ID = INITIAL_DEVICE
@@ -95,10 +96,16 @@ def _source_context(collector: Collector | None) -> dict:
             "hardRealtimeGuaranteed": False, "sources": sources}
 
 
-def create_app(token: str, log_path: Path | None = None, *, collector: Collector | None = None) -> FastAPI:
+def create_app(token: str, log_path: Path | None = None, *, collector: Collector | None = None,
+               raw_archive_paths: dict[str, Path] | None = None) -> FastAPI:
     if not isinstance(token, str) or len(token.strip()) < 32 or "\r" in token or "\n" in token:
         raise ValueError("AEGIS_API_TOKEN must contain at least 32 characters.")
     expected_token = token.encode("utf-8")
+    replay_devices = {source.deviceId for source in collector.sources if source.transport == "replay"} if collector else set()
+    if raw_archive_paths is not None and (not isinstance(raw_archive_paths, dict)
+                                         or not set(raw_archive_paths) <= replay_devices):
+        raise ValueError("Raw archive paths must belong to configured replay devices.")
+    raw_paths = {device: Path(path).resolve() for device, path in (raw_archive_paths or {}).items()}
     @asynccontextmanager
     async def lifespan(_app):
         if collector is not None:
@@ -314,6 +321,27 @@ def create_app(token: str, log_path: Path | None = None, *, collector: Collector
     async def ingestion():
         return collector.ingestion() if collector is not None else []
 
+    def _raw_query(request, device, run, start, end, signals, limit):
+        _known_device(device)
+        if device not in raw_paths:
+            return _error(request, 501, "RAW_ARCHIVE_NOT_SUPPORTED", "This device has no configured raw archive reader.")
+        try:
+            return read_raw_archive(raw_paths[device], device, run, start, end, signals=signals, max_batches=limit)
+        except RawQueryError as error:
+            return _error(request, error.status, error.code, error.message)
+
+    @app.get("/v1/devices/{id}/raw-tags")
+    def raw_tags(request: Request, id: str, runId: str = Query(min_length=36, max_length=36),
+                 fromUtc: str = Query(max_length=64), toUtc: str = Query(max_length=64),
+                 maxBatches: int = Query(default=64, ge=1, le=64)):
+        return _raw_query(request, id, runId, fromUtc, toUtc, None, maxBatches)
+
+    @app.get("/v1/devices/{id}/raw-history")
+    def raw_history(request: Request, id: str, runId: str = Query(min_length=36, max_length=36),
+                    fromUtc: str = Query(max_length=64), toUtc: str = Query(max_length=64),
+                    signals: str = Query(max_length=2063), maxBatches: int = Query(default=64, ge=1, le=64)):
+        return _raw_query(request, id, runId, fromUtc, toUtc, signals, maxBatches)
+
     @app.get("/v1/devices/{id}/signal-review")
     async def signal_review(id: str):
         _known_device(id)
@@ -351,17 +379,21 @@ def main() -> None:
         log_path = Path("runtime/local_api.jsonl")
         sources = load_sources(args.emulators) if args.emulators else []
         archive = None
+        raw_paths = {}
         if args.isolate:
             from aegis.processes import ProcessCollector
             collector = ProcessCollector(sources, args.archive_directory or Path("runtime/modules"), evaluate=args.evaluate, log_path=log_path)
+            raw_paths = {source.deviceId: collector.archive_paths[source.deviceId]
+                         for source in sources if source.transport == "replay"}
         elif any(source.transport == "replay" for source in sources):
             from aegis.archive import RawArchive
             archive = RawArchive(args.archive or Path("runtime/raw.sqlite3"))
+            raw_paths = {source.deviceId: archive.path for source in sources if source.transport == "replay"}
         elif args.archive:
             parser.error("--archive requires at least one replay source.")
         if not args.isolate:
             collector = Collector(sources, log_path=log_path, evaluate=args.evaluate, archive=archive) if sources else None
-        app = create_app(os.environ.get("AEGIS_API_TOKEN", ""), log_path, collector=collector)
+        app = create_app(os.environ.get("AEGIS_API_TOKEN", ""), log_path, collector=collector, raw_archive_paths=raw_paths)
     except (ValueError, OSError):
         raise SystemExit("Check local API/emulator token environment variables and emulator configuration.") from None
     # Windows IOCP accept can remain failed after WinError 64; bounded local TCP needs no subprocess loop support.

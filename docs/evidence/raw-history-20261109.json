@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "verification_date_utc": "2026-11-09",
+  "base_branch": "improve/source-context-contract-20261109",
+  "base_sha": "7d303ee27d9ec31cc33d2c1ec69cbc8b036ac867",
+  "new_branch": "improve/raw-history-query-20261109",
+  "visibility": "public unchanged",
+  "scope": "Bounded raw1.1 stored tag catalog and selected-tag history projection by device, exact run key and explicit time window.",
+  "contract_version": "raw-query-1",
+  "routes": [
+    "GET /v1/devices/{id}/raw-tags",
+    "GET /v1/devices/{id}/raw-history"
+  ],
+  "time_window": {
+    "bounds": "[from,to)",
+    "max_seconds": 86400,
+    "comparison_precision": "Existing Python UTC datetime microseconds; source strings preserved.",
+    "required_exact_run_key": true
+  },
+  "limits": {
+    "candidate_batches": 1024,
+    "matching_batches_max": 64,
+    "selected_tags": 16,
+    "catalog_tags": 512,
+    "payload_bytes": 262144,
+    "query_payload_bytes": 8388608,
+    "run_gaps": 1024,
+    "sql_steps": 1000000,
+    "sql_progress_seconds": 1.0,
+    "sqlite_busy_timeout_seconds": 0.2,
+    "hard_realtime_deadline_claimed": false
+  },
+  "completion_semantics": {
+    "selectionComplete": "Stored selection only; limits/errors never return success prefixes.",
+    "sourceCoverage": "NOT_ASSERTED",
+    "gap_scope": "SELECTED_RUN_SEQUENCE_ONLY",
+    "catalog": "Observed window metadata, not authoritative equipment tag dictionary, all-history inventory or latest values."
+  },
+  "source_preservation": {
+    "original_json_values_and_strings_not_model_dumped": true,
+    "original_integer_type_preserved": true,
+    "original_null_and_quality_preserved": true,
+    "tag_absence_explicit_and_not_quality_missing": true,
+    "first_receipt_and_source_observed_time_distinct": true,
+    "stored_equipment_module_not_current_config_used": true,
+    "no_missing_original_time_sequence_substitution": true
+  },
+  "implementation": {
+    "new_reader": "src/aegis/raw_history.py",
+    "separate_read_only_sqlite_uri": true,
+    "query_only_single_read_transaction": true,
+    "immutable_or_wal_ignore_used": false,
+    "writer_start_or_database_creation_for_reads": false,
+    "sql_values_parameterized": true,
+    "payload_lengths_checked_before_full_fetch": true,
+    "candidate_count_check_before_projection": true,
+    "duplicate_json_keys_and_nonfinite_numbers_rejected": true,
+    "raw1_1_and_db_identity_time_validated": true,
+    "schema_and_unique_gap_contract_validated": true,
+    "sync_api_uses_fastapi_threadpool": true,
+    "mapping_copied_and_server_owned_replay_only": true,
+    "cli_shared_and_isolated_mapping": true
+  },
+  "baseline_reuse": {
+    "exact_verified_base_sha": "7d303ee27d9ec31cc33d2c1ec69cbc8b036ac867",
+    "prior_full_suite_counts": {
+      "tests": 392,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "prior_full_suite_passed": 391,
+    "all_prior_tested_python_sources_and_tests_byte_identical": true,
+    "no_dependency_changes": true,
+    "baseline_full_reused_from_immediately_preceding_verified_commit": true,
+    "current_checkout_targeted_baseline_run": "baseline-raw"
+  },
+  "test_runs": {
+    "baseline-raw": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_archive.py",
+        "tests/test_api.py",
+        "tests/test_live_api.py",
+        "tests/test_contracts.py",
+        "tests/test_source_context_api.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.815,
+      "counts": {
+        "tests": 121,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    },
+    "raw-core-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 0.833,
+      "counts": {
+        "tests": 37,
+        "failures": 37,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": [
+        "ModuleNotFoundError: No module named 'aegis.raw_history'"
+      ]
+    },
+    "raw-core-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.901,
+      "counts": {
+        "tests": 37,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    },
+    "raw-api-red-final": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history_api.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.736,
+      "counts": {
+        "tests": 50,
+        "failures": 50,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": [
+        "AssertionError: assert 404 == 200",
+        "TypeError: create_app() got an unexpected keyword argument 'raw_archive_paths'",
+        "assert 404 == 501"
+      ]
+    },
+    "raw-api-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history_api.py",
+        "tests/test_raw_history.py",
+        "tests/test_archive.py",
+        "tests/test_api.py",
+        "tests/test_live_api.py",
+        "tests/test_contracts.py",
+        "tests/test_source_context_api.py",
+        "tests/test_source_integrity.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.449,
+      "counts": {
+        "tests": 224,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    },
+    "raw-schema-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history.py",
+        "-k",
+        "unique_gap_contract or exclusive_database_lock"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 0.732,
+      "counts": {
+        "tests": 2,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": [
+        "Failed: DID NOT RAISE RawQueryError"
+      ],
+      "interpretation": "Missing unique gap schema raised no error before fix (1FAIL); exclusive-lock unavailability was an existing passing control."
+    },
+    "raw-final-targeted": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history.py",
+        "tests/test_raw_history_api.py",
+        "tests/test_archive.py",
+        "tests/test_api.py",
+        "tests/test_live_api.py",
+        "tests/test_contracts.py",
+        "tests/test_source_context_api.py",
+        "tests/test_source_integrity.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.591,
+      "counts": {
+        "tests": 226,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    },
+    "raw-boundaries": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history.py",
+        "-k",
+        "actual_candidate"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.066,
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": [],
+      "interpretation": "Post-implementation positive/control case for actual1024candidate/64match/16tag and1025candidate fail; not feature RED."
+    },
+    "full-verification": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 135.276,
+      "counts": {
+        "tests": 482,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    },
+    "full-final": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 134.267,
+      "counts": {
+        "tests": 482,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    }
+  },
+  "supplementary": {
+    "emulator-unit": {
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.559,
+      "tests": 26
+    },
+    "generated-contracts": {
+      "command": [
+        "python",
+        "scripts/generate_contracts.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.055
+    },
+    "contract-v34": {
+      "command": [
+        "python",
+        "scripts/validate_v34.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.216
+    }
+  },
+  "source_file_fingerprints": {
+    "src/aegis/api.py": {
+      "sha256": "3ac499d5b706ddd1dbf1147450c0f297516801efe8ecc575f8bd4f2b0a98ea00",
+      "bytes": 20133
+    },
+    "src/aegis/raw_history.py": {
+      "sha256": "a805850653feb64b34a13c01478d746e19c4f981bc413b7086340af6a42159e7",
+      "bytes": 10834
+    },
+    "tests/test_raw_history.py": {
+      "sha256": "dd338214ce00d24d275cd5e66183a3aa00fd5fd238e1ec0162d8c20c3fa90d63",
+      "bytes": 15138
+    },
+    "tests/test_raw_history_api.py": {
+      "sha256": "93e695ecb679c9e70d7fd870c68bd9b50a52286f3eeb0c4c1f9fa05b8831fdc8",
+      "bytes": 16621
+    }
+  },
+  "preservation": {
+    "protected_baseline_tracked_files": 379,
+    "baseline_exceptions": [
+      "README.md",
+      "src/aegis/api.py"
+    ],
+    "all_protected_files_byte_identical": true,
+    "filename_inventory_uses_nul_delimiters": true,
+    "previous_six_checkouts_unchanged_and_clean": true,
+    "existing_nine_remote_heads_unchanged": true,
+    "new_target_absent": true,
+    "generated_legacy_evidence_byte_restored": true
+  },
+  "author_check": {
+    "author_committer_match": true,
+    "origin_owner_name_match": true,
+    "owner_github_noreply": true,
+    "authenticated_origin_owner_match": true,
+    "actual_identity_omitted": true,
+    "source_commit": "7d303ee27d9ec31cc33d2c1ec69cbc8b036ac867"
+  },
+  "review": {
+    "status": "COMPLETE",
+    "critical": 0,
+    "important": 0,
+    "minor": 1,
+    "reviewer_reran_full_suite": false,
+    "reviewer_ran_read_only_timestamp_probe": true,
+    "all_recorded_tested_python_hashes_match": true,
+    "controller_checked_actual_full_and_supplementary_results": true,
+    "evidence_finalized_by_controller_after_review": true,
+    "deferred_minor": [
+      {
+        "files": [
+          "src/aegis/raw_history.py:77",
+          "src/aegis/raw_history.py:129"
+        ],
+        "issue": "UTC normalization at extreme year/offset boundaries can raise OverflowError. API fails closed with500 instead of422(query) or409(stored data).",
+        "examples": [
+          "0001-01-01T00:00:00+01:00",
+          "9999-12-31T23:00:00-02:00"
+        ],
+        "effect": "Error classification only; no successful partial data or database writes.",
+        "disposition": "Minor deferred; disclosed in report and final handoff."
+      }
+    ]
+  },
+  "rulings": [
+    {
+      "decision": "Read the bounded complete device+run before projecting the time window; no DB index/schema/write change.",
+      "cost": "Runs beyond1024rows/8MiB fail413 even for a narrow time window; large-history seek/pagination deferred."
+    },
+    {
+      "decision": "Offer observed tag metadata only and require known exact run key.",
+      "cost": "No engineering description, authoritative equipment catalog, all-history run discovery or hardware provenance."
+    }
+  ],
+  "limitations": [
+    "Existing Python datetime microsecond time precision; no sub-microsecond accuracy claim.",
+    "Read-only SQLite still uses its normal WAL sidecars/locks.",
+    "Source completeness or lossless acquisition not asserted.",
+    "Every candidate is validated, including candidates outside selected time window.",
+    "Metadata/API ProcessCollector and CLI tests do not start workers/server; existing full-suite Linux process regression is separate.",
+    "Some byte/catalog/VM/deadline limits tested through lowered constants, not high-load field performance."
+  ],
+  "not_run": [
+    "Actual equipment/customer data",
+    "Windows/Windows services/PowerShell7 delivery case",
+    "Dotnet/WPF/WebView2/UI execution",
+    "New raw API over actual production module IPC/hardware",
+    "Large-history/concurrent-many-query/long-duration performance"
+  ],
+  "scope_preserved": {
+    "ui_design_changed": false,
+    "collector_archive_write_schema_cursor_worker_ipc_simulator_changed": false,
+    "canonical_yaml_generated_native_contract_changed": false,
+    "previous_access_denied_preservation_retried_or_bypassed": false,
+    "previous_5075ccd_restoration_or_equivalence_claimed": false
+  },
+  "new_dependencies_installed": false,
+  "raw_logs_databases_credentials_or_identity_committed": false,
+  "skip_reason": "Existing Windows PowerShell7 delivery-script case.",
+  "git_commit_push_remote_sha": "Actual outcome recorded separately after operation.",
+  "final_full_run": "full-final",
+  "formatting_correction": {
+    "file": "tests/test_raw_history_api.py",
+    "before_sha256": "1dbba4a5f59a4b7c81a22bef1e68166a96f513e9c3b4295998342347a1484b39",
+    "after_sha256": "93e695ecb679c9e70d7fd870c68bd9b50a52286f3eeb0c4c1f9fa05b8831fdc8",
+    "only_trailing_blank_lines_removed": true,
+    "python_ast_identical": true,
+    "commit_not_attempted_before_correction": true,
+    "prior_head_still_base": true,
+    "fresh_full_suite_rerun_after_correction": true
+  }
+}
