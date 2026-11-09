@@ -31,6 +31,10 @@ device/run을 명시하는 제한된 조회이며 큰 run은 부분 성공 없�
 선택 `--rule-lock`으로 같은 규칙 ID·버전의 내용 충돌과 미등록 버전을 조회 전에 거부합니다.
 [기준 생성·버전 추가·재현과 신뢰 경계](docs/RULE_VERSION_LOCK_20261109.md).
 
+수집 중 WAL archive를 고정된 시점으로 백업하고 보관한 manifest로 새 파일 복원을 검증하는
+별도 CLI를 추가했습니다. 기존 대상은 덮어쓰지 않으며 자동 삭제나 실행 중 원본 전환은 없습니다.
+[백업·복원 절차, 장애 결과와 검증 범위](docs/ARCHIVE_BACKUP_20261109.md).
+
 ## Retained-summary investigation — 2026-11-06
 
 Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).

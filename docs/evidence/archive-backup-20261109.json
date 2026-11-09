@@ -1,0 +1,147 @@
+{
+  "schemaVersion": "aegis-archive-backup-evidence-1",
+  "date": "2026-11-09",
+  "baseCommit": "52844968bbd25ea6ea14bea40ca64b3b37a86fbe",
+  "branch": "improve/archive-backup-verification-20261109",
+  "historyScope": "Independent change on accessible remote history; not restoration or replacement of unavailable 5075ccd or preservation files.",
+  "environment": {
+    "os": "Linux",
+    "python": "3.12.14",
+    "sqlite": "3.53.1",
+    "syntheticDataOnly": true
+  },
+  "implemented": [
+    "Read-only pinned SQLite snapshot and incremental online backup including committed WAL state",
+    "Raw1.1 payload identity and exact stored JSON/first receipt/hierarchy preservation",
+    "Active-run cursor and recorded-gap validation; deterministic schema and table hashes",
+    "Standalone artifact SHA256 and mandatory retained unsigned reference for verify and restore",
+    "Private staging and atomic no-replace fresh publication with file and directory fsync",
+    "Explicit published uncertainty and cleanup-required errors; existing source/targets/backups never deleted",
+    "Fresh restore validation only; no collector activation or live archive replacement"
+  ],
+  "coverage": "NOT_ASSERTED",
+  "limits": {
+    "databaseBytes": 268435456,
+    "rawRows": 100000,
+    "cursors": 4096,
+    "gaps": 100000,
+    "payloadBytes": 262144,
+    "totalPayloadBytes": 134217728,
+    "manifestBytes": 65536,
+    "cooperativeSeconds": 30,
+    "sqlVmSteps": 20000000,
+    "copyPages": 64,
+    "sqliteBusySeconds": 0.2
+  },
+  "tests": {
+    "focused": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_archive_backup.py",
+        "tests/test_archive_backup_cli.py"
+      ],
+      "passed": 98,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 15.105
+    },
+    "full": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "passed": 767,
+      "failed": 0,
+      "skipped": 1,
+      "seconds": 185.294,
+      "skipScope": "Existing Windows PowerShell delivery test",
+      "existingWarning": "Existing Starlette/httpx TestClient deprecation warning"
+    },
+    "supplementary": {
+      "emulatorPassed": 26,
+      "contractsCheck": true,
+      "v34Validation": true
+    },
+    "regressions": [
+      "WAL commit between actual incremental copy steps keeps raw/cursor/gap at one earlier snapshot while writer progresses",
+      "Uncommitted changes excluded; reader connection released after errors",
+      "Sparse old run 100/new active run 0 and empty archive supported",
+      "Actual subprocess backup/verify/restore roundtrip and idempotent resumed append",
+      "Corrupt/truncated/invalid payload/schema/cursor/gap and changed manifest/artifact rejected",
+      "Existing files/directories/symlinks/dangling links/hardlinks/sidecars and absent source companion names protected",
+      "Injected copy/validation/capacity/file-sync/link race/post-link directory-sync/output and cleanup failures",
+      "Pages/rows/payloads/cursors/gaps/reference/time/nonzero SQL progress limits",
+      "Python restore API None/malformed reference rejected before copy"
+    ],
+    "capacityFaultScope": "Injected ENOSPC/copy failure, not actual host disk exhaustion",
+    "tddRecords": {
+      "coreMissingModule": {
+        "failures": 44,
+        "errors": 0
+      },
+      "cliMissingModule": {
+        "failures": 39,
+        "errors": 0
+      },
+      "publicationOutputBug": {
+        "failures": 2,
+        "errors": 0
+      },
+      "bufferedOutputBug": {
+        "failures": 1,
+        "errors": 0
+      },
+      "restoreBoundaryBug": {
+        "tests": 12,
+        "expectedFailures": 1,
+        "otherPassed": 11
+      }
+    },
+    "testedPythonFiles": 56,
+    "testedSourcesUnchanged": true,
+    "generatedEvidenceRestoredByteForByte": true,
+    "newSourceSha256": {
+      "src/aegis/archive_backup.py": "bdff499eb97b9d8fc4a64ef6a1edde30b456d8b880b5f3e9b6827bfa27514590",
+      "tests/test_archive_backup.py": "adbe7fc368a48239d59c5e04e47b314876a5aff52edc0de84f4e85fddef29af2",
+      "tests/test_archive_backup_cli.py": "dc0c8fe88245b73869eea4cedfa16bde094acaf193dfc6243da313749904c605"
+    }
+  },
+  "review": {
+    "independentWholeChangeRereview": true,
+    "remainingCritical": 0,
+    "remainingImportant": 0,
+    "remainingMinor": 0,
+    "importantFixed": "None reference could select backup mode from restore API; explicit required-reference boundary added and regression tested."
+  },
+  "preservation": {
+    "originalCleanCheckouts": 10,
+    "existingFilesByteIdenticalExceptDocumentedReadme": 409,
+    "collectorWriterSchemaUiChanged": false,
+    "automaticUserDataDeletion": false,
+    "cleanup": "Only exact files inside this invocation private staging directory; cleanup failures retain aliases for manual attention.",
+    "restrictedPreservationFilesAccessed": false,
+    "forcePush": false
+  },
+  "trustLimits": [
+    "Unsigned operator-supplied manifest; simultaneous replacement of reference and artifact is not authenticated",
+    "Trusted local POSIX directory without concurrent path manipulation; sidecar-name adversarial races and network filesystem semantics unsupported",
+    "Cooperative work limits do not hard-interrupt OS I/O or fsync",
+    "Shell reference redirection is caller-owned; report-output failure can leave a completed destination without its reference"
+  ],
+  "unverified": [
+    "Windows and Windows service execution (currently rejected before publication)",
+    "Actual device, field data and source authenticity",
+    "Power loss and physical disk exhaustion",
+    "Long-duration/high-volume backup load",
+    "Remote filesystems",
+    "Live restore activation and worker transition"
+  ],
+  "inheritedOutOfScope": [
+    "Previously disclosed direct numeric-rule Python generator/iterator behavior"
+  ]
+}
