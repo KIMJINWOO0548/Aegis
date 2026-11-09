@@ -1,0 +1,691 @@
+{
+  "schema_version": 1,
+  "verification_date_utc": "2026-11-09",
+  "base_branch": "improve/collector-liveness-recovery-20261109",
+  "base_sha": "0db6f5ebcd0e8375cff5f5278709df1a2997570c",
+  "new_branch": "improve/startup-config-recovery-20261109",
+  "visibility": "public unchanged",
+  "scope": "Python isolated module startup configuration I/O after Popen returns. Local synthetic Linux tests; no hardware/Windows service claim.",
+  "implementation": {
+    "separate_writer_executor": true,
+    "writer_slots": "N configured modules, maximum32",
+    "reader_slots": "separate N configured modules",
+    "fixed_startup_budget_seconds": 10,
+    "startup_clock_begins_after_popen_returns": true,
+    "same_clock_for_configuration_and_first_summary": true,
+    "reader_waits_for_successful_configuration": true,
+    "writer_future_cancelled_on_timeout_or_stop": false,
+    "unsuccessful_writer_teardown": "kill/wait owned child before stdin close, then actual writer/reader completion and pipes close",
+    "recovery_limit_per_start_lifetime": 3,
+    "recovery_delay_seconds": 2,
+    "healthy_frames_reset_budget": false,
+    "unreaped_io_blocks_replacement_and_start": true
+  },
+  "test_runs": {
+    "baseline": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 123.148,
+      "counts": {
+        "tests": 345,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "processes_py_sha256": "5b63c244b801cbf8c330bb8f07a07d6ce604fc49a0d896706a5f45520884bd6c"
+    },
+    "config-lifecycle-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_config_lifecycle.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.095,
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_config_lifecycle::test_configuration_write_keeps_loop_responsive_and_stop_kills_before_close",
+          "type": "failure",
+          "message": "AssertionError: Configuration write blocked the supervisor event loop"
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "processes_py_sha256": "5b63c244b801cbf8c330bb8f07a07d6ce604fc49a0d896706a5f45520884bd6c"
+    },
+    "config-lifecycle-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_config_lifecycle.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.812,
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "processes_py_sha256": "8ba60d82e273f869dad8058edf81c5fb3073d3fe5cfd20b97d663258d8d1f480"
+    },
+    "config-boundaries-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_config_lifecycle.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.644,
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "processes_py_sha256": "8ba60d82e273f869dad8058edf81c5fb3073d3fe5cfd20b97d663258d8d1f480"
+    },
+    "startup-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_startup_recovery.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 12.518,
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_startup_recovery::test_blocked_configuration_does_not_block_the_shared_event_loop",
+          "type": "failure",
+          "message": "AssertionError: Startup configuration blocked its event loop beyond the external wall-clock deadline."
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "processes_py_sha256": "5b63c244b801cbf8c330bb8f07a07d6ce604fc49a0d896706a5f45520884bd6c"
+    },
+    "startup-green-core": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_startup_recovery.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.274,
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "processes_py_sha256": "8ba60d82e273f869dad8058edf81c5fb3073d3fe5cfd20b97d663258d8d1f480"
+    },
+    "startup-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_startup_recovery.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 10.631,
+      "counts": {
+        "tests": 4,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_startup_recovery::test_startup_recovery_preserves_two_real_replay_workers_and_original_archive_rows",
+          "type": "failure",
+          "message": "AssertionError: assert ({'ok': False, 'error_type': 'AssertionError'} is not None and False)"
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "processes_py_sha256": "8ba60d82e273f869dad8058edf81c5fb3073d3fe5cfd20b97d663258d8d1f480"
+    },
+    "startup-peer-diagnostic": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_startup_recovery.py",
+        "-k",
+        "two_real"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 8.712,
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_startup_recovery::test_startup_recovery_preserves_two_real_replay_workers_and_original_archive_rows",
+          "type": "failure",
+          "message": "AssertionError: assert ({'ok': False, 'error_type': 'AssertionError', 'error_file': 'startup_recovery_harness.py', 'error_line': 178} is not None and False)"
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "processes_py_sha256": "8ba60d82e273f869dad8058edf81c5fb3073d3fe5cfd20b97d663258d8d1f480"
+    },
+    "startup-green-final": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_startup_recovery.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 7.503,
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "processes_py_sha256": "8ba60d82e273f869dad8058edf81c5fb3073d3fe5cfd20b97d663258d8d1f480"
+    },
+    "supervisor-regression": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_config_lifecycle.py",
+        "tests/test_collector_liveness.py",
+        "tests/test_worker_recovery.py",
+        "tests/test_processes.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 49.064,
+      "counts": {
+        "tests": 84,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": false,
+      "processes_py_sha256": "8ba60d82e273f869dad8058edf81c5fb3073d3fe5cfd20b97d663258d8d1f480"
+    }
+  },
+  "actual_baseline_red": [
+    {
+      "scenario": "responsiveness",
+      "deadline_expired": true,
+      "descendants_reaped": true,
+      "application_exit": 1,
+      "registered_workers": 1,
+      "configuration_writes": [
+        {
+          "bytes": 11399,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        }
+      ],
+      "inner": {
+        "ok": false,
+        "error_type": "AssertionError"
+      }
+    }
+  ],
+  "final_affected_external_harnesses": [
+    {
+      "scenario": "responsiveness",
+      "deadline_expired": false,
+      "descendants_reaped": true,
+      "application_exit": 0,
+      "registered_workers": 1,
+      "configuration_writes": [
+        {
+          "payload_bytes": 11415,
+          "prefill_bytes": 0,
+          "total_wire_bytes": 11415,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        }
+      ],
+      "inner": {
+        "ok": true,
+        "ticks": 12,
+        "attempts": 1,
+        "all_workers_exited": true
+      }
+    },
+    {
+      "scenario": "peer",
+      "deadline_expired": false,
+      "descendants_reaped": true,
+      "application_exit": 0,
+      "registered_workers": 4,
+      "configuration_writes": [
+        {
+          "payload_bytes": 581,
+          "prefill_bytes": 4096,
+          "total_wire_bytes": 4677,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        }
+      ],
+      "inner": {
+        "ok": true,
+        "ticks": 192,
+        "attempts": 4,
+        "peer_pid_preserved": true,
+        "peer_committed_while_config_pending": true,
+        "original_prefix_and_receipts_preserved": true,
+        "contiguous_archives": true,
+        "sqlite_integrity": true,
+        "all_workers_exited": true,
+        "scope": "Two real Linux workers, eight-signal synthetic replay, valid-JSON whitespace pipe prefill."
+      }
+    },
+    {
+      "scenario": "stop",
+      "deadline_expired": false,
+      "descendants_reaped": true,
+      "application_exit": 0,
+      "registered_workers": 1,
+      "configuration_writes": [
+        {
+          "payload_bytes": 11415,
+          "prefill_bytes": 0,
+          "total_wire_bytes": 11415,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        }
+      ],
+      "inner": {
+        "ok": true,
+        "ticks": 6,
+        "attempts": 1,
+        "all_workers_exited": true
+      }
+    },
+    {
+      "scenario": "budget",
+      "deadline_expired": false,
+      "descendants_reaped": true,
+      "application_exit": 0,
+      "registered_workers": 2,
+      "configuration_writes": [
+        {
+          "payload_bytes": 11415,
+          "prefill_bytes": 0,
+          "total_wire_bytes": 11415,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        },
+        {
+          "payload_bytes": 11415,
+          "prefill_bytes": 0,
+          "total_wire_bytes": 11415,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        }
+      ],
+      "inner": {
+        "ok": true,
+        "ticks": 22,
+        "attempts": 2,
+        "all_workers_exited": true
+      }
+    }
+  ],
+  "full_verification": {
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "-q"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 130.49,
+    "counts": {
+      "tests": 352,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "failures": [],
+    "existing_generated_evidence_restored_byte_for_byte": true,
+    "tested_source_unchanged_during_run": true,
+    "status": "PASS",
+    "passed": 351
+  },
+  "supplementary_checks": [
+    {
+      "label": "contract-drift",
+      "exit_code": 0,
+      "command": [
+        "python",
+        "scripts/generate_contracts.py",
+        "--check"
+      ]
+    },
+    {
+      "label": "contract-v34",
+      "exit_code": 0,
+      "command": [
+        "python",
+        "scripts/validate_v34.py"
+      ]
+    },
+    {
+      "label": "emulator-tests",
+      "exit_code": 0,
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ]
+    }
+  ],
+  "source_files": {
+    "src/aegis/processes.py": {
+      "sha256": "8ba60d82e273f869dad8058edf81c5fb3073d3fe5cfd20b97d663258d8d1f480",
+      "bytes": 27277
+    },
+    "tests/test_config_lifecycle.py": {
+      "sha256": "52a0ccc681e0848c39d0e52a08d3b8ebce79d1df9d0c821863b24f20e6255d37",
+      "bytes": 7301
+    },
+    "tests/test_startup_recovery.py": {
+      "sha256": "9b0de65fe507ab24f63c003cd5dbf800ae08d155e4d3f32e538b57e83e9e307a",
+      "bytes": 5844
+    },
+    "tests/startup_recovery_harness.py": {
+      "sha256": "8979e9b0e6c92583c28ce8c2e6078418d669c2a3a3b6466b7447b101bb70640e",
+      "bytes": 23023
+    }
+  },
+  "fault_injections": {
+    "core": "Actual long Unicode configuration payload larger than measured4KiB pipe; real module worker stopped before configuration read (premature-frame case uses a test child).",
+    "peer": "Short real SQLite archive; actual stopped module-worker stdin prefilled with4KiB valid JSON whitespace before actual configuration write/flush. payload/prefill/total wire recorded separately."
+  },
+  "setup_and_fixture_failures": {
+    "first_probe": {
+      "required_external_rescue": false,
+      "harness_exit_code": 0,
+      "elapsed_seconds": 1.168,
+      "config_bytes": 10598,
+      "pipe_capacity": 65536,
+      "config_exceeds_capacity": false,
+      "archive_path_utf8_bytes": 2642,
+      "archive_path_characters": 962,
+      "scope": "Linux synthetic child not reading stdin; valid long Unicode archive/log config; no real device.",
+      "recorded_child_reaped": false
+    },
+    "first_probe_cleanup": {
+      "target": "recorded synthetic startup-probe child",
+      "pid_output_omitted": true,
+      "running": false,
+      "disappeared": false,
+      "zombie_awaiting_host_reaper": true,
+      "kill_sent": false
+    },
+    "reduced_pipe_baseline_probe": {
+      "required_external_rescue": true,
+      "harness_exit_code": 0,
+      "elapsed_seconds": 2.116,
+      "config_bytes": 10636,
+      "pipe_capacity": 4096,
+      "config_exceeds_capacity": true,
+      "archive_path_utf8_bytes": 2661,
+      "archive_path_characters": 981,
+      "scope": "Linux synthetic child not reading stdin; valid long Unicode archive/log config; no real device.",
+      "recorded_child_reaped": true
+    },
+    "fixed_pipe_probe": {
+      "required_external_rescue": false,
+      "harness_exit_code": 0,
+      "elapsed_seconds": 1.067,
+      "config_bytes": 10632,
+      "pipe_capacity": 4096,
+      "config_exceeds_capacity": true,
+      "archive_path_utf8_bytes": 2659,
+      "archive_path_characters": 979,
+      "scope": "Linux synthetic child not reading stdin; valid long Unicode archive/log config; no real device.",
+      "recorded_child_reaped": true
+    },
+    "peer_first_attempt": "OS/WorkerConfig-valid approx3KiB path could not be opened by SQLite; no initial commits. Fixed test-only archive path/prefill, without changing product or prefix/cursor assertions.",
+    "interim_regression": "84 tests passed while three new/edited test files changed during parallel development. Not treated as final frozen-tree suite proof."
+  },
+  "rulings": [
+    {
+      "decision": "Separate writer-only N-slot pool",
+      "cost": "Up to32 additional writer threads; no32-module or long-duration capacity validation."
+    },
+    {
+      "decision": "Do not reset the startup clock after configuration succeeds",
+      "cost": "Slow configuration leaves less time for the first summary; on-site timeout not validated."
+    },
+    {
+      "decision": "Keep Popen and other existing synchronous OS calls outside this bounded I/O step",
+      "cost": "No bound on OS process creation/log-open stalls or force-cancellation of blocked OS threads."
+    }
+  ],
+  "not_run": [
+    "Physical equipment/customer data",
+    "Windows/Windows services",
+    "PowerShell7 Windows delivery case",
+    "Dotnet/WPF/WebView2 execution",
+    "Long-duration/32-module capacity/power-loss durability"
+  ],
+  "history_and_scope": {
+    "access_denied_material_retried_or_bypassed": false,
+    "previous_5075ccd_restored_or_equivalence_claimed": false,
+    "ui_or_design_changed": false,
+    "archive_schema_or_cursor_code_changed": false,
+    "service_install_or_deployment_performed": false
+  },
+  "raw_logs_databases_pids_or_actual_credentials_committed": false,
+  "full_external_harnesses": [
+    {
+      "scenario": "peer",
+      "deadline_expired": false,
+      "descendants_reaped": true,
+      "application_exit": 0,
+      "registered_workers": 4,
+      "configuration_writes": [
+        {
+          "payload_bytes": 577,
+          "prefill_bytes": 4096,
+          "total_wire_bytes": 4673,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        }
+      ],
+      "inner": {
+        "ok": true,
+        "ticks": 183,
+        "attempts": 4,
+        "peer_pid_preserved": true,
+        "peer_committed_while_config_pending": true,
+        "original_prefix_and_receipts_preserved": true,
+        "contiguous_archives": true,
+        "sqlite_integrity": true,
+        "all_workers_exited": true,
+        "scope": "Two real Linux workers, eight-signal synthetic replay, valid-JSON whitespace pipe prefill."
+      }
+    },
+    {
+      "scenario": "responsiveness",
+      "deadline_expired": false,
+      "descendants_reaped": true,
+      "application_exit": 0,
+      "registered_workers": 1,
+      "configuration_writes": [
+        {
+          "payload_bytes": 11411,
+          "prefill_bytes": 0,
+          "total_wire_bytes": 11411,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        }
+      ],
+      "inner": {
+        "ok": true,
+        "ticks": 12,
+        "attempts": 1,
+        "all_workers_exited": true
+      }
+    },
+    {
+      "scenario": "budget",
+      "deadline_expired": false,
+      "descendants_reaped": true,
+      "application_exit": 0,
+      "registered_workers": 2,
+      "configuration_writes": [
+        {
+          "payload_bytes": 11411,
+          "prefill_bytes": 0,
+          "total_wire_bytes": 11411,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        },
+        {
+          "payload_bytes": 11411,
+          "prefill_bytes": 0,
+          "total_wire_bytes": 11411,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        }
+      ],
+      "inner": {
+        "ok": true,
+        "ticks": 22,
+        "attempts": 2,
+        "all_workers_exited": true
+      }
+    },
+    {
+      "scenario": "stop",
+      "deadline_expired": false,
+      "descendants_reaped": true,
+      "application_exit": 0,
+      "registered_workers": 1,
+      "configuration_writes": [
+        {
+          "payload_bytes": 11411,
+          "prefill_bytes": 0,
+          "total_wire_bytes": 11411,
+          "capacity": 4096,
+          "config_valid": true,
+          "paths_valid": true
+        }
+      ],
+      "inner": {
+        "ok": true,
+        "ticks": 6,
+        "attempts": 1,
+        "all_workers_exited": true
+      }
+    }
+  ],
+  "preservation": {
+    "protected_files": 230,
+    "all_protected_files_byte_identical": true,
+    "includes": "All prior tracked evidence, UI/.NET/config/emulator/dependencies and every Python product source except processes.py",
+    "existing_generated_evidence_restored_byte_for_byte": true
+  },
+  "independent_read_only_review": {
+    "critical": 0,
+    "important": 0,
+    "minor_deferred": [
+      {
+        "finding": "Startup/stop RuntimeError wording names worker/reader but omits configuration writer.",
+        "effect": "Diagnostic wording only; writer is checked and blocks replacement correctly."
+      }
+    ],
+    "reviewer_reran_tests": false,
+    "full_run_verified_by_controller_after_review": true
+  },
+  "skip_reason": "Windows PowerShell7 delivery-script case (same baseline skip).",
+  "warnings": [
+    "Existing Starlette TestClient/httpx deprecation warning (1)."
+  ],
+  "dependency_installation": "No new dependencies; reused prior authorized pinned project venv.",
+  "author_check": {
+    "author_committer_match": true,
+    "authenticated_origin_owner_match": true,
+    "owner_github_noreply": true,
+    "source_commit": "0db6f5ebcd0e8375cff5f5278709df1a2997570c",
+    "actual_identity_omitted": true
+  },
+  "precommit_remote_check": {
+    "existing_heads_unchanged": 6,
+    "base_sha_unchanged": true,
+    "target_absent": true,
+    "previous_three_checkouts_unchanged_and_clean": true,
+    "visibility": "public unchanged",
+    "actual_commit_push_and_remote_sha_reported_separately": true
+  }
+}

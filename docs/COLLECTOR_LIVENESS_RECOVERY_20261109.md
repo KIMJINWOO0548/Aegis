@@ -1,5 +1,9 @@
 # 내부 수집 생존과 모듈별 유한 복구
 
+후속 기록: 이 보고서 당시 남긴 동기 설정 전송 한계는 별도
+[설정 전송 복구 단계](STARTUP_CONFIG_RECOVERY_20261109.md)에서 보완했습니다.
+아래는 기존0db6f5e 단계의 범위·시험과 판단을 보존한 기록입니다.
+
 2026-11-09 UTC. 원격 `improve/numeric-tag-integrity-20261109`의
 `bbb0ed10bb43b0aec65d9d0c8d7b79c40b9c4144`를 정확히 기준으로 했습니다.
 작업 브랜치는 `improve/collector-liveness-recovery-20261109`입니다.

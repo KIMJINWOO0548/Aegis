@@ -182,21 +182,24 @@ class ProcessCollector:
         self._workers = [ModuleProcess(source, self.archive_paths[source.deviceId]) for source in self.sources]
         self._evaluate, self._log_path = evaluate, log_path
         self._executor = None
+        self._writer_executor = None
         self._tasks = []
         self._stopping = False
         self._stop_event = None
         self._worker_timeout, self._restart_limit, self._restart_delay = worker_timeout, restart_limit, restart_delay
         self._readers = set()
+        self._writers = set()
 
     @property
     def logging_degraded(self):
         return any(worker.summary is not None and worker.summary[0].loggingDegraded for worker in self._workers)
 
     async def start(self):
-        if self._executor is not None:
+        if self._executor is not None or self._writer_executor is not None:
             raise RuntimeError("Module collector already started.")
         if (any(worker.process is not None and worker.process.poll() is None for worker in self._workers)
-                or any(not reader.done() for reader in self._readers)):
+                or any(not reader.done() for reader in self._readers)
+                or any(not writer.done() for writer in self._writers)):
             raise RuntimeError("An owned worker or reader has not been reaped.")
         for source in self.sources:
             token = os.environ.get(source.tokenEnvironment, "")
@@ -206,11 +209,14 @@ class ProcessCollector:
         self._stopping = False
         self._stop_event = asyncio.Event()
         self._readers.clear()
+        self._writers.clear()
         for worker in self._workers:
             worker.restart_count = 0
             worker.failure_reason = None
             worker.state = "STARTING"
         self._executor = ThreadPoolExecutor(max_workers=len(self.sources), thread_name_prefix="aegis-module")
+        # Long-lived readers cannot consume the slots needed for another module's startup write.
+        self._writer_executor = ThreadPoolExecutor(max_workers=len(self.sources), thread_name_prefix="aegis-config")
         self._tasks = [asyncio.create_task(self._monitor(worker)) for worker in self._workers]
 
     def _launch(self, worker, stderr):
@@ -222,12 +228,17 @@ class ProcessCollector:
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr, env=environment,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         worker.process = process
+        return process
+
+    def _write_config(self, worker, process):
         config = {"source": worker.source.model_dump(mode="json"), "archivePath": str(worker.archive.resolve()),
                   "evaluate": self._evaluate,
                   "logPath": str(worker.archive.with_suffix(".events.jsonl").resolve()) if self._log_path is not None else None}
-        process.stdin.write(json.dumps(config, separators=(",", ":")).encode() + b"\n")
+        line = json.dumps(config, separators=(",", ":")).encode() + b"\n"
+        if len(line) > MAX_FRAME_BYTES:
+            raise ValueError("Module configuration exceeds its bounded line protocol.")
+        process.stdin.write(line)
         process.stdin.flush()
-        return process
 
     def _read(self, worker, process):
         while True:
@@ -272,10 +283,43 @@ class ProcessCollector:
             if time.monotonic() - max(started, received) > self._worker_timeout:
                 raise TimeoutError("WORKER_SUMMARY_TIMEOUT")
 
-    async def _reap(self, process, reader):
+    async def _wait_configuration(self, writer, started):
+        while not self._stopping:
+            done, _ = await asyncio.wait({writer}, timeout=min(.1, self._worker_timeout))
+            if self._stopping:
+                return False
+            # No frame or partial write renews this fixed startup deadline.
+            if time.monotonic() - started > self._worker_timeout:
+                raise TimeoutError("WORKER_CONFIG_TIMEOUT")
+            if done:
+                await writer
+                return True
+        return False
+
+    @staticmethod
+    def _kill(process):
+        if process.poll() is None:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+        process.wait(timeout=5)
+
+    async def _reap(self, process, reader, writer=None):
         if process is None:
             return True
         try:
+            configured = (writer is None or (writer.done() and not writer.cancelled()
+                                             and writer.exception() is None))
+            if not configured:
+                # close() may wait on the writer's buffered lock or flush its residual bytes.
+                # Kill/wait first to release the pipe, then join the actual uncancelled writer.
+                await asyncio.to_thread(self._kill, process)
+            if writer is not None:
+                done, _ = await asyncio.wait({writer}, timeout=2)
+                if not done or writer.cancelled():
+                    return False
+                writer.exception()
             await asyncio.to_thread(self._finish, process)
             if reader is not None:
                 # A timeout must not cancel the future and disguise a still-blocked read thread.
@@ -295,18 +339,26 @@ class ProcessCollector:
             worker.failure_reason = None
             process = None
             reader = None
+            writer = None
+            configured = False
             stderr = None
             try:
                 stderr = worker.archive.with_suffix(".stderr.log").open("ab")
-                started = time.monotonic()
                 process = self._launch(worker, stderr)
-                reader = asyncio.get_running_loop().run_in_executor(self._executor, self._read, worker, process)
-                self._readers.add(reader)
-                reader.add_done_callback(self._readers.discard)
-                await self._watch(worker, process, reader, started)
-                worker.failure_reason = "WORKER_EXITED"
+                started = time.monotonic()  # Popen's own OS call is outside this I/O deadline.
+                loop = asyncio.get_running_loop()
+                writer = loop.run_in_executor(self._writer_executor, self._write_config, worker, process)
+                self._writers.add(writer)
+                writer.add_done_callback(self._writers.discard)
+                configured = await self._wait_configuration(writer, started)
+                if configured:
+                    reader = loop.run_in_executor(self._executor, self._read, worker, process)
+                    self._readers.add(reader)
+                    reader.add_done_callback(self._readers.discard)
+                    await self._watch(worker, process, reader, started)
+                    worker.failure_reason = "WORKER_EXITED"
             except TimeoutError:
-                worker.failure_reason = "WORKER_SUMMARY_TIMEOUT"
+                worker.failure_reason = "WORKER_SUMMARY_TIMEOUT" if configured else "WORKER_CONFIG_TIMEOUT"
             except Exception as error:
                 worker.failure_reason = "WORKER_PROTOCOL_FAILED" if isinstance(error, ValueError) else "WORKER_FAILED"
                 if stderr is not None:
@@ -318,7 +370,7 @@ class ProcessCollector:
             finally:
                 with worker.publication_lock:
                     worker.state = "STOPPED" if self._stopping else "RESTARTING"
-                reaped = await self._reap(process or worker.process, reader)
+                reaped = await self._reap(process or worker.process, reader, writer)
                 if stderr is not None:
                     try:
                         stderr.close()
@@ -340,17 +392,21 @@ class ProcessCollector:
                     pass
 
     async def stop(self):
-        if self._executor is None:
+        if self._executor is None and self._writer_executor is None:
             return
         self._stopping = True
         self._stop_event.set()
         # Each monitor owns its child's teardown; do not race two _finish calls on its pipes.
         await asyncio.gather(*self._tasks, return_exceptions=True)
         pending_readers = any(not reader.done() for reader in self._readers)
-        await asyncio.to_thread(self._executor.shutdown, wait=not pending_readers)
+        pending_writers = any(not writer.done() for writer in self._writers)
+        for executor, pending in ((self._executor, pending_readers), (self._writer_executor, pending_writers)):
+            if executor is not None:
+                await asyncio.to_thread(executor.shutdown, wait=not pending)
         self._executor = None
+        self._writer_executor = None
         self._tasks.clear()
-        if (pending_readers or any(worker.process is not None and worker.process.poll() is None
+        if (pending_readers or pending_writers or any(worker.process is not None and worker.process.poll() is None
                                    for worker in self._workers)
                 or any(worker.failure_reason == "WORKER_CLEANUP_FAILED" for worker in self._workers)):
             raise RuntimeError("An owned worker or reader could not be reaped; automatic recovery is blocked.")
