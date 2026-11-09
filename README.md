@@ -1,5 +1,9 @@
 # Aegis Insight
 
+raw-v1과 nullable adapter store는 opt-in 공통 읽기 CLI로 저장 원본을 함께 조회합니다.
+누락된 원본 시각·순번은 채우지 않고 최초 수신 시각 기준과 출처 근거를 구분합니다.
+[읽기 계약·조회 예제·한도와 남은 쓰기 이행](docs/DUAL_STORE_READ_20261109.md).
+
 ## 모듈 생존·유한 복구 — 2026-11-09
 
 Python 모듈 분리 수집에서 내부 작업 종료와 살아 있는 무응답 worker를 감지하고 해당 모듈만

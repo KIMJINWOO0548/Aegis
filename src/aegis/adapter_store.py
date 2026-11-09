@@ -76,6 +76,89 @@ def _receipt(value):
 def _sql_normal(value):return ' '.join(value.split()).lower()
 
 
+def validate_adapter_schema(connection):
+    """Validate an existing connection without configuring or owning its lifecycle."""
+    if (connection.execute('PRAGMA application_id').fetchone()[0]!=APPLICATION_ID
+            or connection.execute('PRAGMA user_version').fetchone()[0]!=STORE_VERSION):
+        raise StoreError('STORE_INTEGRITY')
+    objects=connection.execute('SELECT type,name,tbl_name,sql FROM sqlite_master').fetchall()
+    indexes={'sqlite_autoindex_adapter_pages_1':'adapter_pages',
+             'sqlite_autoindex_adapter_records_1':'adapter_records'}
+    if {name for _,name,_,_ in objects}!=set(SCHEMA)|set(indexes):
+        raise StoreError('STORE_INTEGRITY')
+    for kind,name,table,sql in objects:
+        if name in SCHEMA:
+            if kind!='table' or table!=name or not isinstance(sql,str) or _sql_normal(sql)!=_sql_normal(SCHEMA[name]):
+                raise StoreError('STORE_INTEGRITY')
+        elif kind!='index' or table!=indexes[name] or sql is not None:
+            raise StoreError('STORE_INTEGRITY')
+    if connection.execute('PRAGMA integrity_check(1)').fetchall()!=[('ok',)]:
+        raise StoreError('STORE_INTEGRITY')
+
+def validate_adapter_snapshot(connection,budget,*,expected_descriptor=None,expected_fixture_sha=None) -> AdapterAdmission:
+    """Reconstruct verified evidence from the caller's existing read snapshot.
+
+    The caller owns the transaction, progress handler and connection. No fixture
+    is read from the source and no persistence configuration or cursor is changed.
+    Expected binding is optional for a reader, but retained for writer reopen.
+    """
+    c=connection;budget.check()
+    if c.execute('PRAGMA page_count').fetchone()[0]*c.execute('PRAGMA page_size').fetchone()[0]>MAX_STORE_BYTES:
+        raise StoreError('STORE_LIMIT')
+    validate_adapter_schema(c)
+    if (c.execute('SELECT count(*) FROM store_meta').fetchone()[0]!=1
+            or c.execute('SELECT count(*) FROM store_state').fetchone()[0]!=1):
+        raise StoreError('STORE_INTEGRITY')
+    if (c.execute('SELECT count(*) FROM adapter_pages').fetchone()[0]>MAX_ACCEPTED_PAGES
+            or c.execute('SELECT count(*) FROM adapter_records').fetchone()[0]>MAX_ADMITTED_RECORDS):
+        raise StoreError('STORE_LIMIT')
+    size=c.execute('SELECT length(fixture_wire) FROM store_meta WHERE id=1').fetchone()
+    if size is None or type(size[0]) is not int or size[0]>MAX_FIXTURE_BYTES:
+        raise StoreError('STORE_LIMIT')
+    meta=c.execute('SELECT adapter_id,adapter_version,stream_id,fixture_sha,fixture_wire_sha,fixture_wire FROM store_meta WHERE id=1').fetchone()
+    if meta is None:raise StoreError('STORE_INTEGRITY')
+    if ((expected_descriptor is not None and meta[:3]!=(expected_descriptor.adapterId,
+            expected_descriptor.adapterVersion,str(expected_descriptor.streamId)))
+            or (expected_fixture_sha is not None and meta[3]!=expected_fixture_sha)):
+        raise StoreError('STORE_BINDING_MISMATCH')
+    if not isinstance(meta[5],bytes) or _sha(meta[5])!=meta[4]:raise StoreError('STORE_INTEGRITY')
+    stored=SyntheticReplayAdapter(meta[5])
+    descriptor=stored.descriptor
+    original=_decode(stored.fixture_wire,MAX_FIXTURE_BYTES)
+    if (meta[:3]!=(descriptor.adapterId,descriptor.adapterVersion,str(descriptor.streamId))
+            or _sha(_encode(original))!=meta[3]):
+        raise StoreError('STORE_INTEGRITY')
+    expected_pages={_key(p['afterToken']):_sha(_encode(p['response'])) for p in original['pages']}
+    for table,column,limit in (('adapter_pages','wire',MAX_PAGE_BYTES),('adapter_records','record_json',MAX_PAGE_BYTES)):
+        maximum=c.execute(f'SELECT coalesce(max(length(CAST({column} AS BLOB))),0) FROM {table}').fetchone()[0]
+        if maximum>limit:raise StoreError('STORE_LIMIT')
+    admission=AdapterAdmission(descriptor.adapterId,descriptor.adapterVersion,descriptor.streamId)
+    pages=c.execute('SELECT ordinal,after_key,next_key,canonical_sha,wire_sha,wire,received_at_utc FROM adapter_pages ORDER BY ordinal').fetchall()
+    for index,(ordinal,after,next_key,canonical_sha,wire_sha,wire,received) in enumerate(pages):
+        budget.check()
+        if type(ordinal) is not int or ordinal!=index or not isinstance(wire,bytes) or _sha(wire)!=wire_sha:
+            raise StoreError('STORE_INTEGRITY')
+        parsed=validate_page(wire)
+        if (_sha(parsed.canonical)!=canonical_sha or expected_pages.get(after)!=canonical_sha
+                or after!=_key(parsed.model.afterToken) or next_key!=_key(parsed.model.nextToken)):
+            raise StoreError('STORE_INTEGRITY')
+        result=admission.admit(wire,_receipt(received))
+        if result['status'] not in ('ADMITTED','END_OF_SYNTHETIC_INPUT'):
+            raise StoreError('STORE_INTEGRITY')
+    records=c.execute('SELECT record_id,record_sha,record_json,first_received_at_utc FROM adapter_records ORDER BY record_id').fetchall()
+    expected=[]
+    for entry in admission.records:
+        budget.check();encoded=_encode(entry['record'])
+        expected.append((entry['record']['recordId'],_sha(encoded),encoded.decode('utf-8'),entry['firstReceivedAtUtc']))
+    if records!=sorted(expected):raise StoreError('STORE_INTEGRITY')
+    state=c.execute('SELECT cursor_key,ended,page_count,record_count FROM store_state WHERE id=1').fetchone()
+    if (state!=(_key(admission.cursor),int(admission.ended),len(pages),len(records))
+            or any(type(v) is not int for v in state[1:])):
+        raise StoreError('STORE_INTEGRITY')
+    budget.check()
+    return admission
+
+
 def _regular_info(path):
     info=os.lstat(path)
     if not stat.S_ISREG(info.st_mode) or info.st_nlink!=1:
@@ -194,72 +277,11 @@ class AdapterStore:
         if self._connection is not None and self._connection.in_transaction:self._connection.rollback()
 
     def _schema(self,connection):
-        if (connection.execute('PRAGMA application_id').fetchone()[0]!=APPLICATION_ID
-                or connection.execute('PRAGMA user_version').fetchone()[0]!=STORE_VERSION):
-            raise StoreError('STORE_INTEGRITY')
-        objects=connection.execute('SELECT type,name,tbl_name,sql FROM sqlite_master').fetchall()
-        indexes={'sqlite_autoindex_adapter_pages_1':'adapter_pages',
-                 'sqlite_autoindex_adapter_records_1':'adapter_records'}
-        if {name for _,name,_,_ in objects}!=set(SCHEMA)|set(indexes):
-            raise StoreError('STORE_INTEGRITY')
-        for kind,name,table,sql in objects:
-            if name in SCHEMA:
-                if kind!='table' or table!=name or not isinstance(sql,str) or _sql_normal(sql)!=_sql_normal(SCHEMA[name]):
-                    raise StoreError('STORE_INTEGRITY')
-            elif kind!='index' or table!=indexes[name] or sql is not None:
-                raise StoreError('STORE_INTEGRITY')
-        if connection.execute('PRAGMA integrity_check(1)').fetchall()!=[('ok',)]:
-            raise StoreError('STORE_INTEGRITY')
+        return validate_adapter_schema(connection)
 
     def _read_current(self,budget):
-        c=self._connection;budget.check()
-        if c.execute('PRAGMA page_count').fetchone()[0]*c.execute('PRAGMA page_size').fetchone()[0]>MAX_STORE_BYTES:
-            raise StoreError('STORE_LIMIT')
-        self._schema(c)
-        if (c.execute('SELECT count(*) FROM store_meta').fetchone()[0]!=1
-                or c.execute('SELECT count(*) FROM store_state').fetchone()[0]!=1):
-            raise StoreError('STORE_INTEGRITY')
-        if (c.execute('SELECT count(*) FROM adapter_pages').fetchone()[0]>MAX_ACCEPTED_PAGES
-                or c.execute('SELECT count(*) FROM adapter_records').fetchone()[0]>MAX_ADMITTED_RECORDS):
-            raise StoreError('STORE_LIMIT')
-        size=c.execute('SELECT length(fixture_wire) FROM store_meta WHERE id=1').fetchone()
-        if size is None or type(size[0]) is not int or size[0]>MAX_FIXTURE_BYTES:
-            raise StoreError('STORE_LIMIT')
-        meta=c.execute('SELECT adapter_id,adapter_version,stream_id,fixture_sha,fixture_wire_sha,fixture_wire FROM store_meta WHERE id=1').fetchone()
-        if (meta is None or meta[:4]!=(self._descriptor.adapterId,self._descriptor.adapterVersion,
-                str(self._descriptor.streamId),self._fixture_sha)):
-            raise StoreError('STORE_BINDING_MISMATCH')
-        if not isinstance(meta[5],bytes) or _sha(meta[5])!=meta[4]:raise StoreError('STORE_INTEGRITY')
-        stored=SyntheticReplayAdapter(meta[5])
-        if _sha(_encode(_decode(stored.fixture_wire,MAX_FIXTURE_BYTES)))!=meta[3]:raise StoreError('STORE_INTEGRITY')
-        for table,column,limit in (('adapter_pages','wire',MAX_PAGE_BYTES),('adapter_records','record_json',MAX_PAGE_BYTES)):
-            maximum=c.execute(f'SELECT coalesce(max(length(CAST({column} AS BLOB))),0) FROM {table}').fetchone()[0]
-            if maximum>limit:raise StoreError('STORE_LIMIT')
-        admission=AdapterAdmission(self._descriptor.adapterId,self._descriptor.adapterVersion,self._descriptor.streamId)
-        pages=c.execute('SELECT ordinal,after_key,next_key,canonical_sha,wire_sha,wire,received_at_utc FROM adapter_pages ORDER BY ordinal').fetchall()
-        for index,(ordinal,after,next_key,canonical_sha,wire_sha,wire,received) in enumerate(pages):
-            budget.check()
-            if type(ordinal) is not int or ordinal!=index or not isinstance(wire,bytes) or _sha(wire)!=wire_sha:
-                raise StoreError('STORE_INTEGRITY')
-            parsed=validate_page(wire)
-            if (_sha(parsed.canonical)!=canonical_sha or self._expected_pages.get(after)!=canonical_sha
-                    or after!=_key(parsed.model.afterToken) or next_key!=_key(parsed.model.nextToken)):
-                raise StoreError('STORE_INTEGRITY')
-            result=admission.admit(wire,_receipt(received))
-            if result['status'] not in ('ADMITTED','END_OF_SYNTHETIC_INPUT'):
-                raise StoreError('STORE_INTEGRITY')
-        records=c.execute('SELECT record_id,record_sha,record_json,first_received_at_utc FROM adapter_records ORDER BY record_id').fetchall()
-        expected=[]
-        for entry in admission.records:
-            budget.check();encoded=_encode(entry['record'])
-            expected.append((entry['record']['recordId'],_sha(encoded),encoded.decode('utf-8'),entry['firstReceivedAtUtc']))
-        if records!=sorted(expected):raise StoreError('STORE_INTEGRITY')
-        state=c.execute('SELECT cursor_key,ended,page_count,record_count FROM store_state WHERE id=1').fetchone()
-        if (state!=(_key(admission.cursor),int(admission.ended),len(pages),len(records))
-                or any(type(v) is not int for v in state[1:])):
-            raise StoreError('STORE_INTEGRITY')
-        budget.check()
-        return admission
+        return validate_adapter_snapshot(self._connection,budget,
+            expected_descriptor=self._descriptor,expected_fixture_sha=self._fixture_sha)
 
     def _proof(self):
         meta=self._connection.execute('SELECT id,adapter_id,adapter_version,stream_id,fixture_sha,fixture_wire_sha FROM store_meta').fetchone()
