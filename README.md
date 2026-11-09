@@ -39,6 +39,10 @@ device/run을 명시하는 제한된 조회이며 큰 run은 부분 성공 없�
 수신 시각 나이와 마지막 commit 측정값을 구분하고 정책 미설정·측정 불가·임계 초과를 명시합니다.
 [진단 절차·SQLite 읽기 경계·운영 한계](docs/STORAGE_DIAGNOSTICS_20261109.md).
 
+독립 어댑터 입력 계약은 별도 합성 replay CLI에서 원본 메타데이터의 제공/누락과 재전송을 검증합니다.
+기존 SIMULATOR 수집·저장에는 연결하지 않으며 새 검증 cursor는 메모리 제안값입니다.
+[입력 스키마·출처·timeout·보존 경계와 후속 이행](docs/ADAPTER_INPUT_20261109.md).
+
 ## Retained-summary investigation — 2026-11-06
 
 Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).

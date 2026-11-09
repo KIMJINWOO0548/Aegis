@@ -1,0 +1,185 @@
+{
+  "schemaVersion": "aegis-adapter-input-evidence-1",
+  "date": "2026-11-09",
+  "baseCommit": "2094fbee4f0525daa89bddbcc1c0ca65557dcaee",
+  "branch": "improve/synthetic-adapter-contract-20261109",
+  "historyScope": "Independent accessible remote history, not restoration of restricted preservation copies or unavailable 5075ccd.",
+  "environment": {
+    "os": "Linux",
+    "python": "3.12.14",
+    "sqlite": "3.53.1",
+    "syntheticTemporaryDataOnly": true,
+    "newDependencies": false
+  },
+  "implemented": [
+    "Independent exact-version adapter-input-1 and synthetic-adapter-fixture-1 contracts",
+    "Explicit nullable original timestamp/sequence/run with consistent PROVIDED/NOT_PROVIDED states",
+    "Separate host full-response receipt and delivery stream/token/record identity; no fabricated original metadata",
+    "Separate declared origin, origin evidence, acquisition and access axes; built-in synthetic replay/read-only binding only",
+    "Whole-page atomic single-state in-memory admission with canonical replay/record conflict checks and first receipt preservation",
+    "Idempotent retransmission including empty EOF, no-data distinction, token-loop/capacity/descriptor guards",
+    "Entire fixture descriptor pinning and one reachable finite chain; hidden or missing pages rejected",
+    "Allowlisted built-in reader, strict bounded requests, finite cooperative read timeout/retries and serialized session polls",
+    "Original fixture bytes/hash separate from generated synthetic canonical binary64 response wire",
+    "Bounded regular-file nonblocking/no-follow CLI and summary-only private errors"
+  ],
+  "sourceSemantics": {
+    "admittedOrigin": "SYNTHETIC",
+    "originEvidence": "DECLARED_ONLY",
+    "admittedAcquisition": "SOURCE_BUFFER_REPLAY",
+    "accessMode": "READ_ONLY",
+    "schemaOnlyAdditionalDeclarations": [
+      "DEVICE",
+      "UNKNOWN",
+      "SNAPSHOT_READ"
+    ],
+    "realEquipmentSupported": false,
+    "hardRealtimeGuaranteed": false,
+    "originalClockAccuracyAndChronologyVerified": false,
+    "sourceMetadataFilledFromReceiptOrDeliveryTokens": false
+  },
+  "persistenceBoundary": {
+    "status": "NOT_PERSISTED",
+    "legacyArchiveIntegration": "DISABLED",
+    "durableAck": false,
+    "restartDurableDeduplication": false,
+    "sourceAckOrCheckpoint": false,
+    "sqliteWrites": false,
+    "legacyCursorModified": false,
+    "companyLibrariesOrRealDataUsed": false,
+    "dynamicPluginsCommandsUrlsOrDeviceControl": false
+  },
+  "evidenceBoundary": {
+    "directPageWire": "Exact supplied bytes retained for accepted pages",
+    "recordEvidence": "Canonical parsed JSON retained separately from normalized typed models",
+    "syntheticResponseWire": "Generated CANONICAL_PARSED_JSON_FLOAT64_SIGNALS, not original fixture lexemes",
+    "fixtureWire": "Exact caller-selected bytes retained separately with unsigned SHA256",
+    "arbitraryPrecisionDecimalClaimed": false
+  },
+  "bounds": {
+    "fixtureBytes": 1048576,
+    "responseBytes": 65536,
+    "recordsPerPage": 64,
+    "signalsPerRecord": 512,
+    "fixtureTotalRecords": 1024,
+    "admittedUniqueRecords": 1024,
+    "acceptedPages": 64,
+    "tokenAsciiLength": 128,
+    "readTimeoutMs": [
+      1,
+      10000
+    ],
+    "attempts": [
+      1,
+      3
+    ],
+    "cliPages": [
+      1,
+      64
+    ],
+    "outputBytes": 65536,
+    "cancellation": "Cooperative built-in async reads; no blocking native-driver isolation/hard wall guarantee"
+  },
+  "tests": {
+    "focused": {
+      "passed": 87,
+      "failures": 0,
+      "skipped": 0,
+      "seconds": 7.741,
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_adapter_input.py",
+        "tests/test_adapter_input_cli.py"
+      ]
+    },
+    "full": {
+      "passed": 932,
+      "failures": 0,
+      "skipped": 1,
+      "seconds": 198.899,
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "skipScope": "Existing Windows PowerShell delivery test",
+      "existingWarning": "Existing Starlette/httpx TestClient deprecation"
+    },
+    "emulatorPassed": 26,
+    "contractsCheck": true,
+    "v34Check": true,
+    "covered": [
+      "Null/provided metadata and exact integer/timezone evidence; absent keys/status contradictions rejected",
+      "Pinned versions/origin/evidence/method/access/adapter/stream identities",
+      "Wrong numbers, naive/invalid time, duplicate signals/records and whole-page atomic rejection",
+      "Canonical identical/changed retransmission, first receipt, exact overlap, stale/looped tokens and limits",
+      "Empty EOF replay, transient no-data, strict read request and retained wire/fixture evidence",
+      "Finite timeout exhaustion and successful retry, external cancellation and no leftover supported read tasks",
+      "Serialized concurrent polls, built-in-only adapter execution, before-validation host receipt capture",
+      "Actual subprocess malformed JSON/NaN/size/page/record/FIFO/symlink/argument/error/privacy checks",
+      "Existing SIMULATOR requirements and legacy SQLite raw/first receipt/cursor/gap remain intact"
+    ],
+    "tdd": {
+      "initialCoreMissingModuleFailures": 35,
+      "initialCliMissingModuleFailures": 34,
+      "retransmissionAndRequestRed": {
+        "expectedFailures": 4,
+        "controlPassed": 1
+      },
+      "fixtureAndRequestBoundaryRed": {
+        "expectedFailures": 10,
+        "controlPassed": 1
+      },
+      "receiptTimingRed": {
+        "expectedFailures": 1,
+        "successfulRetryControlPassed": 1
+      },
+      "invalidInitialTestCollection": "A reserved pytest parameter name was corrected before the meaningful regression RED run."
+    },
+    "testedPythonFiles": 62,
+    "testedSourcesUnchanged": true,
+    "generatedEvidenceRestoredByteForByte": true,
+    "newSourceSha256": {
+      "src/aegis/adapter_input.py": "496dd45866eb86408df339342ef5bc181100de67609bb6b806bb4e4ff26773b5",
+      "tests/test_adapter_input.py": "516eeb60e8a2bce00241faab38a64746a5db9af8dbdc47d4c8163696380eccbc",
+      "tests/test_adapter_input_cli.py": "1bace4b11a880643cd4d6b2ed4325bd7ba28e6387bec1441bd686d9c14240e4c"
+    }
+  },
+  "example": {
+    "file": "examples/adapter-input.synthetic.json",
+    "fixtureBytes": 2841,
+    "sha256": "58f11876d7842151dfeaba324dfdf6d0d09e4d898de2f73ef41e0c0bd18fac8f",
+    "actualCliExit": 0,
+    "acceptedRecords": 2,
+    "pageReads": 2,
+    "missingTimestampRecords": 1,
+    "missingSequenceRecords": 1,
+    "persistenceStatus": "NOT_PERSISTED"
+  },
+  "review": {
+    "independentWholeChangeReview": true,
+    "remainingCritical": 0,
+    "remainingImportant": 0,
+    "remainingMinor": 0,
+    "reviewedSourceSha256": "496dd45866eb86408df339342ef5bc181100de67609bb6b806bb4e4ff26773b5"
+  },
+  "preservation": {
+    "originalCleanCheckouts": 12,
+    "existingFilesIdenticalExceptReadme": 421,
+    "legacySourceConfigModelsArchiveSchemaIpcApiHealthUiModified": false,
+    "automaticDeleteOrOverwrite": false,
+    "restrictedPreservationFilesAccessed": false,
+    "forcePush": false
+  },
+  "unverified": [
+    "Physical devices, hardware/source authentication, company libraries or real field data",
+    "Windows/Windows services and CLI file-loading support there",
+    "Production operation, hard realtime/blocking-driver isolation and long-duration/high-volume performance",
+    "Persistent sink, source ACK, archive-v2 migration/rollback, durable restart deduplication and IPC/API negotiation",
+    "Remote CI result"
+  ]
+}
