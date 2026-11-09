@@ -83,6 +83,10 @@ value9에 v1 upper10을 적용하면 WITHIN_LIMITS, v2 upper8이면 ABOVE_UPPER�
 stateless 구현은 버전 증가나 과거 registry의 불변성을 강제하지 않습니다. 결과는 입력과 분리해
 복사하므로 뒤의 설정/입력 변경이 앞의 결과를 바꾸지 않습니다.
 
+후속 [선택 기준 검증](RULE_VERSION_LOCK_20261109.md)은 `--rule-lock`을 지정하면 같은 ID/버전의
+내용 충돌과 미등록 버전을 거부합니다. 옵션 없는 이 단계의 기존 CLI/report는 그대로이며
+검증했다는 표시를 만들지 않습니다. unsigned 기준 파일의 신뢰 경계는 후속 문서를 확인하세요.
+
 ## Archive CLI
 
 기존 설치 환경에서 다음 형태로 실행합니다. 설정의 device/tag/unit은 조회할 보존본과 일치하도록

@@ -265,9 +265,14 @@ def evaluate_rule(rule, batch, *, evaluated_at):
     return result
 
 
-def review_archive(config, archive, device_id, run_id, from_utc, to_utc, *, max_batches=64, evaluated_at=None):
+def review_archive(config, archive, device_id, run_id, from_utc, to_utc, *, max_batches=64, evaluated_at=None,
+                   rule_lock=None):
     if not isinstance(config, LimitRuleConfig):
         raise _config_error()
+    verification = None
+    if rule_lock is not None:
+        from aegis.rule_versions import verify_rule_lock
+        verification = verify_rule_lock(config.model_dump(mode="json"), rule_lock)
     rules = [rule for rule in config.rules if rule.target.deviceId == device_id]
     if not rules:
         raise LimitRuleError("NO_APPLICABLE_RULES", "No configured numeric rules apply to the selected device.")
@@ -278,7 +283,7 @@ def review_archive(config, archive, device_id, run_id, from_utc, to_utc, *, max_
     results = [evaluate_rule(rule, batch, evaluated_at=reference)
                for batch in archive_result["batches"] for rule in rules]
     snapshot = config.model_dump(mode="json")
-    return {"schemaVersion": "numeric-limit-review-1", "evaluationMode": "OFFLINE_ARCHIVE_REVIEW",
+    report = {"schemaVersion": "numeric-limit-review-1", "evaluationMode": "OFFLINE_ARCHIVE_REVIEW",
         "referenceTimeBasis": "SYSTEM_UTC" if evaluated_at is None else "EXPLICIT_REPLAY_UTC",
         "evaluatedAtUtc": reference.isoformat(), "configId": config.configId, "configVersion": config.configVersion,
         "configSha256": _digest(snapshot), "configSnapshot": snapshot,
@@ -287,6 +292,9 @@ def review_archive(config, archive, device_id, run_id, from_utc, to_utc, *, max_
         "selectionStatus": "HAS_SAMPLES" if results else "NO_SAMPLES",
         "counts": {outcome: sum(row["outcome"] == outcome for row in results) for outcome in OUTCOMES},
         "results": results}
+    if verification is not None:
+        report["ruleVersionVerification"] = verification
+    return report
 
 
 class _Parser(argparse.ArgumentParser):
@@ -295,6 +303,8 @@ class _Parser(argparse.ArgumentParser):
 
 
 def main(argv=None):
+    from aegis.rule_versions import RuleVersionError, load_rule_lock
+
     parser = _Parser(description="Read-only offline archive review with configured numeric limits.")
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--archive", type=Path, required=True)
@@ -304,11 +314,13 @@ def main(argv=None):
     parser.add_argument("--to-utc", required=True)
     parser.add_argument("--max-batches", type=int, default=64)
     parser.add_argument("--evaluated-at-utc")
+    parser.add_argument("--rule-lock", type=Path)
     try:
         args = parser.parse_args(argv)
         report = review_archive(load_rule_config(args.config), args.archive, args.device, args.run_id,
-            args.from_utc, args.to_utc, max_batches=args.max_batches, evaluated_at=args.evaluated_at_utc)
-    except (LimitRuleError, RawQueryError) as error:
+            args.from_utc, args.to_utc, max_batches=args.max_batches, evaluated_at=args.evaluated_at_utc,
+            rule_lock=load_rule_lock(args.rule_lock) if args.rule_lock is not None else None)
+    except (LimitRuleError, RawQueryError, RuleVersionError) as error:
         print(json.dumps({"status": "UNAVAILABLE", "code": error.code, "message": error.message}), file=sys.stderr)
         raise SystemExit(2) from None
     print(json.dumps(report, ensure_ascii=False, allow_nan=False))

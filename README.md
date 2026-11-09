@@ -28,6 +28,9 @@ device/run을 명시하는 제한된 조회이며 큰 run은 부분 성공 없�
 규칙 버전·적용 설정·근거를 기록하고 결측·불량·오래된 값은 평가 불가로 구분합니다.
 [설정형 규칙·평가 기준·검증 범위](docs/NUMERIC_LIMIT_RULES_20261109.md).
 
+선택 `--rule-lock`으로 같은 규칙 ID·버전의 내용 충돌과 미등록 버전을 조회 전에 거부합니다.
+[기준 생성·버전 추가·재현과 신뢰 경계](docs/RULE_VERSION_LOCK_20261109.md).
+
 ## Retained-summary investigation — 2026-11-06
 
 Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).
