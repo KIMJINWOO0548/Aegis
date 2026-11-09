@@ -1,6 +1,7 @@
 """Bounded read-only acquisition with optional development advisory evaluation."""
 
 import asyncio
+import errno
 import json
 import os
 import sqlite3
@@ -204,6 +205,16 @@ class CollectorLivenessError(RuntimeError):
     """A fixed failure code, independent of source freshness or sample count."""
 
 
+def _storage_failure_reason(error):
+    if isinstance(error, sqlite3.Error):
+        code = getattr(error, "sqlite_errorcode", None)
+        if type(code) is int and (code & 0xff) == sqlite3.SQLITE_FULL:
+            return "ARCHIVE_FULL"
+    elif isinstance(error, OSError) and error.errno == errno.ENOSPC:
+        return "ARCHIVE_FULL"
+    return "ARCHIVE_UNAVAILABLE"
+
+
 class Collector:
     def __init__(self, sources: list[SourceConfig], environment=None, *, client=None,
                  interval=1.0, timeout=.5, stale_after=3.0, log_path=None,
@@ -343,17 +354,17 @@ class Collector:
             self._states[index] = replace(previous, state="DISCONNECTED", reason="POLL_TIMEOUT")
         except httpx.HTTPError:
             self._states[index] = replace(previous, state="DISCONNECTED", reason="SOURCE_UNAVAILABLE")
-        except (sqlite3.Error, OSError):
-            self._states[index] = replace(previous, state="DISCONNECTED", reason="ARCHIVE_UNAVAILABLE")
+        except (sqlite3.Error, OSError) as error:
+            self._states[index] = replace(previous, state="DISCONNECTED", reason=_storage_failure_reason(error))
         finally:
             state = self._states[index]
             self._states[index] = replace(state, latency_ms=round((time.perf_counter() - started) * 1000, 3))
         state = self._states[index]
         if self._effective(state) != "CONNECTED" and source.deviceId in self._evaluators:
             self._evaluators[source.deviceId].unavailable()
-        if state.state != previous.state:
+        if (state.state, state.reason) != (previous.state, previous.reason):
             if state.state in {"DISCONNECTED", "REJECTED"}:
-                self._event("STORAGE_WRITE_FAILED" if state.reason == "ARCHIVE_UNAVAILABLE" else "POLL_TIMEOUT",
+                self._event("STORAGE_WRITE_FAILED" if state.reason in {"ARCHIVE_UNAVAILABLE", "ARCHIVE_FULL"} else "POLL_TIMEOUT",
                             "FAILED", source.deviceId, state.reason)
             elif state.state == "CONNECTED" and previous.state != "CONNECTING":
                 self._event("COLLECTOR_RESTARTED", "SUCCESS", source.deviceId)

@@ -1,0 +1,368 @@
+{
+  "schema_version": 1,
+  "verification_date_utc": "2026-11-09",
+  "base_branch": "improve/startup-config-recovery-20261109",
+  "base_sha": "4f1c8dd2454b3513e21be06250d07289a83e5822",
+  "new_branch": "improve/storage-failure-integrity-20261109",
+  "visibility": "public unchanged",
+  "scope": "Runtime replay poll/storage cause classification and cause-transition events; original archive transaction implementation retained.",
+  "environment": {
+    "python": "3.12.14",
+    "sqlite": "3.53.1"
+  },
+  "implementation": {
+    "sqlite_full_uses_integer_primary_code": true,
+    "sqlite_primary_mask": 255,
+    "os_full_uses_errno_enospc": true,
+    "exception_message_used_for_full_classification": false,
+    "full_reason": "ARCHIVE_FULL",
+    "other_storage_reason": "ARCHIVE_UNAVAILABLE",
+    "storage_event": "STORAGE_WRITE_FAILED",
+    "event_transition_key": [
+      "state",
+      "reason"
+    ],
+    "repeated_same_failure_logs_again": false,
+    "api_state_and_shape_unchanged": true,
+    "disconnected_means": "Conservative acquisition unavailable; not proof of a physical link disconnection."
+  },
+  "test_runs": {
+    "baseline": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 132.177,
+      "counts": {
+        "tests": 352,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "collector_py_sha256": "b09b9571d6d39029c07d2ae89f5048e1303a039e3ae2af01ce201213c938341a"
+    },
+    "storage-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_storage_failure.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 0.886,
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_storage_failure::test_real_sqlite_full_has_a_distinct_collector_api_and_storage_event_reason",
+          "type": "failure",
+          "message": "AssertionError: assert 'ARCHIVE_UNAVAILABLE' == 'ARCHIVE_FULL'"
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "collector_py_sha256": "b09b9571d6d39029c07d2ae89f5048e1303a039e3ae2af01ce201213c938341a"
+    },
+    "storage-preservation-control": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_storage_failure.py",
+        "-k",
+        "rollback_recovers or separate_archive"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.682,
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "collector_py_sha256": "b09b9571d6d39029c07d2ae89f5048e1303a039e3ae2af01ce201213c938341a"
+    },
+    "storage-diagnostics-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_storage_diagnostics.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 0.679,
+      "counts": {
+        "tests": 11,
+        "failures": 5,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_storage_diagnostics::test_typed_storage_causes_preserve_worker_frame_contract_without_private_error_text[<lambda>-ARCHIVE_FULL0]",
+          "type": "failure",
+          "message": "AssertionError: assert 'ARCHIVE_UNAVAILABLE' == 'ARCHIVE_FULL'"
+        },
+        {
+          "test": "tests.test_storage_diagnostics::test_typed_storage_causes_preserve_worker_frame_contract_without_private_error_text[<lambda>-ARCHIVE_FULL1]",
+          "type": "failure",
+          "message": "AssertionError: assert 'ARCHIVE_UNAVAILABLE' == 'ARCHIVE_FULL'"
+        },
+        {
+          "test": "tests.test_storage_diagnostics::test_typed_storage_causes_preserve_worker_frame_contract_without_private_error_text[<lambda>-ARCHIVE_FULL2]",
+          "type": "failure",
+          "message": "AssertionError: assert 'ARCHIVE_UNAVAILABLE' == 'ARCHIVE_FULL'"
+        },
+        {
+          "test": "tests.test_storage_diagnostics::test_same_disconnected_status_records_changed_cause_once_without_repeated_failure_noise",
+          "type": "failure",
+          "message": "AssertionError: assert [('POLL_TIMEO...OLL_TIMEOUT')] == [('POLL_TIMEO...OLL_TIMEOUT')]"
+        },
+        {
+          "test": "tests.test_storage_diagnostics::test_log_volume_full_does_not_hide_raw_storage_failure_or_kill_poll",
+          "type": "failure",
+          "message": "AssertionError: assert 'ARCHIVE_UNAVAILABLE' == 'ARCHIVE_FULL'"
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "collector_py_sha256": "b09b9571d6d39029c07d2ae89f5048e1303a039e3ae2af01ce201213c938341a"
+    },
+    "storage-diagnostics-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_storage_diagnostics.py",
+        "tests/test_archive.py",
+        "tests/test_replay_collector.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.432,
+      "counts": {
+        "tests": 53,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "collector_py_sha256": "a51b8f4c85a56f0a7aff4f36d80c7db1d22670bed6c8c14c35f42823546818f6"
+    },
+    "storage-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_storage_failure.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.749,
+      "counts": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "collector_py_sha256": "a51b8f4c85a56f0a7aff4f36d80c7db1d22670bed6c8c14c35f42823546818f6"
+    }
+  },
+  "actual_capacity_recovery": {
+    "scope": "Synthetic replay and SQLite max_page_count; filesystem capacity was not exhausted.",
+    "realSqliteFullFailures": 2,
+    "originalRowsPreserved": 2,
+    "committedRowsAfterRecovery": 4,
+    "overflowGapCommittedOnce": true,
+    "firstReceiptsPreservedOnDuplicateAppend": true,
+    "cursorSurvivedReopen": true
+  },
+  "full_verification": {
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "-q"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 130.889,
+    "counts": {
+      "tests": 366,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "failures": [],
+    "existing_generated_evidence_restored_byte_for_byte": true,
+    "tested_source_unchanged_during_run": true,
+    "status": "PASS",
+    "passed": 365
+  },
+  "supplementary_checks": [
+    {
+      "label": "contract-drift",
+      "exit_code": 0,
+      "command": [
+        "python",
+        "scripts/generate_contracts.py",
+        "--check"
+      ]
+    },
+    {
+      "label": "contract-v34",
+      "exit_code": 0,
+      "command": [
+        "python",
+        "scripts/validate_v34.py"
+      ]
+    },
+    {
+      "label": "emulator-tests",
+      "exit_code": 0,
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ]
+    }
+  ],
+  "source_files": {
+    "src/aegis/collector.py": {
+      "sha256": "a51b8f4c85a56f0a7aff4f36d80c7db1d22670bed6c8c14c35f42823546818f6",
+      "bytes": 28923
+    },
+    "tests/test_storage_diagnostics.py": {
+      "sha256": "105185ab022293bbf4b14902c4667a95209c169612b6c3e9731faae5f7a3cb28",
+      "bytes": 5709
+    },
+    "tests/test_storage_failure.py": {
+      "sha256": "3498e018935c9b6e04bdd9636915a7259fcf6479e787af3e45fd128c1c26ae8e",
+      "bytes": 13383
+    }
+  },
+  "fault_injection": {
+    "real_sqlite": "Own archive executor PRAGMA max_page_count=current page count+1 triggers actual engine SQLITE_FULL; restore1000 in test only.",
+    "os_enospc": "Typed injected OSError errno, not physical filesystem exhaustion.",
+    "logging_enospc": "Injected eventwriter failure; poll/ARCHIVE_FULL/logging_degraded/worker frame preserved.",
+    "peer": "Two Collectors with separate real SQLite archives and disk executors, mocked local replay HTTP transport, same process. Not independent OS workers or shared-volume-full validation."
+  },
+  "preservation_assertions": [
+    "Full original rows including first received timestamp and hierarchy",
+    "Cursor unchanged at1 during full",
+    "Gap absent and accepted/dropped counters unchanged during full",
+    "Database inode/path preserved and integrity_check ok",
+    "Same DB connection recovery to cursor5, four committed rows and one overflow gap",
+    "Empty replay and duplicate raw append do not rewrite originals or receipts",
+    "Reopen preserves cursor and raw rows",
+    "Separate peer cursor progresses1to2 while failed target remainsat1"
+  ],
+  "rulings": [
+    {
+      "decision": "Keep existing connection status/API shape/UI",
+      "cost": "Existing UI still displays DISCONNECTED for storage unavailability; reasonCode/event identify storage cause."
+    },
+    {
+      "decision": "Classify FULL only by typed SQLITE_FULL/ENOSPC",
+      "cost": "Quota or unknown storage causes may remain generic ARCHIVE_UNAVAILABLE."
+    }
+  ],
+  "limitations": [
+    "Runtime poll/commit scope; archive initial open failure classification is not added.",
+    "Actual filesystem/shared-volume exhaustion, WAL/commit stage-specific OS ENOSPC and power loss not reproduced.",
+    "Log on a full volume may not persist the failure event; in-memory reason and logging_degraded remain.",
+    "Existing poll retry cadence/source retention and gap semantics retained; no universal lossless recovery claim."
+  ],
+  "not_run": [
+    "Windows/Windows services",
+    "Actual equipment/customer data",
+    "PowerShell7 Windows delivery case",
+    "Dotnet/WPF/WebView2 execution",
+    "Long-duration/capacity validation"
+  ],
+  "scope_preserved": {
+    "automatic_data_deletion_or_reclaim_added": false,
+    "raw_archive_schema_or_cursor_code_changed": false,
+    "ui_design_changed": false,
+    "previous_access_denied_preservation_retried_or_bypassed": false,
+    "previous_5075ccd_restoration_or_equivalence_claimed": false
+  },
+  "official_sources": [
+    "https://docs.python.org/3.12/library/sqlite3.html#sqlite3.Error",
+    "https://www.sqlite.org/rescode.html#full",
+    "https://www.sqlite.org/lang_transaction.html"
+  ],
+  "raw_logs_databases_actual_credentials_or_identity_committed": false,
+  "actual_capacity_recovery_full_suite": {
+    "scope": "Synthetic replay and SQLite max_page_count; filesystem capacity was not exhausted.",
+    "realSqliteFullFailures": 2,
+    "originalRowsPreserved": 2,
+    "committedRowsAfterRecovery": 4,
+    "overflowGapCommittedOnce": true,
+    "firstReceiptsPreservedOnDuplicateAppend": true,
+    "cursorSurvivedReopen": true
+  },
+  "preservation": {
+    "protected_baseline_tracked_files": 367,
+    "all_protected_files_byte_identical": true,
+    "all_baseline_tracked_files_except": [
+      "README.md",
+      "src/aegis/collector.py"
+    ],
+    "includes": "RawArchive/schema/cursor implementation, all prior tests/evidence, supervisor and startup recovery, UI/.NET/config/emulator/dependency inputs",
+    "existing_generated_evidence_restored_byte_for_byte": true,
+    "filename_inventory_uses_nul_delimiters": true
+  },
+  "independent_read_only_review": {
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "reviewer_reran_tests": false,
+    "controller_checked_full_result_after_review": true
+  },
+  "skip_reason": "Same baseline Windows PowerShell7 delivery-script case.",
+  "warnings": [
+    "Existing Starlette TestClient/httpx deprecation warning (1)."
+  ],
+  "dependency_installation": "No new packages installed; prior authorized pinned project venv reused.",
+  "evidence_postprocessing_note": "Whole-baseline preservation enumeration initially used quoted path text and was corrected to NUL-delimited Git names; no product/test files changed.",
+  "author_check": {
+    "author_committer_match": true,
+    "authenticated_origin_owner_match": true,
+    "owner_github_noreply": true,
+    "source_commit": "4f1c8dd2454b3513e21be06250d07289a83e5822",
+    "actual_identity_omitted": true
+  },
+  "precommit_remote_check": {
+    "existing_heads_unchanged": 7,
+    "base_sha_unchanged": true,
+    "target_absent": true,
+    "previous_four_checkouts_unchanged_and_clean": true,
+    "visibility": "public unchanged",
+    "actual_commit_push_and_remote_sha_reported_separately": true
+  }
+}

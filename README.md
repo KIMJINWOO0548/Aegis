@@ -10,6 +10,9 @@ Python 모듈 분리 수집에서 내부 작업 종료와 살아 있는 무응�
 후속으로 시작 설정 pipe가 막히는 구간의 감시·안전한 중단을 보완했습니다.
 [설정 전송 복구와 검증 범위](docs/STARTUP_CONFIG_RECOVERY_20261109.md)를 확인하세요.
 
+저장 용량 실패는 `ARCHIVE_FULL` 사유로 구분하고 연결/저장 사유 전환의 이벤트 누락을
+보완했습니다. [실제 SQLite 장애 주입과 원본·커서 보전](docs/STORAGE_FAILURE_INTEGRITY_20261109.md).
+
 ## Retained-summary investigation — 2026-11-06
 
 Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).
