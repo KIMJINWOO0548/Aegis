@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 import httpx
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from aegis.contracts import (VERSION, DeviceHealth, ModeId, Number, Observation,
                              ObservationEvaluation, ObservationQuality, SignalKey, UtcTimestamp)
@@ -115,6 +115,19 @@ class RawSignal(BaseModel):
     value: Number | None
     unit: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[^\x00-\x1f\x7f]+$")]
     quality: ObservationQuality
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def exact_integer_value(cls, value):
+        # Reject lossy integer conversion before the raw value reaches storage.
+        if type(value) is int:
+            try:
+                exact = float(value) == value
+            except OverflowError:
+                exact = False
+            if not exact:
+                raise ValueError("Raw integer values must be exactly representable as a float.")
+        return value
 
     @model_validator(mode="after")
     def good_has_value(self):

@@ -9,7 +9,7 @@ import pytest
 
 from aegis.archive import RawArchive
 from aegis.api import create_app
-from aegis.collector import Collector, SourceConfig, SIGNAL_UNITS
+from aegis.collector import Collector, RawSignal, SourceConfig, SIGNAL_UNITS
 
 
 TOKEN = "replay-test-" + "x" * 32
@@ -220,6 +220,81 @@ def test_invalid_replay_envelope_cannot_commit_any_part_of_the_page(tmp_path, fa
                     assert db.execute("SELECT count(*) FROM raw_batches").fetchone()[0] == 0
         finally:
             await archive.close()
+    asyncio.run(check())
+
+
+@pytest.mark.parametrize("value", [2**53 + 2, -(2**53 + 2), 2**100])
+def test_raw_numeric_tag_accepts_exactly_representable_large_integers(value):
+    signal = RawSignal.model_validate_json(json.dumps({
+        "signalKey": "customCounter", "value": value, "unit": "count", "quality": "GOOD"}))
+    assert signal.value == value
+    assert json.loads(signal.model_dump_json())["value"] == value
+
+
+@pytest.mark.parametrize("value", [2**53 + 1, -(2**53 + 1)])
+def test_raw_numeric_tag_rejects_inexact_integer_before_python_model_conversion(value):
+    with pytest.raises(ValueError, match="exactly"):
+        RawSignal.model_validate({
+            "signalKey": "customCounter", "value": value, "unit": "count", "quality": "GOOD"})
+
+
+@pytest.mark.parametrize("value", [2**53 + 1, -(2**53 + 1), 10**400],
+                         ids=["positive-rounding", "negative-rounding", "float-overflow"])
+def test_inexact_raw_integer_after_restart_cannot_commit_rows_gap_or_cursor(tmp_path, value):
+    async def check():
+        now = datetime.now(timezone.utc)
+        run = str(uuid4())
+        path = tmp_path / "numeric-integrity.sqlite3"
+        original = frame(run, 0, now - timedelta(seconds=1))
+        original["signals"] = [{"signalKey": "customCounter", "value": 42.0,
+                                "unit": "count", "quality": "GOOD"}]
+        archive = RawArchive(path)
+        await archive.start()
+        try:
+            await archive.append([original], now, equipment_id="CMP-01", module_id="PMC-01")
+        finally:
+            await archive.close()
+        with sqlite3.connect(path) as db:
+            before = db.execute("SELECT * FROM raw_batches").fetchall()
+
+        samples = [frame(run, 2, now - timedelta(milliseconds=10)), frame(run, 3, now)]
+        for sample, number in zip(samples, (1.5, value)):
+            sample["signals"] = [{"signalKey": "customCounter", "value": number,
+                                   "unit": "count", "quality": "GOOD"}]
+        payload = {"streamVersion": "1.0", "deviceId": original["deviceId"], "runId": run,
+                   "oldestSequence": 2, "latestSequence": 3, "snapshots": samples}
+        reopened = RawArchive(path)
+        await reopened.start()
+        try:
+            async with httpx.AsyncClient(transport=httpx.MockTransport(
+                    lambda _: httpx.Response(200, json=payload))) as client:
+                config = SourceConfig(deviceId=original["deviceId"], baseUrl="http://127.0.0.1:9101",
+                                      transport="replay", analysisProfile="raw")
+                collector = Collector([config], {"AEGIS_EMULATOR_TOKEN": TOKEN}, archive=reopened,
+                                      client=client, utc_now=lambda: now)
+                await collector.poll_once(0)
+                assert collector.connections()[0]["state"] == "REJECTED"
+                assert collector.connections()[0]["reasonCode"] == "INVALID_SNAPSHOT"
+                assert collector.connections()[0]["acceptedBatches"] == 0
+                assert await reopened.cursor(config.deviceId) == (run, 0)
+                assert await reopened.latest(config.deviceId) == original
+                with sqlite3.connect(path) as db:
+                    assert db.execute("SELECT * FROM raw_batches").fetchall() == before
+                    assert db.execute("SELECT * FROM ingest_gaps").fetchall() == []
+
+                samples[1]["signals"][0]["value"] = 2**53 + 2
+                await collector.poll_once(0)
+                assert collector.connections()[0]["state"] == "CONNECTED"
+                assert await reopened.cursor(config.deviceId) == (run, 3)
+                latest = await reopened.latest(config.deviceId)
+                assert latest["signals"][0]["signalKey"] == "customCounter"
+                assert latest["signals"][0]["value"] == 2**53 + 2
+                with sqlite3.connect(path) as db:
+                    assert db.execute("SELECT sequence FROM raw_batches ORDER BY sequence").fetchall() == [(0,), (2,), (3,)]
+                    assert db.execute("SELECT first_sequence,last_sequence FROM ingest_gaps").fetchall() == [(1, 1)]
+        finally:
+            await reopened.close()
+
     asyncio.run(check())
 
 
