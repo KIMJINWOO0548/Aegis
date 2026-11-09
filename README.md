@@ -21,6 +21,9 @@ Python 모듈 분리 수집에서 내부 작업 종료와 살아 있는 무응�
 device/run을 명시하는 제한된 조회이며 큰 run은 부분 성공 없이 거부합니다.
 [계약·조회 한도·원본 보전 검증](docs/RAW_HISTORY_20261109.md).
 
+후속으로 raw 조회의 극단 UTC 변환 오류를 검증 오류로 처리했습니다.
+[UTC 경계 회귀와 실제 모듈 IPC의 합성 검증](docs/RAW_QUERY_UTC_IPC_20261109.md).
+
 ## Retained-summary investigation — 2026-11-06
 
 Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).

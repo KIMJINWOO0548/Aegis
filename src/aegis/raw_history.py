@@ -74,7 +74,7 @@ def _query(device, run, start, end, signals, max_batches):
                     or any(not SIGNAL_KEY.fullmatch(key) for key in selected)):
                 raise ValueError
         return start, end, selected
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         raise RawQueryError(422, "INVALID_QUERY", "Request parameters are invalid.") from None
 
 
@@ -126,7 +126,7 @@ def _batch(row, device, run):
             raise ValueError
         _timestamp(receipt)
         return parsed.observedAtUtc, original, receipt, equipment, module
-    except (ValueError, TypeError, KeyError, RecursionError):
+    except (ValueError, TypeError, OverflowError, KeyError, RecursionError):
         raise _invalid() from None
 
 

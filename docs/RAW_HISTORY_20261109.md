@@ -128,11 +128,13 @@ precommit evidence와 분리해 최종 인계에서 확인합니다.
 core/API 미구현 RED와 gap 고유 schema RED를 먼저 확인한 뒤 구현했습니다. 추가 경계 시험은
 이미 구현된 동작의 대조군입니다. 기존 Windows 전달 skip과 TestClient/httpx 경고1개는 남습니다.
 
-독립 검토는 Critical0/Important0/Minor1입니다. 검토자는 전체 기록/지문과 작은 읽기 전용
-UTC overflow probe를 확인했으며 suite는 재실행하지 않았습니다. **남은 Minor:**
+이 단계 당시 독립 검토는 Critical0/Important0/Minor1이었습니다. 검토자는 전체 기록/지문과 작은 읽기 전용
+UTC overflow probe를 확인했으며 suite는 재실행하지 않았습니다. **당시 남았던 Minor:**
 `0001-01-01T00:00:00+01:00` 또는 `9999-12-31T23:00:00-02:00`처럼 UTC 변환이 datetime 범위를
 벗어나는 극단 입력은422(조회)/409(저장행) 대신 일반500이 될 수 있습니다. 실패로 종료되며
-DB 쓰기나 정상 부분 결과는 없지만 오류 분류 보완은 남아 있습니다.
+DB 쓰기나 정상 부분 결과는 없었습니다. 후속 변경에서 이 오류 분류를 보완했습니다.
+[UTC 수정 및 실제 모듈 IPC 검증](RAW_QUERY_UTC_IPC_20261109.md)을 확인하세요.
+기존 evidence의 Minor 기록은 이 단계 당시의 이력으로 보존합니다.
 
 Ruling: 한도 밖 run은 오류입니다. 시간 인덱스 이행을 피하고 기존 원본을 보호하는 비용으로 큰 run의
 좁은 시간 조회도 이 단계에서는 지원하지 않습니다.
