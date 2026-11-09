@@ -35,6 +35,10 @@ device/run을 명시하는 제한된 조회이며 큰 run은 부분 성공 없�
 별도 CLI를 추가했습니다. 기존 대상은 덮어쓰지 않으며 자동 삭제나 실행 중 원본 전환은 없습니다.
 [백업·복원 절차, 장애 결과와 검증 범위](docs/ARCHIVE_BACKUP_20261109.md).
 
+읽기 전용 저장 진단 CLI는 원본·명시한 백업의 크기, 볼륨 여유와 보존 검토 정책을 보고합니다.
+수신 시각 나이와 마지막 commit 측정값을 구분하고 정책 미설정·측정 불가·임계 초과를 명시합니다.
+[진단 절차·SQLite 읽기 경계·운영 한계](docs/STORAGE_DIAGNOSTICS_20261109.md).
+
 ## Retained-summary investigation — 2026-11-06
 
 Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).
