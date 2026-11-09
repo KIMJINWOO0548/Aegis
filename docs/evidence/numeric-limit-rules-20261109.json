@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "verification_date_utc": "2026-11-09",
+  "base_branch": "improve/raw-query-utc-ipc-20261109",
+  "base_sha": "6b07c83bb53766ea7219ed38c22a8c49fa5a1781",
+  "new_branch": "improve/numeric-limit-rules-20261109",
+  "visibility": "public unchanged",
+  "scope": "Versioned stateless numeric limit rules and offline read-only archive CLI, not runtime flow/IPC/control/UI integration.",
+  "config_contract": {
+    "schema_version": "numeric-limit-rules-1",
+    "required_ids_versions": [
+      "configId",
+      "configVersion",
+      "ruleId",
+      "ruleVersion"
+    ],
+    "rule_count_max": 16,
+    "file_bytes_max": 65536,
+    "max_age_ms_range": [
+      1,
+      3600000
+    ],
+    "inclusive_lower_upper": true,
+    "one_sided_equal_and_negative_bounds": true,
+    "strict_finite_exact_integer_to_float_bounds": true,
+    "unit_comparison": "EXACT_NO_CONVERSION",
+    "target_hierarchy": "Optional paired equipment/module matches saved archive metadata; no current SourceConfig substitution.",
+    "frozen_rule_tuple_and_nested_models": true
+  },
+  "evaluation_contract": {
+    "schema_version": "numeric-limit-evaluation-1",
+    "outcomes": [
+      "WITHIN_LIMITS",
+      "BELOW_LOWER",
+      "ABOVE_UPPER",
+      "UNAVAILABLE"
+    ],
+    "offline_mode": "OFFLINE_ARCHIVE_REVIEW",
+    "reference_basis": [
+      "SYSTEM_UTC",
+      "EXPLICIT_REPLAY_UTC"
+    ],
+    "freshness_uses": "Original observedAtUtc; exact timedelta comparison; fresh receipt never replaces old source time.",
+    "quality_absence_unit_target_clock_gates_before_bound_comparison": true,
+    "tag_not_projected_present": null,
+    "explicit_absence_present": false,
+    "original_missing_or_bad_null_present": true,
+    "original_json_integer_and_source_strings_preserved": true,
+    "missing_original_timestamp_or_sequence_fabricated": false
+  },
+  "provenance": {
+    "rule_and_config_snapshots_and_canonical_sha256": true,
+    "config_snapshot_retained_for_empty_selection": true,
+    "same_id_version_content_change_detectable": true,
+    "version_increment_or_registry_immutability_enforced": false,
+    "projection_evidence_hash_scope": "Selected single-tag source evidence excluding derived sourceAgeMs/evaluation clock; not entire raw payload/hardware attestation.",
+    "output_snapshots_detached_from_inputs": true
+  },
+  "archive_cli": {
+    "module": "aegis.limit_rules",
+    "read_only_existing_raw_reader": true,
+    "maximum_batches": 64,
+    "maximum_rule_results": 1024,
+    "existing_reader_candidate_1024_and_8mib_limits_retained": true,
+    "empty_selection": "NO_SAMPLES",
+    "zero_applicable_rules": "NO_APPLICABLE_RULES error",
+    "overall_normal_or_pass_summary": false,
+    "exit_zero_means": "Completed report generation, not all rules within limits.",
+    "writes_results_or_archive_files": false,
+    "error_stream": "stderr fixed JSON status=UNAVAILABLE, code and message; exit2 and empty stdout"
+  },
+  "baseline_reuse": {
+    "exact_verified_base_sha": "6b07c83bb53766ea7219ed38c22a8c49fa5a1781",
+    "prior_full_suite_counts": {
+      "tests": 513,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "prior_full_passed": 512,
+    "all_prior_tested_python_sources_and_tests_byte_identical": true,
+    "no_dependency_changes": true,
+    "current_checkout_baseline": "baseline-limits"
+  },
+  "test_runs": {
+    "baseline-limits": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_evaluation.py",
+        "tests/test_raw_history.py",
+        "tests/test_raw_history_api.py",
+        "tests/test_raw_history_utc.py",
+        "tests/test_api.py",
+        "tests/test_contracts.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 7.438,
+      "counts": {
+        "tests": 240,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    },
+    "limits-core-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_limit_rules.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.275,
+      "counts": {
+        "tests": 67,
+        "failures": 67,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": [
+        "ModuleNotFoundError: No module named 'aegis.limit_rules'"
+      ]
+    },
+    "limits-loader-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_limit_rules.py",
+        "-k",
+        "loader_rejects"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 0.367,
+      "counts": {
+        "tests": 4,
+        "failures": 4,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": [
+        "ModuleNotFoundError: No module named 'aegis.limit_rules'"
+      ],
+      "interpretation": "Subset rerun after shortening oversized-byte pytest parameter IDs; same four expected missing-module failures."
+    },
+    "limits-cli-red-final": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_limit_rules_cli.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.863,
+      "counts": {
+        "tests": 29,
+        "failures": 29,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": [
+        "AssertionError: assert (1 == 0)",
+        "AssertionError: assert 1 == 2",
+        "ModuleNotFoundError: No module named 'aegis.limit_rules'"
+      ]
+    },
+    "limits-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_limit_rules.py",
+        "tests/test_limit_rules_cli.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.143,
+      "counts": {
+        "tests": 96,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    },
+    "full-verification": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 158.516,
+      "counts": {
+        "tests": 609,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    }
+  },
+  "supplementary": {
+    "emulator-unit": {
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.757,
+      "tests": 26
+    },
+    "generated-contracts": {
+      "command": [
+        "python",
+        "scripts/generate_contracts.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.069
+    },
+    "contract-v34": {
+      "command": [
+        "python",
+        "scripts/validate_v34.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.277
+    }
+  },
+  "example": {
+    "file": "examples/numeric-limit-rules.synthetic.json",
+    "config_schema": "numeric-limit-rules-1",
+    "validated_rule_count": 2,
+    "synthetic_targets_only": true,
+    "loader_succeeded": true
+  },
+  "independent_review": {
+    "critical": 0,
+    "important": 0,
+    "minor_deferred": 1,
+    "reviewer_reran_suites": false,
+    "reviewer_ran_small_read_only_probes": true,
+    "reviewer_verified_full_source_hashes_and_evidence_restoration": true,
+    "deferred_minor": [
+      {
+        "file": "src/aegis/limit_rules.py",
+        "lines": [
+          182,
+          230,
+          246
+        ],
+        "issue": "Direct library call with signals iterator/generator can be consumed by Pydantic validation then raise TypeError during reread.",
+        "scope": "Outside supported raw-history JSON dict/list inputs; normal archive CLI provides lists and is unaffected.",
+        "disposition": "Minor deferred and disclosed; no Critical/Important review findings."
+      }
+    ]
+  },
+  "source_file_fingerprints": {
+    "src/aegis/limit_rules.py": {
+      "sha256": "5d17520c0eadf9fef5af184596d2d33925eb8de93c4755a505d3c2447942a361",
+      "bytes": 13365
+    },
+    "tests/test_limit_rules.py": {
+      "sha256": "9356d01e2633905befe69d1df66948d92a8cef988472c70cc06d532b1eb6892d",
+      "bytes": 13567
+    },
+    "tests/test_limit_rules_cli.py": {
+      "sha256": "e421399a741ec6f6d84a65d957f5cbb3e01b30a74a9d418e785ed0cd655e755a",
+      "bytes": 18291
+    }
+  },
+  "rulings": [
+    {
+      "decision": "Offline/stateless engine and CLI first step, keeping existing flow/API/Collector/IPC/UI unchanged.",
+      "cost": "No running automatic alerts, warning history/ack, device control or realtime UI integration."
+    },
+    {
+      "decision": "Record canonical digests and applied snapshots instead of a version registry.",
+      "cost": "Same-version content changes are identifiable but not prohibited."
+    }
+  ],
+  "scope_preserved": {
+    "equipment_control_added": false,
+    "ui_design_changed": false,
+    "flow_api_collector_raw_writer_schema_cursor_worker_ipc_emulator_changed": false,
+    "canonical_yaml_generated_native_changed": false,
+    "previous_access_denied_preservation_retried_or_bypassed": false,
+    "previous_5075ccd_restoration_or_equivalence_claimed": false
+  },
+  "not_run": [
+    "Actual equipment/customer data",
+    "Windows/Windows services/PowerShell7 delivery",
+    "Dotnet/WPF/WebView2/UI",
+    "Calibrated physical limits",
+    "Sustained/high-load/concurrent review performance",
+    "New runtime automatic alert pipeline"
+  ],
+  "new_dependencies_installed": false,
+  "raw_logs_databases_credentials_or_identity_committed": false,
+  "skip_reason": "Existing Windows PowerShell7 delivery case.",
+  "warnings": [
+    "Existing Starlette TestClient/httpx deprecation warning (1)."
+  ],
+  "git_commit_push_remote_sha": "Recorded separately after actual operation.",
+  "preservation": {
+    "protected_baseline_files": 393,
+    "baseline_exceptions": [
+      "README.md"
+    ],
+    "all_protected_files_byte_identical": true,
+    "filename_inventory_uses_nul_delimiters": true,
+    "previous_eight_checkouts_unchanged_and_clean": true,
+    "all_previous_eleven_remote_heads_unchanged": true,
+    "new_target_absent": true,
+    "legacy_six_generated_evidence_restored_byte_for_byte": true
+  },
+  "author_check": {
+    "author_committer_match": true,
+    "origin_owner_name_match": true,
+    "owner_github_noreply": true,
+    "authenticated_origin_owner_match": true,
+    "actual_identity_omitted": true,
+    "source_commit": "6b07c83bb53766ea7219ed38c22a8c49fa5a1781"
+  },
+  "all_tested_python_file_hashes_match_after_full": 50,
+  "controller_checked_actual_full_after_review": true,
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux",
+    "new_dependencies_installed": false
+  },
+  "remote_preflight": {
+    "visibility": "public unchanged",
+    "push_permission": true,
+    "profile_origin_owner_match": true,
+    "repository_identity_resolved_from_current_authorized_git_remote": true
+  }
+}

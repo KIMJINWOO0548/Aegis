@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "numeric-limit-rules-1",
+  "configId": "synthetic-numeric-limits",
+  "configVersion": "1.0",
+  "rules": [
+    {
+      "ruleId": "alpha-range",
+      "ruleVersion": "1.0",
+      "target": {
+        "deviceId": "LIMIT-SYNTHETIC-01",
+        "signalKey": "numeric.alpha"
+      },
+      "unit": "count",
+      "lowerBound": -10,
+      "upperBound": 0,
+      "maxAgeMs": 1000
+    },
+    {
+      "ruleId": "temperature-ceiling",
+      "ruleVersion": "1.0",
+      "target": {
+        "deviceId": "LIMIT-SYNTHETIC-01",
+        "equipmentId": "SYNTHETIC-EQUIPMENT",
+        "moduleId": "SYNTHETIC-MODULE",
+        "signalKey": "numeric.temperature"
+      },
+      "unit": "degC",
+      "lowerBound": null,
+      "upperBound": 50,
+      "maxAgeMs": 1000
+    }
+  ]
+}

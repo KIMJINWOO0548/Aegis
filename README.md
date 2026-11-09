@@ -24,6 +24,10 @@ device/run을 명시하는 제한된 조회이며 큰 run은 부분 성공 없�
 후속으로 raw 조회의 극단 UTC 변환 오류를 검증 오류로 처리했습니다.
 [UTC 경계 회귀와 실제 모듈 IPC의 합성 검증](docs/RAW_QUERY_UTC_IPC_20261109.md).
 
+범용 숫자 tag의 설정형 상·하한은 별도 읽기 전용 archive 분석 CLI로 제공합니다.
+규칙 버전·적용 설정·근거를 기록하고 결측·불량·오래된 값은 평가 불가로 구분합니다.
+[설정형 규칙·평가 기준·검증 범위](docs/NUMERIC_LIMIT_RULES_20261109.md).
+
 ## Retained-summary investigation — 2026-11-06
 
 Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).
