@@ -43,6 +43,10 @@ device/run을 명시하는 제한된 조회이며 큰 run은 부분 성공 없�
 기존 SIMULATOR 수집·저장에는 연결하지 않으며 새 검증 cursor는 메모리 제안값입니다.
 [입력 스키마·출처·timeout·보존 경계와 후속 이행](docs/ADAPTER_INPUT_20261109.md).
 
+선택한 별도 로컬 저장소는 어댑터 원본·최초 수신·cursor·EOF를 함께 commit하고 재확인한 뒤에만
+`LOCAL_STORE_COMMITTED`를 반환합니다. 기존 raw-v1 전달과 source ACK는 연결하지 않습니다.
+[저장 완료 확인·불명 결과 복구·재시작과 호환 한계](docs/ADAPTER_STORE_20261109.md).
+
 ## Retained-summary investigation — 2026-11-06
 
 Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).
