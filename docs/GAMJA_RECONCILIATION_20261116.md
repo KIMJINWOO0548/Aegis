@@ -41,8 +41,10 @@ and writes no files. Original feature-level safety gates remain unchanged.
   platform combinations).
 - Existing targeted adapter store/input archive/backup suites: **118 failed,
   48 passed, 2 skipped** on Windows. No skips were added to hide this failure.
-- Full-suite outcome is recorded separately after the run; focused tests do
-  not establish whole-suite acceptance.
+- Full `pytest -q --tb=no` was attempted but remained at the 5% progress line
+  with three failures already visible and no final summary. It was interrupted
+  rather than reported as passing. Exact failed test names were unavailable
+  because the run did not reach its summary. Full regression remains incomplete.
 - Required next: Windows-native safe file/handle and directory durability
   implementation with fault tests, Windows collector/service + WebView2 E2E,
   long-running load/recovery evidence, real equipment adapter validation and
