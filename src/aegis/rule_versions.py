@@ -85,6 +85,10 @@ def _encoded(lock):
 def _require_lock(lock):
     if not isinstance(lock, RuleVersionLock):
         raise _invalid()
+    try:
+        lock = RuleVersionLock.model_validate(lock.model_dump(mode="python"))
+    except (ValueError, TypeError, RecursionError, OverflowError):
+        raise _invalid() from None
     _encoded(lock)
     return lock
 
@@ -112,7 +116,7 @@ def _config(value):
     # A JSON boundary avoids __main__/named-module class duplication in both CLIs.
     try:
         if isinstance(value, LimitRuleConfig):
-            return value
+            value = value.model_dump(mode="python")
         if not isinstance(value, dict):
             raise ValueError
         return LimitRuleConfig.model_validate(value)

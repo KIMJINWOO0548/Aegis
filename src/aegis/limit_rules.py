@@ -212,6 +212,10 @@ def _reference(value):
 def evaluate_rule(rule, batch, *, evaluated_at):
     if not isinstance(rule, LimitRule):
         raise _config_error()
+    try:
+        rule = LimitRule.model_validate(rule.model_dump(mode="python"))
+    except (ValueError, TypeError, OverflowError, RecursionError):
+        raise _config_error() from None
     reference = _reference(evaluated_at)
     snapshot = rule.model_dump(mode="json")
     result = {"schemaVersion": "numeric-limit-evaluation-1", "evaluationMode": "OFFLINE_ARCHIVE_REVIEW",
@@ -269,6 +273,10 @@ def review_archive(config, archive, device_id, run_id, from_utc, to_utc, *, max_
                    rule_lock=None):
     if not isinstance(config, LimitRuleConfig):
         raise _config_error()
+    try:
+        config = LimitRuleConfig.model_validate(config.model_dump(mode="python"))
+    except (ValueError, TypeError, OverflowError, RecursionError):
+        raise _config_error() from None
     verification = None
     if rule_lock is not None:
         from aegis.rule_versions import verify_rule_lock
