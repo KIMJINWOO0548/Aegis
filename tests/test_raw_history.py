@@ -4,6 +4,7 @@ import asyncio
 import copy
 import hashlib
 import json
+import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
@@ -71,7 +72,8 @@ def test_history_uses_exact_half_open_source_time_not_lexical_time_or_receipt(tm
             sample(1, at=(AT + timedelta(microseconds=500)).astimezone(offset).isoformat()),
             sample(2, at=(AT + timedelta(seconds=1)).isoformat()),
             sample(3, at=(AT - timedelta(microseconds=1)).isoformat())]
-    path = save(tmp_path / "raw #?.sqlite3", rows)
+    filename = "raw # 경로.sqlite3" if os.name == "nt" else "raw #?.sqlite3"
+    path = save(tmp_path / filename, rows)
     result = read(path)
     assert result["schemaVersion"] == "raw-query-1" and result["kind"] == "RAW_ARCHIVE_HISTORY"
     assert result["selectionComplete"] is True and result["sourceCoverage"] == "NOT_ASSERTED"
