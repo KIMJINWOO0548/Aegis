@@ -73,6 +73,7 @@ class WindowsAdapterCandidate:
     def __init__(self, path, *, fixture=None):
         self._lock = threading.RLock()
         self._journal = None
+        self._session_commits = 0
         initial = None
         if fixture is not None:
             source = SyntheticReplayAdapter(fixture)
@@ -151,7 +152,25 @@ class WindowsAdapterCandidate:
             snapshot['pages'].append({'page': parsed.original, 'received': _utc(received_at),
                                       'wire': encoded, 'wireSha256': digest})
             _replay(snapshot)
-            return self._journal.append(_pack(snapshot))
+            result = self._journal.append(_pack(snapshot))
+            self._session_commits += 1
+            return result
+
+    def state_view(self):
+        """Presentation contract: receipt/replayed evidence is never live telemetry."""
+        with self._lock:
+            snapshot, state = self._read()
+            pages = snapshot['pages']
+            return {'schemaVersion': 'windows-adapter-state-view-1',
+                    'stateSource': ('EMPTY' if not pages else
+                                    'SESSION_SYNTHETIC' if self._session_commits else
+                                    'RESTORED_LAST_KNOWN'),
+                    'isLive': False, 'freshness': 'NOT_LIVE_SYNTHETIC',
+                    'declaredOrigin': 'SYNTHETIC', 'sourceAcknowledgement': 'NOT_SENT',
+                    'committedCursor': state.cursor, 'ended': state.ended,
+                    'lastReceiptUtc': pages[-1]['received'] if pages else None,
+                    'timestampMeaning': 'HOST_RECEIPT_NOT_SOURCE_OBSERVATION',
+                    'records': state.records}
 
     def backup_to_new(self, destination):
         """Copy one validated snapshot. Destination is never replaced or repaired.
