@@ -10,8 +10,9 @@ def test_windows_reports_blocked_without_claiming_runtime_validation():
     result = report(SimpleNamespace(name="nt"))
     assert result["status"] == "BLOCKED"
     assert result["runtimeValidation"] == "NOT_RUN"
-    assert all(row["status"] == "PLATFORM_UNVERIFIED" for row in result["features"])
-    assert result["features"][0]["missing"] == ["posix", "O_NOFOLLOW"]
+    assert all(row["status"] == "PLATFORM_UNVERIFIED" for row in result["features"][1:])
+    assert result["features"][0]["status"] == "NATIVE_READER_AVAILABLE"
+    assert result["features"][0]["missing"] == []
 
 
 def test_primitives_present_are_not_a_safety_or_test_pass():

@@ -21,6 +21,14 @@ def report(platform=os):
     """Report known entry-point gates; flag presence alone is not validation."""
     features = []
     for name, flags in REQUIREMENTS:
+        if name == "adapter_fixture" and platform.name == "nt":
+            features.append({
+                "name": name,
+                "status": "NATIVE_READER_AVAILABLE",
+                "missing": [],
+                "scope": "READ_ONLY_FIXTURE_FINAL_COMPONENT_NOFOLLOW",
+            })
+            continue
         missing = ([] if platform.name == "posix" else ["posix"])
         missing += [flag for flag in flags if not hasattr(platform, flag)]
         features.append({

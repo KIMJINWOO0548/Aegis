@@ -401,6 +401,12 @@ class AdapterSession:
 
 
 def _load_fixture(path):
+    if os.name=='nt':
+        from .windows_fixture import read_fixture
+        payload=read_fixture(path,MAX_FIXTURE_BYTES)
+        if len(payload)>MAX_FIXTURE_BYTES:
+            raise AdapterError('INPUT_LIMIT')
+        return payload
     if os.name!='posix' or not hasattr(os,'O_NOFOLLOW'):
         raise AdapterError('PLATFORM_UNVERIFIED')
     fd=os.open(path,os.O_RDONLY|os.O_NONBLOCK|os.O_NOFOLLOW)
