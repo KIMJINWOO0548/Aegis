@@ -78,11 +78,13 @@ class WindowsJournalTests(unittest.TestCase):
 
     def test_own_process_termination_after_flush(self):
         ready = self.path.with_suffix('.ready')
-        code = ('import sys,time;from pathlib import Path;'
+        code = ('import sys,time,os;from pathlib import Path;'
                 'from aegis.windows_journal_candidate import WindowsJournalCandidate as J;'
                 'j=J(sys.argv[1],create=True);j.append(b"committed");'
-                'Path(sys.argv[2]).write_text("ready");time.sleep(90)')
-        p = subprocess.Popen([sys.executable, '-c', code, str(self.path), str(ready)],
+                'Path(sys.argv[2]).write_text(str(os.getpid()));time.sleep(90)')
+        # Windows venv launchers have a different PID from their worker.
+        # Kill the actual owned interpreter, not a launcher that leaves it alive.
+        p = subprocess.Popen([sys._base_executable, '-c', code, str(self.path), str(ready)],
                              creationflags=subprocess.CREATE_NO_WINDOW)
         try:
             until = time.monotonic() + 15
@@ -90,6 +92,7 @@ class WindowsJournalTests(unittest.TestCase):
                 self.assertIsNone(p.poll())
                 self.assertLess(time.monotonic(), until)
                 time.sleep(.02)
+            self.assertEqual(int(ready.read_text()), p.pid)
             p.kill()
             p.wait(timeout=15)
             with Journal(self.path) as journal:
@@ -182,3 +185,5 @@ class WindowsJournalTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
