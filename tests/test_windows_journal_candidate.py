@@ -85,7 +85,8 @@ class WindowsJournalTests(unittest.TestCase):
         # Windows venv launchers have a different PID from their worker.
         # Kill the actual owned interpreter, not a launcher that leaves it alive.
         p = subprocess.Popen([sys._base_executable, '-c', code, str(self.path), str(ready)],
-                             creationflags=subprocess.CREATE_NO_WINDOW)
+                             creationflags=subprocess.CREATE_NO_WINDOW,
+                             env={**os.environ, 'PYTHONPATH': str(Path(__file__).resolve().parents[1] / 'src')})
         try:
             until = time.monotonic() + 15
             while not ready.exists():
@@ -185,5 +186,3 @@ class WindowsJournalTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

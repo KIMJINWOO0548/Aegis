@@ -1,6 +1,6 @@
 """Bounded experimental adapter snapshots on Windows journal; production disabled."""
 import hashlib
-import json
+import base64
 import threading
 from .adapter_input import (AdapterAdmission, SyntheticReplayAdapter, validate_page,
                             _encode, _decode, MAX_FIXTURE_BYTES)
@@ -15,21 +15,51 @@ def _pack(snapshot):
     return payload
 
 
+def _wire(value, digest):
+    if type(value) is not str or type(digest) is not str:
+        raise JournalError('INVALID_WIRE_EVIDENCE')
+    try:
+        payload = base64.b64decode(value, validate=True)
+    except ValueError as error:
+        raise JournalError('INVALID_WIRE_EVIDENCE') from error
+    if hashlib.sha256(payload).hexdigest() != digest:
+        raise JournalError('WIRE_HASH_MISMATCH')
+    return payload
+
+
+def _evidence(payload):
+    return base64.b64encode(payload).decode('ascii'), hashlib.sha256(payload).hexdigest()
+
+
 def _replay(snapshot):
-    if (type(snapshot) is not dict or set(snapshot) != {'version', 'fixture', 'pages'}
-            or snapshot['version'] != 'windows-adapter-snapshot-1'
-            or type(snapshot['pages']) is not list):
+    if type(snapshot) is not dict:
         raise JournalError('INVALID_SNAPSHOT')
-    source = SyntheticReplayAdapter(_encode(snapshot['fixture']))
+    version = snapshot.get('version')
+    fields = {'version', 'fixture', 'pages'}
+    if version == 'windows-adapter-snapshot-2':
+        fields |= {'fixtureWire', 'fixtureWireSha256'}
+    elif version != 'windows-adapter-snapshot-1':
+        raise JournalError('INVALID_SNAPSHOT')
+    if set(snapshot) != fields or type(snapshot['pages']) is not list:
+        raise JournalError('INVALID_SNAPSHOT')
+    fixture_wire = (_wire(snapshot['fixtureWire'], snapshot['fixtureWireSha256'])
+                    if version.endswith('-2') else _encode(snapshot['fixture']))
+    source = SyntheticReplayAdapter(fixture_wire)
+    if _encode(_decode(source.fixture_wire, MAX_FIXTURE_BYTES)) != _encode(snapshot['fixture']):
+        raise JournalError('WIRE_CANONICAL_MISMATCH')
     d = source.descriptor
     state = AdapterAdmission(d.adapterId, d.adapterVersion, d.streamId)
     expected = {_encode(p['afterToken']): _encode(p['response'])
                 for p in snapshot['fixture']['pages']}
     for entry in snapshot['pages']:
-        if type(entry) is not dict or set(entry) != {'page', 'received'}:
+        page_fields = {'page', 'received'} | ({'wire', 'wireSha256'} if version.endswith('-2') else set())
+        if type(entry) is not dict or set(entry) != page_fields:
             raise JournalError('INVALID_SNAPSHOT')
-        payload = _encode(entry['page'])
+        payload = (_wire(entry['wire'], entry['wireSha256'])
+                   if version.endswith('-2') else _encode(entry['page']))
         parsed = validate_page(payload)
+        if parsed.canonical != _encode(entry['page']):
+            raise JournalError('WIRE_CANONICAL_MISMATCH')
         if expected.get(_encode(parsed.model.afterToken)) != parsed.canonical:
             raise JournalError('FIXTURE_MISMATCH')
         result = state.admit(payload, _receipt(entry['received']))
@@ -46,7 +76,9 @@ class WindowsAdapterCandidate:
         initial = None
         if fixture is not None:
             source = SyntheticReplayAdapter(fixture)
-            initial = {'version': 'windows-adapter-snapshot-1',
+            fixture_wire, fixture_sha = _evidence(source.fixture_wire)
+            initial = {'version': 'windows-adapter-snapshot-2',
+                       'fixtureWire': fixture_wire, 'fixtureWireSha256': fixture_sha,
                        'fixture': _decode(source.fixture_wire, MAX_FIXTURE_BYTES), 'pages': []}
             _replay(initial)
             _pack(initial)  # Reject oversized input before creating any file.
@@ -68,7 +100,8 @@ class WindowsAdapterCandidate:
             snapshot = _decode(raw, MAX_RECORD)
             state = _replay(snapshot)
             if previous is not None:
-                if (snapshot['fixture'] != previous['fixture']
+                if ({k: v for k, v in snapshot.items() if k != 'pages'}
+                        != {k: v for k, v in previous.items() if k != 'pages'}
                         or len(snapshot['pages']) != len(previous['pages']) + 1
                         or snapshot['pages'][:-1] != previous['pages']):
                     raise JournalError('INVALID_SNAPSHOT_TRANSITION')
@@ -85,9 +118,27 @@ class WindowsAdapterCandidate:
         with self._lock:
             return self._read()[1].records
 
+    @property
+    def wire_pages(self):
+        with self._lock:
+            snapshot, _ = self._read()
+            if snapshot['version'] != 'windows-adapter-snapshot-2':
+                raise JournalError('WIRE_EVIDENCE_UNAVAILABLE')
+            return tuple(_wire(p['wire'], p['wireSha256']) for p in snapshot['pages'])
+
+    @property
+    def fixture_wire(self):
+        with self._lock:
+            snapshot, _ = self._read()
+            if snapshot['version'] != 'windows-adapter-snapshot-2':
+                raise JournalError('WIRE_EVIDENCE_UNAVAILABLE')
+            return _wire(snapshot['fixtureWire'], snapshot['fixtureWireSha256'])
+
     def commit_page(self, payload, received_at):
         with self._lock:
             snapshot, state = self._read()
+            if snapshot['version'] != 'windows-adapter-snapshot-2':
+                raise JournalError('LEGACY_SNAPSHOT_READ_ONLY')
             parsed = validate_page(payload)
             expected = {_encode(p['afterToken']): _encode(p['response'])
                         for p in snapshot['fixture']['pages']}
@@ -96,7 +147,9 @@ class WindowsAdapterCandidate:
             result = state.admit(payload, received_at)
             if result['status'] in ('RETRANSMISSION', 'NO_NEW_DATA'):
                 return {'status': result['status'], 'sourceAcknowledgement': 'NOT_SENT'}
-            snapshot['pages'].append({'page': parsed.original, 'received': _utc(received_at)})
+            encoded, digest = _evidence(parsed.wire)
+            snapshot['pages'].append({'page': parsed.original, 'received': _utc(received_at),
+                                      'wire': encoded, 'wireSha256': digest})
             _replay(snapshot)
             return self._journal.append(_pack(snapshot))
 
