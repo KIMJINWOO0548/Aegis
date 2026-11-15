@@ -42,3 +42,44 @@ Independent review reran the five replay tests on Python 3.12: **5/5 PASS**,
 with no blocker inside this isolated scope. `timeout_ms` bounds only adapter.read;
 synchronous validation/commit is outside that read timeout and cannot be interrupted
 by asyncio cancellation midway. This API does not promise an end-to-end deadline.
+
+## Bounded read retry follow-up
+
+`max_attempts` accepts only integers 1..3 and defaults to 1, preserving existing
+single-read behavior. Only adapter read TimeoutError is retried. Each attempt uses
+the same committed cursor; validation and persistence happen once after a successful
+read. A commit TimeoutError is not misclassified as an adapter timeout, and an
+ambiguous flush still fences the store with RESULT_UNKNOWN. External cancellation
+is immediately propagated without consuming further attempts. No source ACK is sent.
+
+The per-attempt timeout bounds only cooperative async adapter reads, not synchronous
+validation or storage. There is no unbounded loop, background polling, equipment
+reconnection or Windows service integration. The production guards are unchanged.
+
+Seven new cases failed before implementing the new policy (missing max_attempts).
+The final four Windows candidate suites passed 49/49 on Python 3.12.10, including
+nine retry-policy/timeout/cancel/uncertain-write cases. The first sandboxed run had
+46 passes and one hardlink fixture PermissionError (WinError 5); rerunning through
+the normal approved execution path allowed the hardlink safety test to run and pass.
+Full application regression is tracked separately and is not implied by this count.
+
+Independent review reran all 14 replay tests successfully and separately checked
+non-timeout AdapterError and response cursor mismatch: one read, zero commits,
+original exception preserved. No scoped blocker was found. This remains a
+synthetic-only candidate; it does not establish real equipment or service recovery.
+
+Full application pytest was also executed on Windows: **298 failed, 964 passed,
+11 skipped, 30 errors**, 2 warnings, 389.05 seconds. This is NOT a green application
+regression. The run started before the final two cancellation/flush tests were added;
+those are covered by the later 49/49 focused run and independent 14/14 replay run.
+Representative failures were rerun individually: stored-records empty-adapter test
+fails at AdapterStore with PLATFORM_UNVERIFIED; storage-policy unconfigured test
+fails at diagnose_storage with PLATFORM_UNVERIFIED. The journal hardlink failure in
+the sandboxed full run is the WinError 5 fixture restriction described above.
+The complete 298-failure/30-error set has NOT been individually attributed, and no
+claim is made that every failure is environmental or pre-existing. The full output
+was in a per-command temporary directory removed when the session ended; its final
+summary was captured, but detailed tracebacks were not retained. Test-generated
+tracked evidence JSON files were backed up outside the repository and restored to
+HEAD; they are not included in this feature commit. Production Windows guards remain
+closed rather than being weakened to turn platform-gated tests green.
