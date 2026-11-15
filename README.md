@@ -1,5 +1,12 @@
 # Aegis Insight
 
+## Platform preflight
+
+Before using the opt-in adapter/archive tools, run `python -m aegis.platform_support`.
+Windows currently blocks several storage/backup paths with `PLATFORM_UNVERIFIED`.
+The preflight does not modify files or certify runtime behavior. See the
+[Gamja reconciliation and remaining Windows gates](docs/GAMJA_RECONCILIATION_20261116.md).
+
 nullable 원본과 출처 선언은 별도 새 쓰기 계약으로 저장하고 공통 조회로 다시 읽습니다.
 합성 collector 예제와 장애·재시작 시험을 제공하며 기존 스키마를 자동 변경하지 않습니다.
 [새 쓰기 계약·수집/재조회·검증 한계](docs/INPUT_ARCHIVE_20261109.md).
