@@ -29,6 +29,15 @@ def report(platform=os):
                 "scope": "READ_ONLY_FIXTURE_FINAL_COMPONENT_NOFOLLOW",
             })
             continue
+        if name == "adapter_store" and platform.name == "nt":
+            features.append({
+                "name": name,
+                "status": "NATIVE_WRITER_AVAILABLE",
+                "missing": [],
+                "scope": "TRUSTED_LOCAL_NTFS_PROCESS_RECOVERY",
+                "directorySync": "UNSUPPORTED",
+            })
+            continue
         missing = ([] if platform.name == "posix" else ["posix"])
         missing += [flag for flag in flags if not hasattr(platform, flag)]
         features.append({

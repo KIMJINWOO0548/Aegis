@@ -61,6 +61,11 @@ This first runner performs **synchronous SQLite work inside a standalone fixture
 
 ## Filesystem, schema and limits
 
+The original POSIX implementation is described below. The follow-up
+[Windows AdapterStore implementation](WINDOWS_ADAPTER_STORE_20261116.md)
+retains the same storage schema and local commit semantics with a separate
+path admission and initial publication policy.
+
 New store files use exclusive create0600 in an existing parent. Existing files must be regular, singly linked files with the adapter application marker/version in their main header **before SQLite opens them**. Raw-v1, unknown/empty files, symlinks, hardlinks and reserved `-wal/-shm/-journal` target names are refused. Existing companions block new creation; existing store companions must be regular singly linked files. Trusted local directories without hostile concurrent path replacement are required.
 
 Initialize only the newly created file using DELETE journal/EXTRA synchronization, commit schema/descriptor and sync its parent, then use WAL/FULL. The marker is thereby in the main header before later WAL reads. SQLite manages its own journal/SHM lifecycle; the application performs no retention deletion, backup overwrite, source checkpoint, raw-v1 alteration or migration. Failed initialization artifacts are preserved, not automatically removed. If initialization was interrupted before the marker/schema completed, a later open may refuse the incomplete file; inspect it and choose a new file rather than overwriting it.

@@ -1,5 +1,10 @@
 # Windows storage implementation boundary
 
+Follow-up: [the product AdapterStore Windows path](WINDOWS_ADAPTER_STORE_20261116.md)
+now supports trusted local NTFS process recovery with the existing database
+format. This document retains the pre-implementation baseline and broader
+archive/backup/service acceptance conditions.
+
 ## Current result
 
 Production `AdapterStore`, nullable archive and backup publication remain

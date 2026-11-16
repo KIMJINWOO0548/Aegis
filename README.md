@@ -3,10 +3,11 @@
 ## Platform preflight
 
 Before using the opt-in adapter/archive tools, run `python -m aegis.platform_support`.
-Windows currently blocks several storage/backup paths with `PLATFORM_UNVERIFIED`.
-The read-only synthetic fixture CLI now has a bounded Windows handle reader;
-this does not enable durable adapter storage or backup/restore. See the
-[Windows fixture scope and actual tests](docs/WINDOWS_FIXTURE_READER_20261116.md).
+Windows supports the synthetic `AdapterStore` writer on a trusted local NTFS
+directory, with tested process recovery and explicit directory-sync limits.
+See [supported Windows storage and actual tests](docs/WINDOWS_ADAPTER_STORE_20261116.md).
+Nullable archive, archive backup/restore and storage diagnostics retain their
+own `PLATFORM_UNVERIFIED` gates.
 The preflight does not modify files or certify runtime behavior. See the
 [Gamja reconciliation and remaining Windows gates](docs/GAMJA_RECONCILIATION_20261116.md).
 

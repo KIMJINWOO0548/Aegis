@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+from contextlib import closing, nullcontext
 from datetime import datetime, timezone
 import errno
 import hashlib
@@ -175,6 +176,10 @@ def _check_header(path):
             raise StoreError('UNSAFE_STORE_PATH')
         header=os.read(fd,100)
     finally:os.close(fd)
+    _validate_header(header)
+
+
+def _validate_header(header):
     if (len(header)!=100 or header[:16]!=b'SQLite format 3\x00'
             or int.from_bytes(header[68:72],'big')!=APPLICATION_ID
             or int.from_bytes(header[60:64],'big')!=STORE_VERSION):
@@ -191,10 +196,11 @@ class AdapterStore:
     """One trusted local fixture/stream. Synchronous I/O, no executor or source ACK."""
     def __init__(self,path,adapter):
         self._connection=None
+        self._windows=None
         self._fenced=False
         self._operation=False
         try:
-            if os.name!='posix' or not hasattr(os,'O_NOFOLLOW') or not hasattr(os,'O_DIRECTORY'):
+            if os.name!='nt' and (os.name!='posix' or not hasattr(os,'O_NOFOLLOW') or not hasattr(os,'O_DIRECTORY')):
                 raise StoreError('PLATFORM_UNVERIFIED')
             if type(adapter) is not SyntheticReplayAdapter:
                 raise StoreError('UNSUPPORTED_ADAPTER')
@@ -209,6 +215,16 @@ class AdapterStore:
             self.path=Path(path).absolute()
             if self.path.name.lower().endswith(('-wal','-shm','-journal')):
                 raise StoreError('UNSAFE_STORE_PATH')
+            if os.name=='nt':
+                from .windows_sqlite import WindowsStorePath, UnsafePath
+                try:
+                    self._windows=WindowsStorePath(path)
+                    self.path=self._windows.path
+                    with self._windows.serialize():
+                        self._open_windows()
+                except UnsafePath:
+                    raise StoreError('UNSAFE_STORE_PATH') from None
+                return
             parent=os.stat(self.path.parent)
             if not stat.S_ISDIR(parent.st_mode):raise StoreError('UNSAFE_STORE_PATH')
             try:
@@ -225,43 +241,111 @@ class AdapterStore:
                 fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY|os.O_NOFOLLOW,0o600)
                 os.close(fd)
             else:_check_header(self.path)  # Reject raw-v1 before SQLite can initialize sidecars.
-            connection=sqlite3.connect(self.path.as_uri()+'?mode=rw',uri=True,timeout=.2,isolation_level=None)
-            self._connection=connection
-            connection.execute('PRAGMA trusted_schema=OFF')
+            connection=self._connection=self._connect(self.path)
             if fresh:
-                connection.execute('PRAGMA journal_mode=DELETE')
-                connection.execute('PRAGMA synchronous=EXTRA')
-                connection.execute('BEGIN IMMEDIATE')
-                for statement in SCHEMA.values():connection.execute(statement)
-                connection.execute(f'PRAGMA application_id={APPLICATION_ID}')
-                connection.execute(f'PRAGMA user_version={STORE_VERSION}')
-                connection.execute('INSERT INTO store_meta VALUES(1,?,?,?,?,?,?)',
-                    (self._descriptor.adapterId,self._descriptor.adapterVersion,str(self._descriptor.streamId),
-                     self._fixture_sha,self._fixture_wire_sha,self._fixture_wire))
-                connection.execute("INSERT INTO store_state VALUES(1,'null',0,0,0)")
-                connection.commit()
+                self._initialize(connection)
                 _sync_parent(self.path)
-            self._snapshot()
-            if connection.execute('PRAGMA journal_mode=WAL').fetchone()[0]!='wal':
-                raise StoreError('STORE_CONFIGURATION')
-            connection.execute('PRAGMA synchronous=FULL')
-            if connection.execute('PRAGMA synchronous').fetchone()[0]!=2:
-                raise StoreError('STORE_CONFIGURATION')
-            size=connection.execute('PRAGMA page_size').fetchone()[0]
-            connection.execute(f'PRAGMA max_page_count={MAX_STORE_BYTES//size}')
+            self._configure()
         except BaseException as error:
-            self.close()
+            try:self.close()
+            except (OSError,sqlite3.Error):error.add_note('Storage cleanup failed.')
             if isinstance(error,(StoreError,KeyboardInterrupt,SystemExit,asyncio.CancelledError)):raise
             if isinstance(error,AdapterError):raise StoreError(error.code) from None
             raise StoreError('STORE_UNAVAILABLE') from None
 
+    @staticmethod
+    def _connect(path):
+        connection=sqlite3.connect(path.as_uri()+'?mode=rw',uri=True,timeout=.2,isolation_level=None)
+        try:connection.execute('PRAGMA trusted_schema=OFF')
+        except BaseException:
+            connection.close()
+            raise
+        return connection
+
+    def _initialize(self,connection):
+        connection.execute('PRAGMA journal_mode=DELETE')
+        connection.execute('PRAGMA synchronous=EXTRA')
+        connection.execute('BEGIN IMMEDIATE')
+        for statement in SCHEMA.values():connection.execute(statement)
+        connection.execute(f'PRAGMA application_id={APPLICATION_ID}')
+        connection.execute(f'PRAGMA user_version={STORE_VERSION}')
+        connection.execute('INSERT INTO store_meta VALUES(1,?,?,?,?,?,?)',
+            (self._descriptor.adapterId,self._descriptor.adapterVersion,str(self._descriptor.streamId),
+             self._fixture_sha,self._fixture_wire_sha,self._fixture_wire))
+        connection.execute("INSERT INTO store_state VALUES(1,'null',0,0,0)")
+        connection.commit()
+
+    def _open_windows(self):
+        companions=self._check_windows_companions(opening=True)
+        try:
+            header=self._windows.read_header()
+        except FileNotFoundError:
+            if companions:
+                raise StoreError('STORE_COMPANION_EXISTS')
+            stage=self._windows.stage()
+            try:
+                with closing(self._connect(stage)) as connection:
+                    self._initialize(connection)
+                    validate_adapter_snapshot(connection,_Budget(),expected_descriptor=self._descriptor,
+                                              expected_fixture_sha=self._fixture_sha)
+                self._windows.publish(stage)
+            except BaseException as error:
+                # SQLite is closed. Clean only names owned by this initialization attempt.
+                try:
+                    Path(str(stage)+'-journal').unlink(missing_ok=True)
+                    stage.unlink(missing_ok=True)
+                except OSError:error.add_note('Staging cleanup failed.')
+                raise
+            header=self._windows.read_header()
+        _validate_header(header)
+        if '-journal' in companions:
+            # Not created by the Windows WAL writer; recovery could rewrite the existing DB.
+            raise StoreError('STORE_RECOVERY_REQUIRED')
+        self._connection=self._connect(self.path)
+        # A rejected DB may have a surviving WAL. Do not checkpoint its evidence on close.
+        if '-wal' in companions:
+            self._connection.setconfig(sqlite3.SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE,True)
+        self._configure()
+        self._connection.setconfig(sqlite3.SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE,False)
+
+    def _configure(self):
+        self._snapshot()
+        connection=self._connection
+        if connection.execute('PRAGMA journal_mode=WAL').fetchone()[0]!='wal':
+            raise StoreError('STORE_CONFIGURATION')
+        connection.execute('PRAGMA synchronous=FULL')
+        if connection.execute('PRAGMA synchronous').fetchone()[0]!=2:
+            raise StoreError('STORE_CONFIGURATION')
+        size=connection.execute('PRAGMA page_size').fetchone()[0]
+        connection.execute(f'PRAGMA max_page_count={MAX_STORE_BYTES//size}')
+
     def __enter__(self):return self
-    def __exit__(self,*_args):self.close()
+    def __exit__(self,kind,error,traceback):
+        try:self.close()
+        except (OSError,sqlite3.Error):
+            if error is None:raise
+            error.add_note('Storage cleanup failed.')
 
     def close(self):
+        if self._windows is None:
+            self._close_connection()
+            return
+        if self._connection is not None:
+            from .windows_sqlite import StoreBusy
+            try:
+                with self._windows.serialize(timeout_ms=12000):
+                    self._close_connection()
+            except StoreBusy:
+                # Close without a checkpoint: the competing process owns writer serialization.
+                self._connection.setconfig(sqlite3.SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE,True)
+                self._close_connection()
+        guard,self._windows=self._windows,None
+        guard.close()
+
+    def _close_connection(self):
         connection=self._connection
-        self._connection=None
         if connection is not None:connection.close()
+        self._connection=None
 
     def _live(self,*,public=False):
         if self._fenced:raise StoreError('STORE_RESULT_UNKNOWN')
@@ -270,7 +354,7 @@ class AdapterStore:
 
     def _fence(self):
         self._fenced=True
-        try:self.close()
+        try:self._close_connection()
         except (OSError,sqlite3.Error):pass
 
     def _rollback(self):
@@ -316,7 +400,24 @@ class AdapterStore:
         finally:
             if self._connection is not None:self._connection.set_progress_handler(None,0)
 
-    def _public_snapshot(self):self._live(public=True);return self._snapshot()
+    def _operation_guard(self):
+        return self._windows.serialize() if self._windows is not None else nullcontext()
+
+    def _check_windows_companions(self,*,opening=False):
+        if self._windows is not None:
+            from .windows_sqlite import valid_wal_header
+            try:companions=self._windows.companions()
+            except ValueError:raise StoreError('UNSAFE_STORE_PATH') from None
+            if ('-journal' in companions and not opening
+                    or '-wal' in companions and not valid_wal_header(Path(str(self.path)+'-wal'))):
+                raise StoreError('STORE_RECOVERY_REQUIRED')
+            return companions
+
+    def _public_snapshot(self):
+        self._live(public=True)
+        with self._operation_guard():
+            self._check_windows_companions()
+            return self._snapshot()
     @property
     def committed_cursor(self):return self._public_snapshot().cursor
     @property
@@ -344,6 +445,12 @@ class AdapterStore:
     def _confirm_after_commit(self,expected_confirmation):return self._snapshot(expected_confirmation)
 
     def commit_page(self,payload,received_at):
+        self._live(public=True)
+        with self._operation_guard():
+            self._check_windows_companions()
+            return self._commit_page(payload,received_at)
+
+    def _commit_page(self,payload,received_at):
         self._live(public=True)
         self._operation=True;attempted=False;budget=_Budget();c=self._connection
         c.set_progress_handler(budget.progress,1000)
@@ -376,11 +483,11 @@ class AdapterStore:
             confirmed=self._confirm_after_commit(confirmation)
             page_status=('LOCAL_STORE_COMMITTED' if changed else (
                 'ALREADY_LOCAL_STORE_COMMITTED' if outcome['status']=='RETRANSMISSION' else 'NO_NEW_PAGE'))
-            return {'status':'COMMITTED' if changed else outcome['status'],'pageCommitStatus':page_status,
+            return self._add_durability({'status':'COMMITTED' if changed else outcome['status'],'pageCommitStatus':page_status,
                 'persistenceStatus':'LOCAL_STORE_COMMITTED' if page_status!='NO_NEW_PAGE' else 'NO_NEW_PAGE_COMMITTED',
                 'committedCursor':confirmed.cursor,'ended':confirmed.ended,
                 'newRecords':outcome['acceptedRecords'],'legacyArchiveDelivery':'NOT_CONNECTED',
-                'sourceAcknowledgement':'NOT_SENT'}
+                'sourceAcknowledgement':'NOT_SENT'})
         except BaseException as error:
             if attempted:
                 self._fence()
@@ -402,7 +509,7 @@ class AdapterStore:
 
     def report(self):
         state=self._public_snapshot();report=state.report();counts=report['counts']
-        return {'schemaVersion':'adapter-store-report-1',
+        return self._add_durability({'schemaVersion':'adapter-store-report-1',
             'persistenceStatus':'LOCAL_STORE_COMMITTED' if counts['acceptedPages'] else 'NO_COMMITTED_PAGE',
             'legacyArchiveDelivery':'NOT_CONNECTED','sourceAcknowledgement':'NOT_SENT',
             'declaredOrigin':'SYNTHETIC','sourceAccessMode':'READ_ONLY','localStoreAccess':'READ_WRITE',
@@ -411,7 +518,14 @@ class AdapterStore:
             'counts':{'committedPages':counts['acceptedPages'],'committedRecords':counts['acceptedRecords'],
                 'missingSourceTimestampRecords':counts['missingSourceTimestampRecords'],
                 'missingSourceSequenceRecords':counts['missingSourceSequenceRecords'],
-                'missingSourceRunRecords':counts['missingSourceRunRecords']}}
+                'missingSourceRunRecords':counts['missingSourceRunRecords']}})
+
+    def _add_durability(self,result):
+        if self._windows is not None:
+            result['durability']={'transactionSync':'SQLITE_WAL_FULL',
+                                  'directorySync':'UNSUPPORTED',
+                                  'powerLoss':'NOT_VERIFIED'}
+        return result
 
 
 class DurableAdapterSession:
