@@ -7,6 +7,8 @@ import sqlite3
 
 import pytest
 
+from platform_requirements import fifo_case
+
 from test_archive import AT, RUN, snapshot
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -264,7 +266,7 @@ def test_resource_limits_fail_whole_query(tmp_path,monkeypatch,constant,value):
     assert e.value.code=='QUERY_LIMIT'
 
 
-@pytest.mark.parametrize('kind',['fifo','symlink','hardlink','directory'])
+@pytest.mark.parametrize('kind',[fifo_case,'symlink','hardlink','directory'])
 def test_unsafe_source_is_rejected_before_sqlite_open(tmp_path,monkeypatch,kind):
     import os
     p=tmp_path/'unsafe'

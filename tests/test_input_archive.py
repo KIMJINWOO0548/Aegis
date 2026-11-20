@@ -14,6 +14,8 @@ import sys
 
 import pytest
 
+from platform_requirements import requires_posix_nullable_archive
+
 from test_adapter_input import AT, RUN, fixture, page as adapter_page, record, wire
 
 
@@ -53,6 +55,7 @@ def rows(connection):
 
 @pytest.mark.parametrize('origin',['DEVICE','SYNTHETIC','UNKNOWN'])
 @pytest.mark.parametrize('method',['SOURCE_BUFFER_REPLAY','SNAPSHOT_READ'])
+@requires_posix_nullable_archive
 def test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen(tmp_path,origin,method):
     a=api();p=page([record(),record('provided',provided=True,value=2**60)],
         declaredOrigin=origin,acquisitionMethod=method);bound=descriptor(p);path=tmp_path/'archive.sqlite'
@@ -97,6 +100,7 @@ def test_write_page_validation_keeps_original_wire_and_canonical_content():
     {'declaredOrigin':'REAL_DEVICE_VERIFIED'}, {'acquisitionMethod':'DEVICE_CONTROL'},
     {'streamId':'invalid'}, {'endOfStream':1},
 ])
+@requires_posix_nullable_archive
 def test_invalid_page_contract_does_not_create_partial_records(tmp_path,change):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:
@@ -106,6 +110,7 @@ def test_invalid_page_contract_does_not_create_partial_records(tmp_path,change):
 
 @pytest.mark.parametrize('field,status',[('observedAtUtc','timestampStatus'),('sequence','sequenceStatus'),('runId','runIdStatus')])
 @pytest.mark.parametrize('mutation',['missing','contradiction'])
+@requires_posix_nullable_archive
 def test_original_metadata_presence_is_validated_without_fabrication(tmp_path,field,status,mutation):
     a=api();p=page([record('valid'),record('bad')]);metadata=p['records'][1]['sourceMetadata']
     if mutation=='missing':del metadata[field]
@@ -127,6 +132,7 @@ def test_descriptor_requires_exact_supported_binding_fields(tmp_path,bound):
 
 @pytest.mark.parametrize('change',[{'adapterId':'other'},{'streamId':RUN},
     {'declaredOrigin':'DEVICE'},{'acquisitionMethod':'SNAPSHOT_READ'}])
+@requires_posix_nullable_archive
 def test_reopen_and_page_binding_mismatches_preserve_existing_state(tmp_path,change):
     a=api();path=tmp_path/'archive.sqlite';bound=descriptor()
     with a.InputArchive(path,bound) as archive:
@@ -139,6 +145,7 @@ def test_reopen_and_page_binding_mismatches_preserve_existing_state(tmp_path,cha
     assert error.value.code=='STORE_BINDING_MISMATCH' and path.read_bytes()==before
 
 
+@requires_posix_nullable_archive
 def test_descriptor_input_is_copied_and_cannot_change_committed_binding(tmp_path):
     a=api();bound=descriptor();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,bound) as archive:
@@ -148,6 +155,7 @@ def test_descriptor_input_is_copied_and_cannot_change_committed_binding(tmp_path
     with a.InputArchive(path,descriptor()) as reopened:assert reopened.ended
 
 
+@requires_posix_nullable_archive
 def test_canonical_retransmission_preserves_first_wire_receipt_and_cursor(tmp_path):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:
@@ -164,6 +172,7 @@ def test_canonical_retransmission_preserves_first_wire_receipt_and_cursor(tmp_pa
         assert archive.records==before
 
 
+@requires_posix_nullable_archive
 def test_record_deduplication_keeps_first_receipt_and_conflict_rolls_back_whole_page(tmp_path):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:
@@ -179,6 +188,7 @@ def test_record_deduplication_keeps_first_receipt_and_conflict_rolls_back_whole_
 
 
 @pytest.mark.parametrize('kind',['out_of_order','loop','after_eof'])
+@requires_posix_nullable_archive
 def test_token_order_loops_and_eof_never_advance_invalid_delivery(tmp_path,kind):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:
@@ -196,6 +206,7 @@ def test_token_order_loops_and_eof_never_advance_invalid_delivery(tmp_path,kind)
 
 
 @pytest.mark.parametrize('end',[False,True])
+@requires_posix_nullable_archive
 def test_empty_nonterminal_has_no_commit_but_empty_terminal_is_durable(tmp_path,end):
     a=api();path=tmp_path/'archive.sqlite';p=page([],next=None,end=end)
     with a.InputArchive(path,descriptor()) as archive:
@@ -208,6 +219,7 @@ def test_empty_nonterminal_has_no_commit_but_empty_terminal_is_durable(tmp_path,
     with a.InputArchive(path,descriptor()) as archive:assert archive.ended==end and archive.records==()
 
 
+@requires_posix_nullable_archive
 def test_failure_after_page_and_record_inserts_rolls_back_cursor_and_can_retry(tmp_path,monkeypatch):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:
@@ -224,6 +236,7 @@ def test_failure_after_page_and_record_inserts_rolls_back_cursor_and_can_retry(t
 
 
 @pytest.mark.parametrize('changed_evidence',['wire','receipt'])
+@requires_posix_nullable_archive
 def test_precommit_write_hook_cannot_rewrite_preexisting_prefix_and_rolls_back_whole_page(tmp_path,monkeypatch,changed_evidence):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:
@@ -251,6 +264,7 @@ def test_precommit_write_hook_cannot_rewrite_preexisting_prefix_and_rolls_back_w
         assert archive.committed_cursor=='delivery-2' and archive.ended
 
 
+@requires_posix_nullable_archive
 def test_sqlite_busy_and_full_leave_no_records_or_cursor_and_retry_succeeds(tmp_path):
     a=api();path=tmp_path/'archive.sqlite';p=page([record('large')])
     p['records'][0]['signals']=[{'signalKey':f'synthetic.tag{n:04d}','value':n,'unit':'count','quality':'GOOD'} for n in range(300)]
@@ -268,6 +282,7 @@ def test_sqlite_busy_and_full_leave_no_records_or_cursor_and_retry_succeeds(tmp_
         assert len(archive.records)==1 and archive.ended
 
 
+@requires_posix_nullable_archive
 def test_uncommitted_proposal_is_never_exposed_by_public_properties(tmp_path,monkeypatch):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:
@@ -284,6 +299,7 @@ def test_uncommitted_proposal_is_never_exposed_by_public_properties(tmp_path,mon
 
 
 @pytest.mark.parametrize('after_real_commit',[False,True])
+@requires_posix_nullable_archive
 def test_commit_exception_is_unknown_and_fenced_until_verified_reopen(tmp_path,monkeypatch,after_real_commit):
     a=api();path=tmp_path/'archive.sqlite';archive=a.InputArchive(path,descriptor());commit=archive._commit
     def uncertain():
@@ -301,6 +317,7 @@ def test_commit_exception_is_unknown_and_fenced_until_verified_reopen(tmp_path,m
         assert len(reopened.records)==1
 
 
+@requires_posix_nullable_archive
 def test_postcommit_readback_failure_cannot_return_success(tmp_path,monkeypatch):
     a=api();path=tmp_path/'archive.sqlite';archive=a.InputArchive(path,descriptor())
     def fail(*_args):raise OSError(errno.EIO,'injected confirmation failure')
@@ -312,6 +329,7 @@ def test_postcommit_readback_failure_cannot_return_success(tmp_path,monkeypatch)
 
 @pytest.mark.parametrize('target_ordinal',[0,1])
 @pytest.mark.parametrize('changed_evidence',['wire','receipt'])
+@requires_posix_nullable_archive
 def test_confirmation_pins_requested_wire_receipt_and_precommit_page_prefix(tmp_path,monkeypatch,target_ordinal,changed_evidence):
     a=api();path=tmp_path/'archive.sqlite';archive=a.InputArchive(path,descriptor())
     archive.append_page(wire(first()),AT);confirm=archive._confirm_after_commit;replaced=[]
@@ -336,6 +354,7 @@ def test_confirmation_pins_requested_wire_receipt_and_precommit_page_prefix(tmp_
 
 
 @pytest.mark.parametrize('limit',['MAX_ACCEPTED_PAGES','MAX_ADMITTED_RECORDS'])
+@requires_posix_nullable_archive
 def test_admission_limits_leave_preexisting_page_and_cursor_unchanged(tmp_path,monkeypatch,limit):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:
@@ -350,6 +369,7 @@ def test_admission_limits_leave_preexisting_page_and_cursor_unchanged(tmp_path,m
     datetime(2026,11,9,12),
     datetime(1,1,1,0,tzinfo=timezone(timedelta(hours=1))),
 ])
+@requires_posix_nullable_archive
 def test_naive_or_utc_overflow_receipt_does_not_change_archive(tmp_path,receipt):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:
@@ -360,6 +380,7 @@ def test_naive_or_utc_overflow_receipt_does_not_change_archive(tmp_path,receipt)
         assert archive.committed_cursor=='delivery-1' and len(archive.records)==1 and not archive.ended
 
 
+@requires_posix_nullable_archive
 def test_expired_write_budget_rolls_back_and_retry_after_restoring_budget_succeeds(tmp_path,monkeypatch):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:
@@ -382,6 +403,7 @@ def test_expired_write_budget_rolls_back_and_retry_after_restoring_budget_succee
     "UPDATE archive_records SET first_received_at_utc='2026-11-10T00:00:00Z'",
     "UPDATE stream_meta SET descriptor_sha='wrong'",
 ])
+@requires_posix_nullable_archive
 def test_restart_rejects_state_record_page_receipt_and_descriptor_tampering(tmp_path,sql):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:archive.append_page(wire(page()),AT)
@@ -392,6 +414,7 @@ def test_restart_rejects_state_record_page_receipt_and_descriptor_tampering(tmp_
 
 
 @pytest.mark.parametrize('after_commit',[False,True])
+@requires_posix_nullable_archive
 def test_actual_process_exit_before_or_after_commit_recovers_atomic_state(tmp_path,after_commit):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()):pass
@@ -434,6 +457,7 @@ def deny_writes(action,first,second,*_args):
 
 
 @pytest.mark.parametrize('live_wal',[False,True])
+@requires_posix_nullable_archive
 def test_snapshot_helper_uses_readonly_connection_without_writes_or_lifecycle_ownership(tmp_path,monkeypatch,live_wal):
     a=api();path=tmp_path/'archive.sqlite';p=page([record(),record('provided',provided=True)],declaredOrigin='DEVICE')
     bound=descriptor(p);archive=a.InputArchive(path,bound);archive.append_page(wire(p),AT)
@@ -461,6 +485,7 @@ def test_snapshot_helper_uses_readonly_connection_without_writes_or_lifecycle_ow
     finally:reader.set_authorizer(None);reader.close();archive.close()
 
 
+@requires_posix_nullable_archive
 def test_unexpected_sqlite_prefixed_trigger_is_rejected_by_readonly_schema_and_snapshot_helpers(tmp_path):
     a=api();path=tmp_path/'archive.sqlite'
     with a.InputArchive(path,descriptor()) as archive:archive.append_page(wire(page()),AT)
@@ -498,6 +523,7 @@ def test_foreign_store_is_refused_before_sqlite_without_changing_files_or_compan
 
 
 @pytest.mark.parametrize('kind',['symlink','hardlink'])
+@requires_posix_nullable_archive
 def test_unsafe_archive_links_are_refused_and_original_is_unchanged(tmp_path,kind):
     a=api();target=tmp_path/'original.sqlite'
     with a.InputArchive(target,descriptor()) as archive:archive.append_page(wire(page()),AT)

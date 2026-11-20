@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pytest
 
+from platform_requirements import requires_posix_nullable_archive
+
 
 ROOT = Path(__file__).resolve().parents[1]
 AT = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -87,6 +89,7 @@ def assert_error(result, path, store, code=None):
     assert_private(result, path, store)
 
 
+@requires_posix_nullable_archive
 def test_shipped_example_and_two_actual_cli_runs_preserve_originals_and_first_receipts(tmp_path):
     a = api()
     data = json.loads((ROOT / "examples/archive-write.synthetic.json").read_text(encoding="utf-8"))
@@ -109,6 +112,7 @@ def test_shipped_example_and_two_actual_cli_runs_preserve_originals_and_first_re
     assert store.read_bytes() == before
 
 
+@requires_posix_nullable_archive
 def test_session_captures_host_receipt_after_read_and_preserves_missing_source_metadata(tmp_path, monkeypatch):
     a = api()
     data = fixture()
@@ -132,6 +136,7 @@ def test_session_captures_host_receipt_after_read_and_preserves_missing_source_m
         assert entry["firstReceivedAtUtc"] == "2026-01-01T00:00:05Z"
 
 
+@requires_posix_nullable_archive
 def test_session_refreshes_external_committed_cursor_before_reading(tmp_path):
     a = api()
     data = fixture()
@@ -147,6 +152,7 @@ def test_session_refreshes_external_committed_cursor_before_reading(tmp_path):
 
 
 @pytest.mark.parametrize("ended", [False, True])
+@requires_posix_nullable_archive
 def test_changed_committed_fixture_prefix_fails_before_read_even_at_eof(tmp_path, ended):
     a = api()
     data = fixture()
@@ -168,6 +174,7 @@ def test_changed_committed_fixture_prefix_fails_before_read_even_at_eof(tmp_path
     assert store.read_bytes() == original_bytes
 
 
+@requires_posix_nullable_archive
 def test_uncommitted_tail_can_change_while_prior_wire_and_receipt_are_preserved(tmp_path):
     a = api()
     data = fixture()
@@ -186,6 +193,7 @@ def test_uncommitted_tail_can_change_while_prior_wire_and_receipt_are_preserved(
         assert archive.records[1]["record"]["signals"][0]["value"] == 8
 
 
+@requires_posix_nullable_archive
 def test_concurrent_different_tail_cannot_turn_own_retransmission_into_completed_claim(tmp_path, monkeypatch):
     a = api()
     data = fixture()
@@ -212,6 +220,7 @@ def test_concurrent_different_tail_cannot_turn_own_retransmission_into_completed
         assert archive.records[1]["record"]["signals"][0]["value"] == 99
 
 
+@requires_posix_nullable_archive
 def test_original_uuid_spelling_is_preserved_and_mixed_headers_fail_before_creation(tmp_path):
     a = api()
     data = fixture()
@@ -250,6 +259,7 @@ def test_terminal_delivery_token_backedge_is_rejected_before_store_creation(tmp_
     assert not store.exists()
 
 
+@requires_posix_nullable_archive
 def test_actual_cli_collect_then_stored_records_cli_queries_nullable_originals(tmp_path):
     api()
     data = fixture()
@@ -281,6 +291,7 @@ def test_actual_cli_collect_then_stored_records_cli_queries_nullable_originals(t
     assert store.read_bytes() == before
 
 
+@requires_posix_nullable_archive
 def test_timeout_retries_are_bounded_and_never_capture_a_receipt_or_commit(tmp_path):
     a = api()
     data = fixture()
@@ -298,6 +309,7 @@ def test_timeout_retries_are_bounded_and_never_capture_a_receipt_or_commit(tmp_p
 
 
 @pytest.mark.parametrize("during_read", [True, False])
+@requires_posix_nullable_archive
 def test_cancellation_before_append_never_creates_a_committed_page(tmp_path, during_read):
     a = api()
     data = fixture()
@@ -323,6 +335,7 @@ def test_cancellation_before_append_never_creates_a_committed_page(tmp_path, dur
         assert archive.records == () and archive.committed_cursor is None
 
 
+@requires_posix_nullable_archive
 def test_source_io_failure_is_sanitized_and_cannot_advance_archive(tmp_path, monkeypatch):
     a = api()
     source = a.SyntheticArchiveSource(fixture())
@@ -336,6 +349,7 @@ def test_source_io_failure_is_sanitized_and_cannot_advance_archive(tmp_path, mon
         assert archive.records == () and archive.committed_cursor is None
 
 
+@requires_posix_nullable_archive
 def test_read_limit_preserves_a_valid_prefix_then_restart_resumes(tmp_path):
     a = api()
     data = fixture()
@@ -352,6 +366,7 @@ def test_read_limit_preserves_a_valid_prefix_then_restart_resumes(tmp_path):
 
 
 @pytest.mark.parametrize("ended", [False, True])
+@requires_posix_nullable_archive
 def test_empty_no_data_stops_and_terminal_eof_is_durable(tmp_path, ended):
     a = api()
     data = fixture()
@@ -430,6 +445,7 @@ def test_invalid_policy_and_missing_parent_fail_before_store_creation(tmp_path, 
     assert not store.parent.exists()
 
 
+@requires_posix_nullable_archive
 def test_broken_stdout_after_commit_is_unknown_but_durable_archive_remains(tmp_path):
     a = api()
     data = fixture()
@@ -448,6 +464,7 @@ def test_broken_stdout_after_commit_is_unknown_but_durable_archive_remains(tmp_p
 
 
 @pytest.mark.parametrize("limited", [False, True])
+@requires_posix_nullable_archive
 def test_close_error_after_commit_is_unknown_and_success_json_is_not_emitted(tmp_path, monkeypatch, capsys, limited):
     a = api()
     data = fixture()

@@ -15,6 +15,8 @@ from urllib.parse import quote
 
 import pytest
 
+from platform_requirements import requires_posix_archive_publication
+
 from aegis.archive import RawArchive
 
 
@@ -127,6 +129,7 @@ def input_for(command, source, tmp_path):
     return backup, manifest
 
 
+@requires_posix_archive_publication
 def test_cli_roundtrip_preserves_exact_rows_first_receipts_cursors_gaps_and_resume(source, tmp_path):
     before = db_state(source)
     original_bytes = source.read_bytes()
@@ -172,6 +175,7 @@ def test_cli_roundtrip_preserves_exact_rows_first_receipts_cursors_gaps_and_resu
 
 @pytest.mark.parametrize("command", ["verify", "restore"])
 @pytest.mark.parametrize("field", ["artifactSha256", "snapshot"])
+@requires_posix_archive_publication
 def test_cli_rejects_tampered_expected_manifest_without_publishing(source, tmp_path, command, field):
     backup, manifest, reference = prepare_backup(source, tmp_path)
     tampered = copy.deepcopy(reference)
@@ -191,6 +195,7 @@ def test_cli_rejects_tampered_expected_manifest_without_publishing(source, tmp_p
 
 
 @pytest.mark.parametrize("command", ["verify", "restore"])
+@requires_posix_archive_publication
 def test_cli_rejects_changed_sqlite_content_even_when_database_integrity_is_ok(source, tmp_path, command):
     backup, manifest, _ = prepare_backup(source, tmp_path)
     original = db_state(source)
@@ -207,7 +212,7 @@ def test_cli_rejects_changed_sqlite_content_even_when_database_integrity_is_ok(s
     assert backup.read_bytes() == changed_bytes and db_state(source) == original
 
 
-@pytest.mark.parametrize("command", ["backup", "restore"])
+@pytest.mark.parametrize("command", ["backup", pytest.param("restore", marks=requires_posix_archive_publication)])
 @pytest.mark.parametrize("kind", ["file", "directory", "symlink", "dangling_symlink", "hardlink"])
 def test_cli_preserves_existing_destination_and_aliases(source, tmp_path, command, kind):
     input_path, manifest = input_for(command, source, tmp_path)
@@ -243,7 +248,7 @@ def test_cli_preserves_existing_destination_and_aliases(source, tmp_path, comman
     assert input_path.read_bytes() == input_bytes
 
 
-@pytest.mark.parametrize("command", ["backup", "restore"])
+@pytest.mark.parametrize("command", ["backup", pytest.param("restore", marks=requires_posix_archive_publication)])
 @pytest.mark.parametrize("suffix", ["-wal", "-shm", "-journal"])
 def test_cli_preserves_existing_destination_sidecars(source, tmp_path, command, suffix):
     input_path, manifest = input_for(command, source, tmp_path)
@@ -262,7 +267,7 @@ def test_cli_preserves_existing_destination_sidecars(source, tmp_path, command, 
     assert input_path.read_bytes() == input_bytes
 
 
-@pytest.mark.parametrize("command", ["backup", "restore"])
+@pytest.mark.parametrize("command", ["backup", pytest.param("restore", marks=requires_posix_archive_publication)])
 @pytest.mark.parametrize("suffix", ["-wal", "-shm", "-journal"])
 def test_cli_refuses_absent_source_companion_as_destination(source, tmp_path, command, suffix):
     input_path, manifest = input_for(command, source, tmp_path)
@@ -275,7 +280,7 @@ def test_cli_refuses_absent_source_companion_as_destination(source, tmp_path, co
     assert input_path.read_bytes() == input_bytes
 
 
-@pytest.mark.parametrize("command", ["backup", "verify", "restore"])
+@pytest.mark.parametrize("command", ["backup", pytest.param("verify", marks=requires_posix_archive_publication), pytest.param("restore", marks=requires_posix_archive_publication)])
 @pytest.mark.parametrize("kind", ["missing", "corrupt"])
 def test_cli_does_not_create_or_rewrite_missing_or_corrupt_source(source, tmp_path, command, kind):
     _, manifest = input_for(command, source, tmp_path)
@@ -303,6 +308,7 @@ def test_cli_requires_expected_manifest_and_emits_only_structured_error(source, 
 
 
 @pytest.mark.parametrize("command", ["verify", "restore"])
+@requires_posix_archive_publication
 def test_cli_rejects_corrupt_manifest_without_partial_stdout_or_source_change(source, tmp_path, command):
     backup, manifest, _ = prepare_backup(source, tmp_path)
     backup_bytes = backup.read_bytes()

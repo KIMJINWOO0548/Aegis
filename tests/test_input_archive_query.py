@@ -8,6 +8,8 @@ import sqlite3
 
 import pytest
 
+from platform_requirements import requires_posix_nullable_archive
+
 from test_stored_records import AT, START, END, sources as old_sources
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -52,6 +54,7 @@ def test_new_kind_is_an_explicit_accepted_read_contract():
 
 @pytest.mark.parametrize('origin',['SYNTHETIC','DEVICE','UNKNOWN'])
 @pytest.mark.parametrize('method',['SOURCE_BUFFER_REPLAY','SNAPSHOT_READ'])
+@requires_posix_nullable_archive
 def test_write_requery_preserves_original_nulls_source_declaration_and_receipt(tmp_path,origin,method):
     path=tmp_path/'input.db';d,pages=seed(path,origin,method);before=path.read_bytes()
     r=query([spec(path)],signals='synthetic.optional,absent')
@@ -82,6 +85,7 @@ def test_write_requery_preserves_original_nulls_source_declaration_and_receipt(t
     assert 'synthetic-token' not in json.dumps(r)
 
 
+@requires_posix_nullable_archive
 def test_three_formats_share_query_and_keep_separate_identities(tmp_path):
     ss=old_sources(tmp_path);new=tmp_path/'input.db';seed(new)
     r=query([*ss,spec(new)])
@@ -98,6 +102,7 @@ def test_three_formats_share_query_and_keep_separate_identities(tmp_path):
     "update stream_meta set descriptor_json='{}'",
     'create table sqliteXhidden(value)',
 ])
+@requires_posix_nullable_archive
 def test_invalid_new_store_fails_entire_query_and_preserves_files(tmp_path,sql):
     ss=old_sources(tmp_path);new=tmp_path/'input.db';seed(new)
     with sqlite3.connect(new) as c:c.execute(sql)
@@ -111,6 +116,7 @@ def test_new_kind_does_not_accept_fixture_binding_option(tmp_path):
     assert e.value.code=='INVALID_QUERY'
 
 
+@requires_posix_nullable_archive
 def test_query_reader_uses_no_writer_and_pins_new_archive_wal_prefix(tmp_path,monkeypatch):
     from aegis.input_archive import InputArchive
     path=tmp_path/'input.db';d,pages=seed(path,both=False);writer=InputArchive(path,d)
@@ -126,6 +132,7 @@ def test_query_reader_uses_no_writer_and_pins_new_archive_wal_prefix(tmp_path,mo
     finally:writer.close()
 
 
+@requires_posix_nullable_archive
 def test_write_failure_reopen_retry_then_actual_common_query_preserves_first_receipt(tmp_path,monkeypatch):
     from aegis.input_archive import InputArchive,StoreError
     path=tmp_path/'input.db';d,pages=seed(path,both=False);writer=InputArchive(path,d)

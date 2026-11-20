@@ -14,6 +14,8 @@ from urllib.parse import quote
 
 import pytest
 
+from platform_requirements import requires_posix_storage_diagnostics
+
 from aegis.archive import RawArchive
 
 
@@ -155,6 +157,7 @@ def assert_error(result, *private_paths):
         assert str(path) not in result.stderr and path.name not in result.stderr
 
 
+@requires_posix_storage_diagnostics
 def test_cli_unconfigured_report_preserves_exact_archive_cursor_gap_and_backups(files):
     source, backup_dir, backup = files
     original = db_state(source)
@@ -177,6 +180,7 @@ def test_cli_unconfigured_report_preserves_exact_archive_cursor_gap_and_backups(
     assert backup.read_bytes() == backup_bytes
 
 
+@requires_posix_storage_diagnostics
 def test_cli_without_backup_or_telemetry_does_not_invent_measurements(files, tmp_path):
     source, backup_dir, _ = files
     policy_path = write_json(tmp_path / "policy.json", policy(backupMtimeReviewDays=1,
@@ -188,6 +192,7 @@ def test_cli_without_backup_or_telemetry_does_not_invent_measurements(files, tmp
     assert body["checks"]["commitLatency"]["status"] == "UNAVAILABLE"
 
 
+@requires_posix_storage_diagnostics
 def test_cli_thresholds_report_exceeded_and_keep_all_inputs_unchanged(files, tmp_path):
     source, backup_dir, backup = files
     refresh_matching_cursor_receipt(source)
@@ -204,6 +209,7 @@ def test_cli_thresholds_report_exceeded_and_keep_all_inputs_unchanged(files, tmp
     assert {path: path.read_bytes() for path in paths} == original
 
 
+@requires_posix_storage_diagnostics
 def test_cli_configured_measured_values_can_be_within_limits_without_global_pass(files, tmp_path):
     source, backup_dir, backup = files
     refresh_matching_cursor_receipt(source)
@@ -220,6 +226,7 @@ def test_cli_configured_measured_values_can_be_within_limits_without_global_pass
     assert {path: path.read_bytes() for path in paths} == original
 
 
+@requires_posix_storage_diagnostics
 def test_cli_empty_archive_receipt_measurements_are_unavailable(files, tmp_path):
     _, backup_dir, _ = files
     empty = tmp_path / "private-empty-archive-marker.sqlite"
@@ -245,6 +252,7 @@ def test_cli_empty_archive_receipt_measurements_are_unavailable(files, tmp_path)
     telemetry(at=AT - timedelta(hours=1)), telemetry(at=AT + timedelta(seconds=1)),
     telemetry(sequence=4), telemetry(run="22222222-2222-4222-8222-222222222222"),
 ])
+@requires_posix_storage_diagnostics
 def test_cli_commit_threshold_requires_fresh_matching_cursor_capture(files, tmp_path, capture):
     source, backup_dir, _ = files
     policy_path = write_json(tmp_path / "policy.json", policy(maxArchiveCommitMs=5,
@@ -254,6 +262,7 @@ def test_cli_commit_threshold_requires_fresh_matching_cursor_capture(files, tmp_
     assert body["checks"]["commitLatency"]["status"] == "UNAVAILABLE"
 
 
+@requires_posix_storage_diagnostics
 def test_cli_explicit_future_evaluation_time_is_used_instead_of_wall_clock(files, tmp_path):
     source, backup_dir, _ = files
     future = AT + timedelta(days=365)
@@ -264,6 +273,7 @@ def test_cli_explicit_future_evaluation_time_is_used_instead_of_wall_clock(files
 
 
 @pytest.mark.parametrize("kind", ["missing", "corrupt"])
+@requires_posix_storage_diagnostics
 def test_cli_archive_failure_is_reported_without_creating_or_repairing_it(files, tmp_path, kind):
     _, backup_dir, _ = files
     source = tmp_path / "private-broken-archive-marker.sqlite"
@@ -281,6 +291,7 @@ def test_cli_archive_failure_is_reported_without_creating_or_repairing_it(files,
         assert source.read_bytes() == b"synthetic invalid SQLite file"
 
 
+@requires_posix_storage_diagnostics
 def test_cli_missing_requested_backup_is_unavailable_and_is_not_created(files, tmp_path):
     source, backup_dir, _ = files
     missing = backup_dir / "private-missing-backup-marker.sqlite"
@@ -320,6 +331,7 @@ def test_cli_rejects_too_many_explicit_backups_without_leaking_filenames(files):
     assert_error(result, source, backup_dir, backup)
 
 
+@requires_posix_storage_diagnostics
 def test_cli_policy_reference_is_independent_of_json_whitespace_and_key_order(files, tmp_path):
     source, backup_dir, _ = files
     data = policy(maxReceiptAgeSeconds=60)

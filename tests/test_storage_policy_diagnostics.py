@@ -11,6 +11,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from platform_requirements import requires_posix_storage_diagnostics, fifo_case
+
 from test_archive import AT, RUN, snapshot
 
 
@@ -48,6 +50,7 @@ def setup(tmp_path):
     return source,directory,backup
 
 
+@requires_posix_storage_diagnostics
 def test_unconfigured_is_explicit_and_receipt_age_is_not_commit_latency(tmp_path):
     a=api();s,d,b=setup(tmp_path);before=s.read_bytes();original=b.read_bytes()
     r=a.diagnose_storage(s,d,backups=[b],now=AT+timedelta(seconds=5))
@@ -64,6 +67,7 @@ def test_unconfigured_is_explicit_and_receipt_age_is_not_commit_latency(tmp_path
 
 
 @pytest.mark.parametrize('age,expected',[(2,'EXCEEDED'),(2.001,'WITHIN_LIMIT')])
+@requires_posix_storage_diagnostics
 def test_receipt_and_retention_boundaries_preserve_cursor_and_gap(tmp_path,age,expected):
     a=api();s,d,b=setup(tmp_path)
     with sqlite3.connect(s) as c:before=[c.execute('select * from '+t).fetchall() for t in ('raw_batches','ingest_cursors','ingest_gaps')]
@@ -72,6 +76,7 @@ def test_receipt_and_retention_boundaries_preserve_cursor_and_gap(tmp_path,age,e
     with sqlite3.connect(s) as c:assert before==[c.execute('select * from '+t).fetchall() for t in ('raw_batches','ingest_cursors','ingest_gaps')]
 
 
+@requires_posix_storage_diagnostics
 def test_retention_is_first_receipt_advisory_and_backup_age_is_only_mtime(tmp_path):
     a=api();s,d,b=setup(tmp_path)
     os.utime(b,(AT.timestamp(),AT.timestamp()))
@@ -83,6 +88,7 @@ def test_retention_is_first_receipt_advisory_and_backup_age_is_only_mtime(tmp_pa
     assert r['sourceCompleteness']=='NOT_ASSERTED'
 
 
+@requires_posix_storage_diagnostics
 def test_capacity_uses_non_superuser_available_bytes_and_exact_boundary(tmp_path,monkeypatch):
     a=api();s,d,b=setup(tmp_path)
     monkeypatch.setattr(a,'_statvfs',lambda p:SimpleNamespace(f_frsize=4096,f_blocks=100,f_bfree=20,f_bavail=10,f_flag=0))
@@ -97,6 +103,7 @@ def test_capacity_uses_non_superuser_available_bytes_and_exact_boundary(tmp_path
 
 
 @pytest.mark.parametrize('code,status',[(errno.ENOENT,'MISSING'),(errno.EACCES,'PERMISSION_DENIED'),(errno.EPERM,'PERMISSION_DENIED'),(errno.EIO,'IO_ERROR')])
+@requires_posix_storage_diagnostics
 def test_stat_failures_are_not_silently_missing_or_zero(tmp_path,monkeypatch,code,status):
     a=api();s,d,b=setup(tmp_path);stat=a._lstat
     def fail(path):
@@ -110,6 +117,7 @@ def test_stat_failures_are_not_silently_missing_or_zero(tmp_path,monkeypatch,cod
 
 
 @pytest.mark.parametrize('code,status',[(errno.EACCES,'PERMISSION_DENIED'),(errno.EIO,'IO_ERROR')])
+@requires_posix_storage_diagnostics
 def test_capacity_failure_does_not_pass_threshold(tmp_path,monkeypatch,code,status):
     a=api();s,d,b=setup(tmp_path)
     def fail(path):raise OSError(code,'synthetic capacity failure')
@@ -119,6 +127,7 @@ def test_capacity_failure_does_not_pass_threshold(tmp_path,monkeypatch,code,stat
     assert r['checks']['backupCapacity']['status']=='UNAVAILABLE'
 
 
+@requires_posix_storage_diagnostics
 def test_wal_companions_and_hardlinks_are_measured_without_double_count(tmp_path):
     a=api();s,d,b=setup(tmp_path);alias=d/'alias';alias.hardlink_to(b)
     writer=sqlite3.connect(s,isolation_level=None);writer.execute('pragma journal_mode=wal');writer.execute('pragma wal_autocheckpoint=0')
@@ -132,6 +141,7 @@ def test_wal_companions_and_hardlinks_are_measured_without_double_count(tmp_path
     finally:writer.close()
 
 
+@requires_posix_storage_diagnostics
 def test_symlink_and_special_backup_are_not_followed(tmp_path):
     a=api();s,d,b=setup(tmp_path);link=d/'link';link.symlink_to(b)
     r=a.diagnose_storage(s,d,backups=[link],policy=policy(backupMtimeReviewDays=1),now=AT)
@@ -141,6 +151,7 @@ def test_symlink_and_special_backup_are_not_followed(tmp_path):
 
 
 @pytest.mark.parametrize('kind',['empty','corrupt','cursor','future'])
+@requires_posix_storage_diagnostics
 def test_unavailable_archive_measurement_is_never_a_pass(tmp_path,kind):
     a=api();s,d,b=setup(tmp_path)
     if kind=='empty':
@@ -152,6 +163,7 @@ def test_unavailable_archive_measurement_is_never_a_pass(tmp_path,kind):
     assert r['checks']['receiptAge']['status']=='UNAVAILABLE'
 
 
+@requires_posix_storage_diagnostics
 def test_valid_fresh_identity_bound_commit_measurement_has_separate_threshold(tmp_path):
     a=api();s,d,b=setup(tmp_path)
     p=policy(maxArchiveCommitMs=12.5,maxTelemetryAgeSeconds=10)
@@ -164,6 +176,7 @@ def test_valid_fresh_identity_bound_commit_measurement_has_separate_threshold(tm
 
 
 @pytest.mark.parametrize('kind',['capture_stale','capture_future','cursor_mismatch','missing','bad_number','receipt_stale','duplicate','recency_unconfigured'])
+@requires_posix_storage_diagnostics
 def test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass(tmp_path,kind):
     a=api();s,d,b=setup(tmp_path);p=policy(maxArchiveCommitMs=100,maxTelemetryAgeSeconds=10);t=capture();now=AT+timedelta(seconds=4)
     if kind=='capture_stale':now=AT+timedelta(seconds=20)
@@ -187,7 +200,7 @@ def test_invalid_policy_rejected_before_filesystem_access(tmp_path,monkeypatch,c
     assert not called
 
 
-@pytest.mark.parametrize('limit,value',[('MAX_BACKUPS',0),('MAX_ARCHIVE_ROWS',1),('MAX_SECONDS',0),('MAX_SQL_STEPS',0)])
+@pytest.mark.parametrize('limit,value',[('MAX_BACKUPS',0),pytest.param('MAX_ARCHIVE_ROWS', 1, marks=requires_posix_storage_diagnostics),pytest.param('MAX_SECONDS', 0, marks=requires_posix_storage_diagnostics),pytest.param('MAX_SQL_STEPS', 0, marks=requires_posix_storage_diagnostics)])
 def test_limits_are_explicit_and_never_publish_data(tmp_path,monkeypatch,limit,value):
     a=api();s,d,b=setup(tmp_path);before=s.read_bytes();monkeypatch.setattr(a,limit,value)
     if limit=='MAX_BACKUPS':
@@ -198,6 +211,7 @@ def test_limits_are_explicit_and_never_publish_data(tmp_path,monkeypatch,limit,v
     assert s.read_bytes()==before
 
 
+@requires_posix_storage_diagnostics
 def test_capture_cannot_precede_the_matching_stored_receipt(tmp_path):
     a=api();s,d,b=setup(tmp_path)
     r=a.diagnose_storage(s,d,policy=policy(maxArchiveCommitMs=100,maxTelemetryAgeSeconds=10),
@@ -205,6 +219,7 @@ def test_capture_cannot_precede_the_matching_stored_receipt(tmp_path):
     assert r['checks']['commitLatency']['status']=='UNAVAILABLE'
 
 
+@requires_posix_storage_diagnostics
 def test_closed_wal_without_companions_is_not_initialized_by_diagnostics(tmp_path):
     a=api();s,d,b=setup(tmp_path)
     with sqlite3.connect(s) as c:c.execute('pragma journal_mode=wal')
@@ -216,7 +231,7 @@ def test_closed_wal_without_companions_is_not_initialized_by_diagnostics(tmp_pat
 
 
 @pytest.mark.parametrize('option',['--policy','--telemetry'])
-@pytest.mark.parametrize('kind',['null','fifo','symlink'])
+@pytest.mark.parametrize('kind',['null',fifo_case,'symlink'])
 def test_explicit_invalid_json_files_are_rejected_without_hanging(tmp_path,option,kind):
     s,d,b=setup(tmp_path);config=tmp_path/'input.json'
     if kind=='null':config.write_text('null')
@@ -232,6 +247,7 @@ def test_explicit_invalid_json_files_are_rejected_without_hanging(tmp_path,optio
     assert set(error)=={'error'} and str(config) not in result.stderr
 
 
+@requires_posix_storage_diagnostics
 def test_partial_backup_inventory_never_reports_an_understated_successful_total(tmp_path):
     a=api();s,d,b=setup(tmp_path)
     r=a.diagnose_storage(s,d,backups=[b,d/'missing'],policy=policy(backupMtimeReviewDays=1),now=AT)
@@ -240,6 +256,7 @@ def test_partial_backup_inventory_never_reports_an_understated_successful_total(
     assert r['checks']['backupMtimeReview']['status']=='UNAVAILABLE'
 
 
+@requires_posix_storage_diagnostics
 def test_sparse_file_apparent_length_is_separate_from_reported_allocation(tmp_path):
     a=api();s,d,b=setup(tmp_path)
     with b.open('wb') as stream:stream.truncate(1024*1024)
@@ -250,6 +267,7 @@ def test_sparse_file_apparent_length_is_separate_from_reported_allocation(tmp_pa
     assert f['allocationBasis']=='FILESYSTEM_REPORTED_512_BYTE_BLOCKS'
 
 
+@requires_posix_storage_diagnostics
 def test_readonly_volume_is_unavailable_even_with_free_blocks(tmp_path,monkeypatch):
     a=api();s,d,b=setup(tmp_path)
     monkeypatch.setattr(a,'_statvfs',lambda p:SimpleNamespace(f_frsize=4096,f_blocks=100,f_bavail=90,f_flag=os.ST_RDONLY))
@@ -258,6 +276,7 @@ def test_readonly_volume_is_unavailable_even_with_free_blocks(tmp_path,monkeypat
     assert r['checks']['backupCapacity']['status']=='UNAVAILABLE'
 
 
+@requires_posix_storage_diagnostics
 def test_nonzero_sql_work_limit_interrupts_and_releases_the_reader(tmp_path,monkeypatch):
     a=api();s=tmp_path/'raw.db';d=tmp_path/'backups';d.mkdir()
     from aegis.archive import RawArchive
@@ -275,6 +294,7 @@ def test_nonzero_sql_work_limit_interrupts_and_releases_the_reader(tmp_path,monk
 
 
 @pytest.mark.parametrize('delay,expected',[(12,'WITHIN_LIMIT'),(12.000001,'UNAVAILABLE')])
+@requires_posix_storage_diagnostics
 def test_commit_recency_boundary_is_inclusive(tmp_path,delay,expected):
     a=api();s,d,b=setup(tmp_path)
     r=a.diagnose_storage(s,d,policy=policy(maxArchiveCommitMs=100,maxTelemetryAgeSeconds=10),

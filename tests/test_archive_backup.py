@@ -10,6 +10,8 @@ from uuid import uuid4
 
 import pytest
 
+from platform_requirements import requires_posix_archive_publication
+
 from test_archive import AT, RUN, snapshot
 
 
@@ -37,6 +39,7 @@ def rows(path):
                 for t in ('raw_batches', 'ingest_cursors', 'ingest_gaps')}
 
 
+@requires_posix_archive_publication
 def test_roundtrip_preserves_original_text_receipt_cursor_gap_and_no_source_mutation(tmp_path):
     a = api(); source = tmp_path/'raw.db'; seed(source, gap=True)
     before = source.read_bytes(); original = rows(source)
@@ -53,6 +56,7 @@ def test_roundtrip_preserves_original_text_receipt_cursor_gap_and_no_source_muta
         assert c.execute('pragma journal_mode').fetchone() == ('delete',)
 
 
+@requires_posix_archive_publication
 def test_fixed_wal_snapshot_has_same_raw_cursor_gap_cutoff_and_writer_progresses(tmp_path, monkeypatch):
     a = api(); source = tmp_path/'raw.db'; seed(source)
     writer = sqlite3.connect(source, isolation_level=None)
@@ -95,6 +99,7 @@ def test_fixed_wal_snapshot_has_same_raw_cursor_gap_cutoff_and_writer_progresses
         writer.close()
 
 
+@requires_posix_archive_publication
 def test_uncommitted_transaction_is_excluded_and_reader_releases(tmp_path):
     a = api(); source = tmp_path/'raw.db'; seed(source)
     with sqlite3.connect(source) as writer:
@@ -107,6 +112,7 @@ def test_uncommitted_transaction_is_excluded_and_reader_releases(tmp_path):
         writer.execute('begin immediate'); writer.rollback()
 
 
+@requires_posix_archive_publication
 def test_sparse_retired_run_and_empty_archive_are_supported(tmp_path):
     a = api()
     from aegis.archive import RawArchive
@@ -181,6 +187,7 @@ def test_failures_before_publication_preserve_source(tmp_path, monkeypatch, stag
     assert not list(tmp_path.glob('.aegis-backup-*'))
 
 
+@requires_posix_archive_publication
 def test_publish_race_preserves_competing_file(tmp_path, monkeypatch):
     a = api(); source = tmp_path/'raw.db'; seed(source); dest = tmp_path/'out.db'
     link = a.os.link
@@ -192,6 +199,7 @@ def test_publish_race_preserves_competing_file(tmp_path, monkeypatch):
     assert dest.read_bytes() == b'competing'
 
 
+@requires_posix_archive_publication
 def test_post_publication_sync_failure_preserves_valid_file(tmp_path, monkeypatch):
     a = api(); source = tmp_path/'raw.db'; seed(source); dest = tmp_path/'out.db'
     def fail(*args): raise OSError('injected sync')
@@ -213,6 +221,7 @@ def test_resource_limits_fail_without_destination_and_release_source(tmp_path, m
 
 
 @pytest.mark.parametrize('mutation', ['raw','receipt','cursor','gap','manifest','truncate'])
+@requires_posix_archive_publication
 def test_expected_manifest_rejects_changed_backup_and_preserves_restore_target(tmp_path, mutation):
     a = api(); source = tmp_path/'raw.db'; seed(source, gap=True)
     backup = tmp_path/'backup.db'; m = a.backup_archive(source, backup)
@@ -230,6 +239,7 @@ def test_expected_manifest_rejects_changed_backup_and_preserves_restore_target(t
 
 
 @pytest.mark.parametrize('operation', ['backup','restore'])
+@requires_posix_archive_publication
 def test_stdout_failure_reports_already_published_file(tmp_path, monkeypatch, capsys, operation):
     a = api(); source = tmp_path/'raw.db'; seed(source)
     args = ['backup','--source',str(source),'--destination',str(tmp_path/'out.db')]
@@ -278,6 +288,7 @@ def test_restore_api_requires_valid_reference_before_any_copy(tmp_path, monkeypa
 
 
 @pytest.mark.parametrize('after_publish', [False, True])
+@requires_posix_archive_publication
 def test_cleanup_failure_is_explicit_and_preserves_published_destination(tmp_path, monkeypatch, after_publish):
     a = api(); source = tmp_path/'raw.db'; seed(source)
     before = source.read_bytes(); dest = tmp_path/'out.db'; unlink = Path.unlink
@@ -301,7 +312,7 @@ def test_cleanup_failure_is_explicit_and_preserves_published_destination(tmp_pat
         directory.rmdir()
 
 
-@pytest.mark.parametrize('limit', ['MAX_CURSORS','MAX_GAPS','MAX_MANIFEST_BYTES'])
+@pytest.mark.parametrize('limit', ['MAX_CURSORS','MAX_GAPS',pytest.param('MAX_MANIFEST_BYTES', marks=requires_posix_archive_publication)])
 def test_remaining_reference_and_table_limits(tmp_path, monkeypatch, limit):
     a = api(); source = tmp_path/'raw.db'; seed(source, gap=True)
     if limit == 'MAX_MANIFEST_BYTES':
@@ -314,6 +325,7 @@ def test_remaining_reference_and_table_limits(tmp_path, monkeypatch, limit):
     assert not (tmp_path/'out.db').exists()
 
 
+@requires_posix_archive_publication
 def test_nonzero_sql_progress_budget_interrupts_and_releases_reader(tmp_path, monkeypatch):
     a = api(); source = tmp_path/'raw.db'
     from aegis.archive import RawArchive
