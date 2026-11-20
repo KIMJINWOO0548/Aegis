@@ -19,7 +19,7 @@ from aegis.adapter_store import validate_adapter_snapshot
 from aegis.input_archive import validate_input_archive_snapshot
 from aegis.archive import COLUMNS
 from aegis.archive_backup import BackupError, _inspect, _discard_failed_stdout
-from aegis.raw_history import RawQueryError, _timestamp, _object, _constant
+from aegis.raw_history import MAX_RUN_GAPS, RUN_KEY, RawQueryError, _timestamp, _object, _constant
 
 
 MAX_SOURCES = 4
@@ -252,9 +252,17 @@ def _input_snapshot(c, budget):
 
 
 def query_stored_records(sources, received_from, received_to, *, device_id=None,
-                         signals=None, max_records=MAX_RECORDS):
+                         signals=None, max_records=MAX_RECORDS, store_id=None, run_id=None):
     """Read validated per-store snapshots; fail whole query on any unavailable source."""
     start,end,selected = _parameters(received_from,received_to,device_id,signals,max_records)
+    run_evidence = None
+    if store_id is not None or run_id is not None:
+        if (device_id is None or not isinstance(store_id, str) or not STORE_ID.fullmatch(store_id)
+                or not isinstance(run_id, str) or not RUN_KEY.fullmatch(run_id)):
+            raise QueryError('INVALID_QUERY')
+        run_evidence = dict(state='not_found', scope='SELECTED_RUN_SEQUENCE_ONLY',
+            storeId=store_id, deviceId=device_id, runId=run_id, storedRowsInReceivedWindow=None,
+            recordedGaps=None, ordinalGapState='not_assessed', ordinalGaps=None, resendCount=None)
     sources = _sources(sources)
     budget = _Budget()
     try:
@@ -275,12 +283,29 @@ def query_stored_records(sources, received_from, received_to, *, device_id=None,
                     rows, detail = _adapter_snapshot(c,budget,source['pin'])
                 else:
                     rows, detail = _input_snapshot(c,budget)
+                selected_store = run_evidence is not None and source['storeId'] == store_id
+                if selected_store:
+                    if source['kind'] != 'RAW_V1':
+                        run_evidence['state'] = 'not_applicable'
+                    elif any(row['deviceId'] == device_id and row['sourceMetadata']['runId'] == run_id for row in rows):
+                        gaps = c.execute("""SELECT first_sequence,last_sequence,reason FROM ingest_gaps
+                            WHERE device_id=? AND run_id=? ORDER BY first_sequence,last_sequence LIMIT ?""",
+                            (device_id,run_id,MAX_RUN_GAPS+1)).fetchall()
+                        if len(gaps) > MAX_RUN_GAPS:
+                            raise QueryError('QUERY_LIMIT')
+                        # The same transaction already validated these rows in _raw_snapshot.
+                        run_evidence.update(state='recorded', recordedGaps=[
+                            dict(firstSequence=str(first),lastSequence=str(last),reason=reason)
+                            for first,last,reason in gaps])
                 matched = 0
                 for row in rows:
                     budget.check()
                     if not start <= _timestamp(row['firstReceivedAtUtc']) < end:
                         continue
                     if device_id is not None and row['deviceId'] != device_id:
+                        continue
+                    if run_evidence is not None and (not selected_store or source['kind'] != 'RAW_V1'
+                            or row['sourceMetadata']['runId'] != run_id):
                         continue
                     matched += 1
                     if len(records) >= max_records:
@@ -292,6 +317,8 @@ def query_stored_records(sources, received_from, received_to, *, device_id=None,
                     row['identity'] = dict(storeId=source['storeId'],storeKind=source['kind'],
                         nativeKeyKind=row.pop('nativeKeyKind'),nativeKey=row.pop('nativeKey'))
                     records.append(row)
+                if selected_store and run_evidence['state'] == 'recorded':
+                    run_evidence['storedRowsInReceivedWindow'] = matched
                 reports.append(dict(storeId=source['storeId'],kind=source['kind'],scannedRecords=len(rows),
                     matchedRecords=matched,integrity='VERIFIED_STORED_SNAPSHOT',**detail))
         records.sort(key=lambda r:(_timestamp(r['firstReceivedAtUtc']),r['identity']['storeId'],
@@ -307,6 +334,8 @@ def query_stored_records(sources, received_from, received_to, *, device_id=None,
             limits=dict(maxSources=MAX_SOURCES,maxRawRowsPerStore=MAX_RAW_ROWS,
                 maxRecords=max_records,maxSelectedSignals=MAX_SIGNALS,maxOutputBytes=MAX_OUTPUT_BYTES,
                 cooperativeSeconds=MAX_SECONDS,maxSqlVmSteps=MAX_SQL_STEPS))
+        if run_evidence is not None:
+            result['runEvidence'] = run_evidence
         if len(_encode(result)) > MAX_OUTPUT_BYTES:
             raise QueryError('QUERY_LIMIT')
         budget.check()
@@ -334,16 +363,22 @@ def query_stored_records(sources, received_from, received_to, *, device_id=None,
 def _config(path):
     fd = None
     try:
-        fd = os.open(path,os.O_RDONLY|os.O_NONBLOCK|os.O_NOFOLLOW)
-        info = os.fstat(fd)
-        if not stat.S_ISREG(info.st_mode) or info.st_size > MAX_CONFIG_BYTES:
-            raise ValueError
-        data = bytearray()
-        while len(data) <= MAX_CONFIG_BYTES:
-            chunk = os.read(fd,min(8192,MAX_CONFIG_BYTES+1-len(data)))
-            if not chunk:
-                break
-            data.extend(chunk)
+        if os.name == 'nt':
+            from aegis.windows_fixture import read_fixture
+            data = read_fixture(path, MAX_CONFIG_BYTES)
+        else:
+            if os.name != 'posix' or not all(hasattr(os, flag) for flag in ('O_NONBLOCK', 'O_NOFOLLOW')):
+                raise ValueError
+            fd = os.open(path,os.O_RDONLY|os.O_NONBLOCK|os.O_NOFOLLOW)
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_size > MAX_CONFIG_BYTES:
+                raise ValueError
+            data = bytearray()
+            while len(data) <= MAX_CONFIG_BYTES:
+                chunk = os.read(fd,min(8192,MAX_CONFIG_BYTES+1-len(data)))
+                if not chunk:
+                    break
+                data.extend(chunk)
         if len(data)>MAX_CONFIG_BYTES:
             raise ValueError
         result = json.loads(data,object_pairs_hook=_object,parse_constant=_constant)

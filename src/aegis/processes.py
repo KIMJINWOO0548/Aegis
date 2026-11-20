@@ -11,9 +11,9 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
@@ -48,6 +48,32 @@ def _valid_reason(value):
     return value is None or (isinstance(value, str) and _CODE.fullmatch(value) is not None)
 
 
+class CollectionStatus(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    collectorMode: Literal["SHARED", "ISOLATED", "FIXTURE"]
+    declaredOrigin: Literal["SYNTHETIC"]
+    receiptProvenance: Literal["ACCEPTED", "RESTORED", "NONE"]
+    lastReceivedAtUtc: UtcTimestamp | None
+    receivedAgeMs: Annotated[int, Field(strict=True, ge=0, le=2**63 - 1)] | None
+    freshness: Literal["CURRENT", "STALE", "RESTORED", "NO_RECEIPT", "UNAVAILABLE"]
+    validUntilUtc: UtcTimestamp | None
+    lastCommittedAtUtc: UtcTimestamp | None
+    pendingBatches: Annotated[int, Field(strict=True, ge=0, le=4095)] | None
+    workerStatus: Literal["RUNNING", "RESTARTING", "FAILED", "UNAVAILABLE", "NOT_APPLICABLE"]
+    workerReason: Literal["ARCHIVE_IDENTITY_MISMATCH", "WORKER_UNAVAILABLE"] | None
+
+    @model_validator(mode="after")
+    def coherent_current(self):
+        if self.freshness == "CURRENT":
+            if (self.receiptProvenance != "ACCEPTED" or self.lastReceivedAtUtc is None
+                    or self.receivedAgeMs is None or self.validUntilUtc is None
+                    or self.validUntilUtc <= self.lastReceivedAtUtc):
+                raise ValueError("Invalid current receipt evidence.")
+        elif self.pendingBatches is not None or self.validUntilUtc is not None:
+            raise ValueError("Unexpected current receipt evidence.")
+        return self
+
+
 class WorkerFrame(BaseModel):
     model_config = ConfigDict(extra="forbid")
     connection: dict
@@ -78,13 +104,17 @@ class WorkerFrame(BaseModel):
                 raise ValueError("Invalid module warning timeline.")
         if (set(self.connection) != {"deviceId", "state", "lastReceivedAtUtc", "lastSequence", "acceptedBatches",
                 "rejectedBatches", "droppedBatches", "pollLatencyMs", "reasonCode"}
-                or set(self.ingestion) != {"deviceId", "equipmentId", "moduleId", "transport", "archiveEnabled",
+                or set(self.ingestion) - {"collectionStatus"} != {"deviceId", "equipmentId", "moduleId", "transport", "archiveEnabled",
                 "signalCount", "acceptedSignalValues", "archiveCommitMs", "observedLagMs", "lastObservedAtUtc",
                 "lastCommittedRunId", "lastCommittedSequence", "latestAvailableSequence", "pendingBatches"}
                 or set(self.diagnostics) != {"deviceId", "enabled", "modelVersion", "evaluation", "sampleCount",
                 "flowErrorEwmaLpm", "issues"}):
             raise ValueError("Unexpected worker summary fields.")
         connection, ingestion, diagnostics = self.connection, self.ingestion, self.diagnostics
+        if "collectionStatus" in ingestion:
+            status = CollectionStatus.model_validate(ingestion["collectionStatus"])
+            if status.pendingBatches != ingestion["pendingBatches"]:
+                raise ValueError("Inconsistent worker backlog.")
         if (not isinstance(connection["state"], str) or connection["state"] not in
                 {"CONNECTING", "CONNECTED", "STALE", "DISCONNECTED", "REJECTED"}
                 or any(not _count(connection[key]) for key in ("acceptedBatches", "rejectedBatches", "droppedBatches"))
@@ -154,6 +184,11 @@ def decode_frame(line: bytes, device_id: str) -> WorkerFrame:
     return frame
 
 
+def archive_identity_failure_frame(device_id: str) -> bytes:
+    return json.dumps({"deviceId": device_id, "startupFailure": "ARCHIVE_IDENTITY_MISMATCH"},
+                      separators=(",", ":")).encode() + b"\n"
+
+
 @dataclass
 class ModuleProcess:
     source: SourceConfig
@@ -163,6 +198,7 @@ class ModuleProcess:
     restart_count: int = 0
     state: str = "STARTING"
     failure_reason: str | None = None
+    startup_identity_failure: bool = False
     publication_lock: object = field(default_factory=threading.Lock, repr=False, compare=False)
 
 
@@ -247,6 +283,11 @@ class ProcessCollector:
                 return
             if self._stopping:
                 continue
+            if line == archive_identity_failure_frame(worker.source.deviceId):
+                with worker.publication_lock:
+                    if worker.process is process and worker.state == "STARTING":
+                        worker.startup_identity_failure = True
+                continue
             frame = decode_frame(line, worker.source.deviceId)
             with worker.publication_lock:
                 if worker.process is not process or worker.state not in {"STARTING", "RUNNING"}:
@@ -255,6 +296,7 @@ class ProcessCollector:
                 worker.summary = (frame, time.monotonic())
                 worker.state = "RUNNING"
                 worker.failure_reason = None
+                worker.startup_identity_failure = False
 
     @staticmethod
     def _finish(process):
@@ -454,7 +496,15 @@ class ProcessCollector:
         rows = []
         for worker in self._workers:
             source = worker.source
-            summary = worker.summary
+            with worker.publication_lock:
+                summary = worker.summary
+                available = self._available(worker, summary)
+                current = self._current(worker, summary) if available else False
+                worker_state = worker.state
+                restart_count = worker.restart_count
+                identity_failure = worker.startup_identity_failure
+                process = worker.process
+                worker_pid = process.pid if process is not None and process.poll() is None else None
             row = dict(summary[0].ingestion) if summary is not None else {
                 "deviceId": source.deviceId, "equipmentId": source.equipmentId, "moduleId": source.moduleId,
                 "transport": source.transport, "archiveEnabled": source.transport == "replay", "signalCount": 0,
@@ -464,9 +514,30 @@ class ProcessCollector:
                 "latestAvailableSequence": None, "pendingBatches": None}
             if summary is not None and row["observedLagMs"] is not None:
                 row["observedLagMs"] = round(self._observed_lag_ms(summary), 3)
-            row.update(workerPid=worker.process.pid if worker.process is not None and worker.process.poll() is None else None,
-                restartCount=worker.restart_count, workerState=worker.state if
-                    worker.state == "FAILED" or self._available(worker, summary) else "UNAVAILABLE")
+            status = dict(row["collectionStatus"]) if "collectionStatus" in row else {
+                "declaredOrigin": "SYNTHETIC", "receiptProvenance": "NONE", "lastReceivedAtUtc": None,
+                "lastCommittedAtUtc": None, "receivedAgeMs": None, "validUntilUtc": None,
+                "freshness": "UNAVAILABLE", "pendingBatches": None}
+            status.update(collectorMode="ISOLATED",
+                workerStatus=worker_state if worker_state in {"RESTARTING", "FAILED"} else
+                    "RUNNING" if available else "UNAVAILABLE",
+                workerReason=None if available else
+                    "ARCHIVE_IDENTITY_MISMATCH" if identity_failure else "WORKER_UNAVAILABLE")
+            if not available:
+                status.update(freshness="UNAVAILABLE", validUntilUtc=None, receivedAgeMs=None, pendingBatches=None)
+            elif status["freshness"] == "CURRENT":
+                elapsed = time.monotonic() - summary[1]
+                now = datetime.now(timezone.utc)
+                deadline = min(_UTC_TIMESTAMP.validate_python(status["validUntilUtc"]),
+                               now + timedelta(seconds=max(0, SUMMARY_STALE_SECONDS - elapsed)))
+                status["receivedAgeMs"] += int(max(0, elapsed) * 1000)
+                if not current or not _UTC_TIMESTAMP.validate_python(status["lastReceivedAtUtc"]) <= now < deadline:
+                    status.update(freshness="STALE", validUntilUtc=None, pendingBatches=None)
+                else:
+                    status["validUntilUtc"] = deadline.isoformat()
+            row.update(collectionStatus=status, pendingBatches=status["pendingBatches"])
+            row.update(workerPid=worker_pid, restartCount=restart_count,
+                workerState=worker_state if worker_state == "FAILED" or available else "UNAVAILABLE")
             rows.append(row)
         return rows
 

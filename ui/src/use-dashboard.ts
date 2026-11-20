@@ -5,10 +5,17 @@ import {readSession} from './session';
 export function useDashboard(){
  const [auth,setAuth]=useState<'checking'|'locked'|'ready'>('checking');const [snapshot,setSnapshot]=useState<Snapshot|null>(null);const [history,setHistory]=useState<History>({});const [error,setError]=useState<string|null>(null);const [transport,setTransport]=useState('연결 대기');const [connected,setConnected]=useState(false);const [now,setNow]=useState(Date.now());const [revision,setRevision]=useState(0);
  const latest=useRef(-Infinity);
+ const clock=useRef({utc:Date.now(),tick:performance.now()});
+ const readNow=useCallback(()=>{
+  const tick=performance.now();
+  const utc=Math.max(Date.now(),clock.current.utc+tick-clock.current.tick);
+  clock.current={utc,tick};
+  return utc;
+ },[]);
  const [sessionUnavailable,setSessionUnavailable]=useState(false);
  const sessionRequest=useRef<AbortController|null>(null);
  const refresh=useCallback(()=>setRevision(v=>v+1),[]);
- const receive=useCallback((raw:unknown)=>{try{const value=parseSnapshot(raw);const stamp=Date.parse(value.generatedAtUtc);if(stamp<latest.current)return;latest.current=stamp;setSnapshot(value);setHistory(old=>appendHistory(old,value));setError(null);}catch{setError('데이터 형식을 확인할 수 없습니다. 마지막 수신 이력을 표시합니다.');setTransport('데이터 오류');}},[]);
+ const receive=useCallback((raw:unknown,floor:number)=>{try{const value=parseSnapshot(raw);const stamp=Date.parse(value.generatedAtUtc);if(stamp<latest.current||stamp<=floor)return false;latest.current=stamp;setNow(readNow());setSnapshot(value);setHistory(old=>appendHistory(old,value));setError(null);return true;}catch{setError('데이터 형식을 확인할 수 없습니다. 마지막 수신 이력을 표시합니다.');setTransport('데이터 오류');return false;}},[readNow]);
  const recheckSession=useCallback(async()=>{
   if(sessionRequest.current&&!sessionRequest.current.signal.aborted)return;
   const controller=new AbortController();sessionRequest.current=controller;
@@ -26,12 +33,30 @@ export function useDashboard(){
   void recheckSession();
   return()=>{const pending=sessionRequest.current;sessionRequest.current=null;pending?.abort();};
  },[recheckSession]);
- useEffect(()=>{const interval=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(interval);},[]);
+ useEffect(()=>{const interval=setInterval(()=>setNow(readNow()),250);return()=>clearInterval(interval);},[readNow]);
  useEffect(()=>{
   if(auth!=='ready')return;let active=true;setConnected(false);setHistory(old=>interruptHistory(old));const controller=new AbortController();const connection=new HubConnectionBuilder().withUrl('/hubs/dashboard',{withCredentials:true}).withAutomaticReconnect([0,2000,5000,10000]).configureLogging(LogLevel.None).build();
-  const load=()=>fetch('/api/dashboard',{credentials:'same-origin',cache:'no-store',signal:controller.signal}).then(async r=>{if(r.status===401){setAuth('locked');throw Error('세션이 만료되었습니다.');}if(!r.ok)throw Error('데이터를 불러올 수 없습니다.');const data:unknown=await r.json();if(active)receive(data);}).catch(e=>{if(active&&e.name!=='AbortError')setError(e.message);});
-  connection.on('snapshot',(raw:unknown)=>{if(active)receive(raw);});connection.onreconnecting(()=>{if(active){setConnected(false);setHistory(old=>interruptHistory(old));setTransport('재연결 중 · 이력');}});connection.onreconnected(()=>{if(active){setConnected(true);setTransport('실시간 연결');void load();}});connection.onclose(()=>{if(active){setConnected(false);setHistory(old=>interruptHistory(old));setTransport('연결 종료 · 이력');}});
-  void connection.start().then(()=>{if(active){setConnected(true);setTransport('실시간 연결');void load();}}).catch(()=>{if(active){setConnected(false);setHistory(old=>interruptHistory(old));setTransport('실시간 연결 불가 · 재시도 필요');setError('실시간 연결을 시작하지 못했습니다. 새로고침으로 다시 연결하세요.');}});void load();
+  let generation=0;let streaming=false;let floor=latest.current;
+  const apply=(raw:unknown)=>{if(receive(raw,floor)&&streaming){setConnected(true);setTransport('실시간 연결');}};
+  const load=async()=>{
+   const requestGeneration=generation;const before=latest.current;
+   const current=()=>active&&generation===requestGeneration;
+   try {
+    const response=await fetch('/api/dashboard',{credentials:'same-origin',cache:'no-store',signal:controller.signal});
+    if(!current())return;
+    if(response.status===401){setAuth('locked');throw Error('세션이 만료되었습니다.');}
+    if(!response.ok)throw Error('데이터를 불러올 수 없습니다.');
+    const data:unknown=await response.json();
+    if(current())apply(data);
+   }catch(e){if(current()&&latest.current===before&&e instanceof Error&&e.name!=='AbortError')setError(e.message);}
+  };
+  const interrupt=(label:string)=>{generation++;streaming=false;floor=latest.current;setConnected(false);setHistory(old=>interruptHistory(old));setTransport(label);};
+  const resume=()=>{if(active){generation++;streaming=true;void load();}};
+  connection.on('snapshot',(raw:unknown)=>{if(active&&streaming)apply(raw);});
+  connection.onreconnecting(()=>{if(active)interrupt('재연결 중 · 이력');});
+  connection.onreconnected(resume);
+  connection.onclose(()=>{if(active)interrupt('연결 종료 · 이력');});
+  void connection.start().then(resume).catch(()=>{if(active){interrupt('실시간 연결 불가 · 재시도 필요');setError('실시간 연결을 시작하지 못했습니다. 새로고침으로 다시 연결하세요.');}});void load();
   return()=>{active=false;controller.abort();void connection.stop();};
  },[auth,revision,receive]);
  const unlock=async(token:string)=>{

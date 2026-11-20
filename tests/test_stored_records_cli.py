@@ -287,3 +287,28 @@ def test_cli_closed_stdout_pipe_cannot_report_success_or_modify_sources(tmp_path
     assert result.returncode != 0
     assert_private(result, path, sources)
     assert source_bytes(sources) == before
+
+
+# Does not require a platform-specific stored database fixture.
+@pytest.mark.parametrize("contents,expected", [
+    ('{"schemaVersion":"stored-record-sources-1","sources":[]}', []),
+    ('{"schemaVersion":"stored-record-sources-1","sources":BROKEN}', None),
+    (' ' * (64 * 1024 + 1), None),
+], ids=('valid', 'invalid-json', 'too-large'))
+def test_cli_config_read_is_bounded_and_portable_without_storage(tmp_path, contents, expected):
+    from aegis.stored_records import QueryError, _config
+
+    path = tmp_path / "configuration-demo.json"
+    path.write_text(contents, encoding="utf-8")
+    if expected is None:
+        with pytest.raises(QueryError, match="^INVALID_QUERY$"):
+            _config(path)
+    else:
+        assert _config(path) == expected
+
+
+def test_cli_config_rejects_directory_without_storage(tmp_path):
+    from aegis.stored_records import QueryError, _config
+
+    with pytest.raises(QueryError, match="^INVALID_QUERY$"):
+        _config(tmp_path)

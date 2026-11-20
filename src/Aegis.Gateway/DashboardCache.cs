@@ -101,6 +101,7 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
                 string? equipment = null, module = null;
                 if (ingestion is not null)
                 {
+                    var collection = WireValidation.CollectionStatus(ingestion["collectionStatus"]);
                     ingestion = WireValidation.Project(ingestion, ["deviceId", "equipmentId", "moduleId", "transport", "archiveEnabled", "signalCount", "acceptedSignalValues", "archiveCommitMs", "latestAvailableSequence", "pendingBatches", "observedLagMs", "lastObservedAtUtc", "lastCommittedRunId", "lastCommittedSequence"]);
                     equipment = WireValidation.NullableIdentity(ingestion, "equipmentId"); module = WireValidation.NullableIdentity(ingestion, "moduleId");
                     if ((equipment is null) != (module is null) || !new[] { "snapshot", "replay" }.Contains(WireValidation.String(ingestion, "transport"))) throw new InvalidDataException();
@@ -110,6 +111,11 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
                     if (ingestion["signalCount"]!.GetValue<int>() > 512) throw new InvalidDataException();
                     foreach (var key in new[] { "archiveCommitMs", "observedLagMs" }) if (ingestion[key] is { } number && number.GetValue<double>() < 0) throw new InvalidDataException();
                     if (ingestion["lastCommittedRunId"] is { } run && !Guid.TryParse(run.GetValue<string>(), out _)) throw new InvalidDataException();
+                    if (collection is not null && !JsonNode.DeepEquals(collection["pendingBatches"], ingestion["pendingBatches"]))
+                        collection = null;
+                    if (collection is not null)
+                        ingestion["collectionStatus"] = collection;
+                    ingestion["pendingBatches"] = collection?["pendingBatches"]?.DeepClone();
                 }
                 var now = DateTimeOffset.UtcNow;
                 foreach (var observation in observations)
@@ -132,6 +138,17 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
             var history = previous.Devices.Select(device =>
             {
                 if (device.Connection is { } connection) connection["state"] = "DISCONNECTED";
+                if (device.Ingestion is { } ingestion)
+                {
+                    ingestion["pendingBatches"] = null;
+                    if (ingestion["collectionStatus"] is { } status)
+                    {
+                        status["freshness"] = "UNAVAILABLE";
+                        status["validUntilUtc"] = null;
+                        status["receivedAgeMs"] = null;
+                        status["pendingBatches"] = null;
+                    }
+                }
                 foreach (var observation in device.Observations)
                     if (observation?["quality"]?.GetValue<string>() == "GOOD") observation["quality"] = "STALE";
                 var unavailable = archive.Snapshot(device.DeviceId);

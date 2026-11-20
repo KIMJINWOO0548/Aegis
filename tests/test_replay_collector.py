@@ -15,6 +15,88 @@ from aegis.collector import Collector, RawSignal, SourceConfig, SIGNAL_UNITS
 TOKEN = "replay-test-" + "x" * 32
 
 
+@pytest.mark.parametrize("identity_field", ["runId", "sequence"])
+def test_restart_rejects_history_whose_payload_identity_differs_from_committed_row(tmp_path, identity_field):
+    async def check():
+        now = datetime.now(timezone.utc)
+        original = frame(str(uuid4()), 0, now)
+        path = tmp_path / 'mismatched-history.sqlite3'
+        archive = RawArchive(path)
+        await archive.start()
+        await archive.append([original], now)
+        await archive.close()
+        changed = dict(original, **{identity_field: str(uuid4()) if identity_field == 'runId' else 99})
+        with sqlite3.connect(path) as db:
+            db.execute('UPDATE raw_batches SET payload_json=?', (json.dumps(changed),))
+            retained = db.execute('SELECT * FROM raw_batches').fetchall()
+            cursor = db.execute('SELECT * FROM ingest_cursors').fetchall()
+
+        def unexpected_request(_):
+            pytest.fail('Unverified stored history must fail before source polling.')
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(unexpected_request)) as client:
+            config = SourceConfig(deviceId=original['deviceId'], baseUrl='http://127.0.0.1:9101', transport='replay')
+            archive = RawArchive(path)
+            collector = Collector([config], {'AEGIS_EMULATOR_TOKEN': TOKEN}, client=client,
+                                  archive=archive, utc_now=lambda: now)
+            try:
+                with pytest.raises(ValueError, match='identity'):
+                    await collector.start()
+                assert collector.observations(config.deviceId) == []
+                assert not archive._ready
+                assert collector.ingestion()[0]['lastCommittedRunId'] is None
+            finally:
+                await collector.stop()
+        with sqlite3.connect(path) as db:
+            assert db.execute('SELECT * FROM raw_batches').fetchall() == retained
+            assert db.execute('SELECT * FROM ingest_cursors').fetchall() == cursor
+    asyncio.run(check())
+
+
+def test_restart_restores_persisted_zero_and_missing_as_history_before_network(tmp_path):
+    async def check():
+        now = datetime.now(timezone.utc)
+        received = now - timedelta(seconds=9)
+        original = frame(str(uuid4()), 0, now - timedelta(seconds=10))
+        original['signals'][0]['value'] = 0
+        original['signals'][1].update(value=None, quality='MISSING')
+        path = tmp_path / 'restore.sqlite3'
+        archive = RawArchive(path)
+        await archive.start()
+        await archive.append([original], received)
+        await archive.close()
+        upstream_ready = False
+        def respond(_):
+            if not upstream_ready:
+                return httpx.Response(503)
+            return httpx.Response(200, json={"streamVersion": "1.0", "deviceId": original["deviceId"],
+                "runId": original["runId"], "oldestSequence": 0, "latestSequence": 0, "snapshots": []})
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            config = SourceConfig(deviceId='CMP-01.PMC-01', baseUrl='http://127.0.0.1:9101', transport='replay')
+            collector = Collector([config], {'AEGIS_EMULATOR_TOKEN': TOKEN}, client=client,
+                                  archive=RawArchive(path), utc_now=lambda: now)
+            await collector.start()
+            try:
+                rows = collector.observations(config.deviceId)
+                assert len(rows) == 8
+                assert rows[0].value == 0 and rows[0].quality.value == 'STALE'
+                assert rows[1].value is None and rows[1].quality.value == 'MISSING'
+                assert rows[0].receivedAtUtc == received
+                assert collector.connections()[0]['state'] == 'DISCONNECTED'
+                assert collector.connections()[0]['acceptedBatches'] == 0
+                assert collector.ingestion()[0]['lastCommittedSequence'] == 0
+                upstream_ready = True
+                await collector.poll_once(0)
+                assert collector.connections()[0]['state'] == 'STALE'
+                assert collector.connections()[0]['reasonCode'] == 'RESTORED_HISTORY'
+                assert collector.observations(config.deviceId)[0].quality.value == 'STALE'
+            finally:
+                await collector.stop()
+        with sqlite3.connect(path) as db:
+            assert db.execute('SELECT COUNT(*) FROM raw_batches').fetchone()[0] == 1
+    asyncio.run(check())
+
+
 def frame(run, seq, at):
     signals = [{"signalKey": key, "value": 10.0, "quality": "GOOD", "unit": unit}
                for key, unit in SIGNAL_UNITS.items()]
@@ -401,6 +483,71 @@ def test_blocked_archive_keeps_api_reads_responsive_and_published_state_unchange
                 assert await archive.cursor("CMP-01.PMC-01") == (run, 1)
                 assert collector.ingestion()[0]["lastCommittedSequence"] == 1
                 assert collector.observations("CMP-01.PMC-01")[1].value == 15.0
+        finally:
+            await archive.close()
+    asyncio.run(check())
+
+
+def test_collection_status_preserves_receipt_and_commit_evidence(tmp_path):
+    async def check():
+        now = datetime(2026, 11, 20, 1, tzinfo=timezone.utc)
+        monotonic = [0.0]
+        member = frame(str(uuid4()), 0, now)
+        member["signals"][0]["value"] = 0
+        def respond(request):
+            return httpx.Response(200, json={"streamVersion": "1.0", "deviceId": member["deviceId"],
+                "runId": member["runId"], "oldestSequence": 0, "latestSequence": 0,
+                "snapshots": [member] if request.url.params["after"] == "-1" else []})
+        archive = RawArchive(tmp_path / "evidence.sqlite")
+        await archive.start()
+        try:
+            async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+                config = SourceConfig(deviceId=member["deviceId"], baseUrl="http://127.0.0.1:9101", transport="replay")
+                collector = Collector([config], {"AEGIS_EMULATOR_TOKEN": TOKEN}, client=client, archive=archive,
+                    utc_now=lambda: now, monotonic=lambda: monotonic[0])
+                await collector.poll_once(0)
+                status = collector.ingestion()[0]["collectionStatus"]
+                assert status["freshness"] == "CURRENT"
+                assert status["lastReceivedAtUtc"] == status["lastCommittedAtUtc"] == now.isoformat()
+                assert status["pendingBatches"] == 0
+                assert collector.observations(config.deviceId)[0].value == 0
+                await collector.poll_once(0)
+                assert collector.ingestion()[0]["collectionStatus"] == status
+                monotonic[0] = 3.001
+                status = collector.ingestion()[0]["collectionStatus"]
+                assert status["freshness"] == "STALE"
+                assert status["pendingBatches"] is None
+        finally:
+            await archive.close()
+    asyncio.run(check())
+
+
+def test_collection_status_does_not_guess_backlog_across_gap_or_run_switch(tmp_path):
+    async def check():
+        now = datetime(2026, 11, 20, 1, tzinfo=timezone.utc)
+        member = frame(str(uuid4()), 0, now - timedelta(seconds=1))
+        page = {"streamVersion": "1.0", "deviceId": member["deviceId"],
+                "runId": member["runId"], "oldestSequence": 0, "latestSequence": 2, "snapshots": [member]}
+        archive = RawArchive(tmp_path / "backlog.sqlite")
+        await archive.start()
+        try:
+            async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(200, json=page))) as client:
+                config = SourceConfig(deviceId=member["deviceId"], baseUrl="http://127.0.0.1:9101", transport="replay")
+                collector = Collector([config], {"AEGIS_EMULATOR_TOKEN": TOKEN}, client=client, archive=archive,
+                    utc_now=lambda: now)
+                await collector.poll_once(0)
+                assert collector.ingestion()[0]["pendingBatches"] == 2
+                gap = frame(member["runId"], 3, now)
+                page.update(oldestSequence=3, latestSequence=4, snapshots=[gap])
+                await collector.poll_once(0)
+                assert collector.ingestion()[0]["pendingBatches"] is None
+                switched = frame(str(uuid4()), 0, now)
+                page.update(runId=switched["runId"], oldestSequence=0, latestSequence=2, snapshots=[switched])
+                await collector.poll_once(0)
+                row = collector.ingestion()[0]
+                assert row["lastCommittedSequence"] == 0
+                assert row["collectionStatus"]["freshness"] == "CURRENT"
+                assert row["pendingBatches"] is None
         finally:
             await archive.close()
     asyncio.run(check())

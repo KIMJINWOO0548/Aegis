@@ -1,6 +1,7 @@
 """Bounded module summaries and real worker process lifetime checks."""
 
 import asyncio
+import io
 import json
 import sqlite3
 import subprocess
@@ -11,13 +12,14 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
+import yaml
 
 from aegis.collector import Collector, RawSnapshot, SIGNAL_UNITS, SourceConfig
 from aegis.archive import RawArchive
 from aegis.contracts import Observation, Warning
 from aegis.evaluation import Evaluator
 from aegis.module_worker import build_frame
-from aegis.processes import MAX_FRAME_BYTES, ProcessCollector, decode_frame
+from aegis.processes import MAX_FRAME_BYTES, CollectionStatus, ProcessCollector, archive_identity_failure_frame, decode_frame
 from scripts.benchmark_emulators import running_stack, wait_until
 
 
@@ -49,6 +51,13 @@ def test_summary_contains_eight_flow_rows_but_no_raw_signal_payload():
     assert len(decoded.observations) == 8
     assert decoded.ingestion["signalCount"] == 256
     assert b"raw.247" not in json.dumps(payload).encode()
+
+
+def test_collection_status_matches_public_required_fields():
+    from pathlib import Path
+    contract = Path(__file__).resolve().parents[1] / "OPENAPI_THIN_DEMO_v3_4.yaml"
+    schema = yaml.safe_load(contract.read_text(encoding="utf-8"))["components"]["schemas"]["CollectionStatus"]
+    assert set(schema["required"]) == set(schema["properties"]) == set(CollectionStatus.model_fields)
 
 
 @pytest.mark.parametrize("change", [
@@ -178,10 +187,27 @@ def test_recent_observations_from_an_expired_worker_summary_are_stale(tmp_path):
     collector = ProcessCollector([source()], tmp_path)
     worker = collector._workers[0]
     worker.summary = (decode_frame(json.dumps(frame()).encode() + b"\n", source().deviceId), time.monotonic() - 4)
-    worker.process = SimpleNamespace(poll=lambda: None)
+    worker.process = SimpleNamespace(pid=123, poll=lambda: None)
     worker.state = "RUNNING"
     assert collector.connections()[0]["reasonCode"] == "WORKER_UNAVAILABLE"
     assert collector.observations(source().deviceId)[0].quality == "STALE"
+    status = collector.ingestion()[0]["collectionStatus"]
+    assert status["freshness"] == "UNAVAILABLE"
+    assert status["lastReceivedAtUtc"] == worker.summary[0].ingestion["collectionStatus"]["lastReceivedAtUtc"]
+    assert status["receivedAgeMs"] is status["pendingBatches"] is None
+
+
+def test_archive_failure_frame_never_refreshes_a_worker_or_changes_another_module(tmp_path):
+    collector = ProcessCollector([source(), source("CMP-01.CMC-01", 19102)], tmp_path)
+    first, second = collector._workers
+    first.process = SimpleNamespace(pid=123, poll=lambda: None,
+        stdout=io.BytesIO(archive_identity_failure_frame(first.source.deviceId)))
+    collector._read(first, first.process)
+    assert first.summary is second.summary is None
+    assert first.state == second.state == "STARTING"
+    statuses = [row["collectionStatus"] for row in collector.ingestion()]
+    assert statuses[0]["workerReason"] == "ARCHIVE_IDENTITY_MISMATCH"
+    assert statuses[1]["workerReason"] == "WORKER_UNAVAILABLE"
 
 
 def test_raw_only_acquisition_freshness_does_not_use_evaluator_startup_time(tmp_path):

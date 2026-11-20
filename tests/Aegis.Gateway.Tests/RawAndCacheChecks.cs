@@ -17,10 +17,16 @@ static class RawAndCacheChecks
         check(latest.UpstreamState == "CONNECTED" && latest.Devices.Count == 1, "actual collector API shape accepted");
         var device = latest.Devices.Single();
         check(device.Ingestion!["signalCount"]!.GetValue<int>() == 512 && device.Observations.Count == 8, "raw512 signals retain bounded8 dashboard observations");
+        check(device.Ingestion["collectionStatus"]?["pendingBatches"]?.GetValue<int>() == 0, "collection status preserves a confirmed zero backlog");
         check(device.EngineState == "ARCHIVE_NOT_CONFIGURED" && device.Review is null, "native archive absence honest");
         check(JsonSerializer.Serialize(latest.Inference).Contains("NOT_REGISTERED"), "inference absence honest");
         device.Observations.Clear(); device.Ingestion["signalCount"] = 0;
         check(cache.Latest.Devices[0].Observations.Count == 8 && cache.Latest.Devices[0].Ingestion!["signalCount"]!.GetValue<int>() == 512, "published snapshot mutation isolated");
+        source.InvalidCollection = true;
+        await cache.RefreshAsync(CancellationToken.None);
+        check(cache.Latest.UpstreamState == "CONNECTED" && cache.Latest.Devices[0].Ingestion!["collectionStatus"] is null
+            && cache.Latest.Devices[0].Ingestion!["pendingBatches"] is null, "invalid optional evidence is omitted without publishing backlog");
+        source.InvalidCollection = false;
         source.Stale = true;
         await cache.RefreshAsync(CancellationToken.None);
         check(cache.Latest.Devices[0].Observations.All(row => row!["quality"]!.GetValue<string>() == "STALE")
@@ -34,6 +40,22 @@ static class RawAndCacheChecks
         check(cache.Latest.Devices.Count == 1 && cache.Latest.Devices[0].Observations.Count == 8
             && cache.Latest.Devices[0].Connection!["state"]!.GetValue<string>() != "CONNECTED",
             "upstream interruption retains explicitly stale history");
+        const string runEvidence = """
+            {"records":[],"runEvidence":{"state":"recorded","scope":"SELECTED_RUN_SEQUENCE_ONLY","storeId":"stored",
+              "deviceId":"device-1","runId":"run-1","storedRowsInReceivedWindow":0,
+              "recordedGaps":[{"firstSequence":"9007199254740993","lastSequence":"9007199254741003","reason":"REPLAY_OVERFLOW"}],
+              "ordinalGapState":"not_assessed","ordinalGaps":null,"resendCount":null}}
+            """;
+        using var validRun=JsonDocument.Parse(runEvidence);
+        check(WireValidation.ValidRunEvidence(validRun.RootElement,"stored","device-1","run-1"),"Selected run supports exact large sequence gaps outside the received window");
+        check(!WireValidation.ValidRunEvidence(validRun.RootElement,"different","device-1","run-1"),"Selected run cannot cross store identity");
+        using var invalidRun=JsonDocument.Parse(runEvidence.Replace("9007199254741003","2"));
+        check(!WireValidation.ValidRunEvidence(invalidRun.RootElement,"stored","device-1","run-1"),"Selected run rejects invalid recorded bounds");
+        var crossedRun=runEvidence.Replace("\"records\":[]", """
+            "records":[{"deviceId":"device-1","identity":{"storeId":"stored","storeKind":"RAW_V1"},"sourceMetadata":{"runId":"other-run"}}]
+            """).Replace("\"storedRowsInReceivedWindow\":0","\"storedRowsInReceivedWindow\":1");
+        using var crossed=JsonDocument.Parse(crossedRun);
+        check(!WireValidation.ValidRunEvidence(crossed.RootElement,"stored","device-1","run-1"),"A result row must belong to the selected run");
 
         var directory = Path.Combine(Path.GetTempPath(), "aegis-archive-continuity-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
@@ -94,7 +116,7 @@ static class RawAndCacheChecks
 
 sealed class SnapshotFactory : IHttpClientFactory
 {
-    public bool Stale, BadUnit, BadDevice;
+    public bool Stale, BadUnit, BadDevice, InvalidCollection;
     public HttpClient CreateClient(string name) => new(new Handler(this));
     private sealed class Handler(SnapshotFactory owner) : HttpMessageHandler
     {
@@ -106,7 +128,10 @@ sealed class SnapshotFactory : IHttpClientFactory
                 "/v1/health" => new { mode = "EMULATORS" },
                 "/v1/devices" => new[] { new { deviceId = "device-1", readOnly = true, source = "SIMULATOR" } },
                 "/v1/connections" => new[] { new { deviceId = "device-1", state = "CONNECTED", lastReceivedAtUtc = at, lastSequence = 599, acceptedBatches = 600, rejectedBatches = 0, droppedBatches = 0, pollLatencyMs = .1, reasonCode = (string?)null } },
-                "/v1/ingestion" => new[] { new { deviceId = "device-1", equipmentId = "equipment-1", moduleId = "module-1", transport = "replay", archiveEnabled = true, signalCount = 512, acceptedSignalValues = 307200, archiveCommitMs = .1, latestAvailableSequence = 599, pendingBatches = 0, observedLagMs = 0, lastObservedAtUtc = at, lastCommittedRunId = "b8e088cc-712a-4b43-ae5a-9fc49b98ab6b", lastCommittedSequence = 599 } },
+                "/v1/ingestion" => new[] { new { deviceId = "device-1", equipmentId = "equipment-1", moduleId = "module-1", transport = "replay", archiveEnabled = true, signalCount = 512, acceptedSignalValues = 307200, archiveCommitMs = .1, latestAvailableSequence = 599, pendingBatches = 0, observedLagMs = 0, lastObservedAtUtc = at, lastCommittedRunId = "b8e088cc-712a-4b43-ae5a-9fc49b98ab6b", lastCommittedSequence = 599,
+                    collectionStatus = new { collectorMode = "ISOLATED", declaredOrigin = "SYNTHETIC", receiptProvenance = "ACCEPTED",
+                        lastReceivedAtUtc = at, receivedAgeMs = 0, freshness = "CURRENT", validUntilUtc = DateTimeOffset.UtcNow.AddSeconds(3).ToString("O"),
+                        lastCommittedAtUtc = at, pendingBatches = owner.InvalidCollection ? (object)true : 0, workerStatus = "RUNNING", workerReason = (string?)null } } },
                 "/v1/warnings" => Array.Empty<object>(),
                 "/v1/devices/device-1/diagnostics" => new { deviceId = "device-1", enabled = false, modelVersion = (string?)null, evaluation = "INSUFFICIENT_DATA", sampleCount = 0, flowErrorEwmaLpm = (double?)null, issues = Array.Empty<object>() },
                 "/v1/devices/device-1/observations" => WireValidation.Units.Select(pair => new { schemaVersion = Aegis.Contracts.Contract.Version,

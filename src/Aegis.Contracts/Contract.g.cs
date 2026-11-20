@@ -5,7 +5,7 @@ namespace Aegis.Contracts;
 
 public static class Contract
 {
-    public const string Sha256 = "16bac50eb851d345bccb0a040bd5eb5819f9e30c0c49d1e3eb9f3093f1a75710";
+    public const string Sha256 = "675843e265d073cc9f3bb88db887249791687019d26900cb4934466cb76db477";
     public const string Version = "3.4.0";
     public const string InitialDevice = "EQ-SUPPLY-01";
     public const int MaxPointsPerSeries = 1500;
@@ -18,7 +18,7 @@ public static class Contract
     public static readonly string[] TrendResponseRequiredFields = ["schemaVersion", "deviceId", "source", "resolution", "window", "generatedAtUtc", "isComplete", "gaps", "series", "warningMarkers"];
     public static readonly string[] ApiErrorRequiredFields = ["code", "message", "requestId"];
     public static readonly string[] NoSensitiveFields = ["password", "api_key", "access_token", "authorization", "cookie", "raw_prompt", "raw_payload", "full_email", "customer_secret", "private_path"];
-    public static readonly string[] ApiRoutesThinDemo = ["GET /v1/health", "GET /v1/devices", "GET /v1/devices/{id}/observations", "GET /v1/devices/{id}/health", "GET /v1/warnings", "POST /v1/warnings/{id}/ack", "POST /v1/lab/scenarios/DEG-02/start", "GET /v1/devices/{id}/trends", "GET /v1/warnings/{id}/timeline"];
+    public static readonly string[] ApiRoutesThinDemo = ["GET /v1/ingestion", "GET /v1/health", "GET /v1/devices", "GET /v1/devices/{id}/observations", "GET /v1/devices/{id}/health", "GET /v1/warnings", "POST /v1/warnings/{id}/ack", "POST /v1/lab/scenarios/DEG-02/start", "GET /v1/devices/{id}/trends", "GET /v1/warnings/{id}/timeline"];
 }
 
 public enum ModelLifecycle

@@ -8,9 +8,9 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from aegis.archive import RawArchive
+from aegis.archive import ArchiveIdentityError, RawArchive
 from aegis.collector import Collector, CollectorLivenessError, SourceConfig
-from aegis.processes import MAX_FRAME_BYTES
+from aegis.processes import MAX_FRAME_BYTES, archive_identity_failure_frame
 
 
 class WorkerConfig(BaseModel):
@@ -62,7 +62,11 @@ async def run(config):
 
     threading.Thread(target=watch_parent, name="aegis-parent", daemon=True).start()
     try:
-        await collector.start()
+        try:
+            await collector.start()
+        except ArchiveIdentityError:
+            await asyncio.to_thread(_write, archive_identity_failure_frame(source.deviceId))
+            raise
         while not stopped.is_set():
             collector.ensure_live()
             # Only the latest contracted flow rows cross the pipe; raw tags stay in this process.

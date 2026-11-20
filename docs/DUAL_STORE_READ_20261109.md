@@ -35,6 +35,8 @@ python -m aegis.stored_records --sources sources.json \
 
 `timeBasis: FIRST_RECEIPT`는 원본 시각이 없는 기록도 조회하기 위한 **최초 host 수신 시각** 기준입니다. aware ISO8601 입력을 UTC로 비교하며 최대1일의 `[from,to)` 구간입니다. `firstReceivedAtUtc`는 보관한 표현을 그대로 반환하고, `sourceMetadata.observedAtUtc/sequence/runId`와 각 PROVIDED/NOT_PROVIDED는 원본 그대로 남깁니다. 수신 시각·SQL 순서·delivery token으로 누락된 원본 필드를 채우지 않습니다. 제공된 원본 시각의 offset 문자열과 큰 정수도 보존합니다.
 
+`GET /v1/stored-records`와 대시보드의 `GET /api/stored-records`에서 `deviceId`를 선택할 수 있습니다. 장비와 함께 `storeId`와 `runId`를 지정하면 수신 창의 행은 한 저장소·장비·실행으로 좁혀집니다. `runEvidence.recordedGaps`는 같은 SQLite 읽기 트랜잭션에서 확인한 실행 전체의 재생 한도 초과 기록입니다. 수신 창에 저장 행이 0개여도 저장된 공백 근거가 있을 수 있습니다. 확인된 실행에서 공백 기록이 없으면 빈 배열, 실행을 찾지 못했거나 원시 공백을 지원하지 않으면 `null`입니다. 순번의 전체 연속성과 재수신 횟수는 별도로 입증되기 전까지 확인 불가입니다. HTTP의 `identity.nativeKeyText`는 큰 순번을 정확하게 표시하기 위한 JSON 문자열입니다.
+
 `identity`는 storeId/storeKind/nativeKeyKind/nativeKey입니다. raw-v1 키는 저장된 device/run/sequence, adapter 키는 adapter/version/**delivery stream**/recordId입니다. adapter delivery stream은 source run이 아닙니다. 각 저장소의 정상 재전송은 기존 저장 중복 정책을 따릅니다. 형식이 다르거나 다른 저장소에 있는 유사 기록은 같은 물리 이벤트라는 근거가 없으므로 합치지 않습니다. 하나의 실제 파일을 여러 label로 설정하면 거부합니다.
 
 raw-v1 `source: SIMULATOR`는 `declaredOrigin: SYNTHETIC`, `originEvidence: DECLARED_ONLY`, `producerDeclaration: SIMULATOR`로 표현합니다. 당시 저장하지 않은 acquisitionMethod/sourceAccessMode는 `NOT_RECORDED`입니다. 현재 config로 과거를 추정하지 않습니다. adapter 출처·수집 방식·접근 모드는 검증된 최초 committed page에서 읽습니다. 장비 확인을 하지 않았으므로 `hardwareIdentityVerified:false`입니다. raw hierarchy는 저장 column이며 adapter hierarchy는 `NOT_RECORDED`/null입니다.
@@ -49,7 +51,7 @@ raw-v1 `source: SIMULATOR`는 `declaredOrigin: SYNTHETIC`, `originEvidence: DECL
 
 각 저장소 snapshot은 내부적으로 일관되지만 여러 파일을 한 번에 고정하는 분산 transaction은 없습니다. `snapshotConsistency: PER_STORE_SNAPSHOT_NO_DISTRIBUTED_ATOMICITY`, `sourceCoverage: NOT_ASSERTED`로 표시합니다. `selectionComplete:true`는 설정한 모든 snapshot에 대한 제한 내 선택 처리가 완료됐다는 의미입니다. raw gap count는 **저장소 전체** sequence gap evidence이며 시간 구간의 완전성 판정이 아닙니다. adapter gap evidence는 NOT_RECORDED/null이며 0으로 표시하지 않습니다.
 
-최대4개 저장소, raw 저장소당10,000개 원본 행, adapter는 기존64page/1,024record/32MiB 검증 한도를 적용합니다. 반환 최대64개, 선택 태그16개, 출력4MiB, 공유 cooperative5초/SQLite VM5백만 step 한도입니다. 초과 시 잘라서 성공하지 않습니다. raw 검증은 기존256MiB DB/행256KiB/총 payload128MiB와 cursor/gap 한도도 적용합니다. 전체 저장 무결성 검사이므로 기간 밖의 손상이나 많은 행으로도 거부할 수 있습니다. 0.2초 busy timeout이며 native I/O/파일 호출의 강제 종료나 실시간 deadline 보장이 아닙니다. 설정은64KiB regular nonblocking/no-follow JSON이고 중복 key/비유한 숫자를 거부합니다. CLI 설정의 이 파일 접근은 Linux/POSIX에서만 검증했습니다.
+최대4개 저장소, raw 저장소당10,000개 원본 행, adapter는 기존64page/1,024record/32MiB 검증 한도를 적용합니다. 반환 최대64개, 선택 태그16개, 출력4MiB, 공유 cooperative5초/SQLite VM5백만 step 한도입니다. 초과 시 잘라서 성공하지 않습니다. raw 검증은 기존256MiB DB/행256KiB/총 payload128MiB와 cursor/gap 한도도 적용합니다. 전체 저장 무결성 검사이므로 기간 밖의 손상이나 많은 행으로도 거부할 수 있습니다. 0.2초 busy timeout이며 native I/O/파일 호출의 강제 종료나 실시간 deadline 보장이 아닙니다. 설정 파일은 최대 64KiB이며 JSON 중복 key/비유한 숫자를 거부합니다. POSIX는 일반 파일을 nonblocking/no-follow로 읽습니다. Windows는 기존의 단일 네이티브 핸들 제한 읽기를 재사용해 마지막 경로 요소의 링크/재분석 지점과 비정규 파일을 거부합니다. Windows의 정상·잘못된 JSON, 크기 초과, 디렉터리 거부를 합성 테스트로 확인했습니다. 상위 디렉터리 전환 방지나 전체 저장소 플랫폼 검증을 의미하지 않습니다.
 
 ## 검증과 남은 이행
 

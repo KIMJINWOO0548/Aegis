@@ -30,6 +30,16 @@ $env:AEGIS_DASHBOARD_TOKEN = [Convert]::ToHexString([Security.Cryptography.Rando
 
 ## 데이터 경계
 
+### 선택적 로컬 보관 이력
+
+API 프로세스의 `AEGIS_STORED_SOURCES` 환경변수에 관리자가 신뢰하는 로컬 경로 목록을 JSON으로 설정하면 기존 **근거 검토 → 로컬 보관 수신 이력**에서 조회할 수 있습니다. 예: `[{"storeId":"adapter-01","kind":"ADAPTER_STORE_V1","path":"C:/trusted/adapter.sqlite"}]`. 기본값은 비활성(404)이며 브라우저는 파일 경로를 지정할 수 없습니다. 기존 수집 실행 옵션과 독립적으로 적용됩니다.
+
+`GET /v1/stored-records`와 인증된 게이트웨이의 `/api/stored-records`는 필수 `receivedFromUtc`·`receivedToUtc`, 선택 `signals`·`deviceId`를 받습니다. 실행 범위로 좁히려면 같은 요청에 `deviceId`와 함께 `storeId`·`runId`를 모두 지정합니다. 알 수 없는 키와 중복 매개변수는 거부합니다. 기존 `stored_records.query_stored_records` 검증·읽기 전용 투영과 한도(최대 4개 소스, 24시간의 종료 미포함 수신 창, 선택 신호 16개, 반환 64개 기록/4MiB)를 재사용합니다. API 응답의 각 reading에는 브라우저 숫자 정밀도 손실을 피하기 위한 `valueText` 표시 문자열이 추가됩니다. HTTP의 원본 키는 정확한 표시용 JSON 문자열을 함께 제공합니다. 실행 전체의 기록된 재생 공백은 수신 창의 행 수와 별도이며, 순번 연속성이나 재수신 횟수는 확인하지 않습니다. 저장된 원본 숫자와 CLI 투영 계약은 그대로입니다.
+
+SQLite 수신 이력은 현재 연결·수신 지연의 증거가 아닙니다. UI는 복원한 이력, 원본 시각 미제공, 명시적 null/MISSING, 선택 신호의 미포함/ABSENT, 숫자 0을 구분합니다. 출처는 저장된 선언이며 실장비 검증이 아닙니다. 조회 오류 시 이전 결과를 지웁니다. 소스 누락·무결성 실패·한도 초과는 부분 성공으로 숨기지 않습니다.
+
+이 연결은 읽기 경로만 제공합니다. AdapterStore→raw-v1 쓰기 브리지는 여전히 `NOT_CONNECTED`입니다. nullable 원본에 raw-v1 필수 시각·순서·장비 메타데이터를 만들어 넣지 않으며 자동 마이그레이션, collector 등록, source ACK를 실행하지 않습니다. 그런 쓰기 통합에는 별도 계약이 필요합니다.
+
 ```mermaid
 flowchart LR
   E[독립 에뮬레이터] --> P[모듈별 Python 수집]

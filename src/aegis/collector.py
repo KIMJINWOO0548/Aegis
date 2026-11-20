@@ -8,7 +8,7 @@ import sqlite3
 import time
 from collections import deque
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, Literal
 from urllib.parse import urlsplit
@@ -190,6 +190,9 @@ class State:
     accepted: int = 0
     accepted_values: int = 0
     archive_commit_ms: float | None = None
+    committed_at: datetime | None = None
+    commit_cursor: tuple[str, int] | None = None
+    pending: int | None = None
     available_sequence: int | None = None
     rejected: int = 0
     dropped: int = 0
@@ -258,6 +261,21 @@ class Collector:
             raise RuntimeError("Collector already started.")
         if self._archive is not None:
             await self._archive.start()
+            try:
+                for index, source in enumerate(self.sources):
+                    if source.transport != "replay":
+                        continue
+                    saved = await self._archive.latest_record(source.deviceId)
+                    if saved is not None:
+                        snapshot = RawSnapshot.model_validate(saved[0])
+                        self._accept(index, snapshot, history=True,
+                                     received=datetime.fromisoformat(saved[1].replace("Z", "+00:00")))
+                        self._states[index] = replace(self._states[index], state="DISCONNECTED",
+                            reason="RESTORED_HISTORY", accepted=0, accepted_values=0, accepted_at=None)
+                        self._cursors[index] = (str(snapshot.runId), snapshot.sequence)
+            except BaseException:
+                await self._archive.close()
+                raise
         if self._client is None:
             self._client = httpx.AsyncClient(trust_env=False, follow_redirects=False,
                 limits=httpx.Limits(max_connections=MAX_SOURCES, max_keepalive_connections=MAX_SOURCES))
@@ -340,6 +358,8 @@ class Collector:
 
     async def poll_once(self, index):
         source, previous = self.sources[index], self._states[index]
+        previous = replace(previous, pending=None)
+        self._states[index] = previous
         self._behind[index] = False
         started = time.perf_counter()
         try:
@@ -399,7 +419,9 @@ class Collector:
         if not page.snapshots:
             state = self._states[index]
             if state.snapshot is not None and state.snapshot.runId == page.runId:
-                self._states[index] = replace(state, state="CONNECTED", reason=None)
+                self._states[index] = (replace(state, state="STALE", reason="RESTORED_HISTORY")
+                    if state.accepted_at is None else replace(state, state="CONNECTED", reason=None,
+                        pending=0 if same_run and cursor[1] == page.latestSequence else None))
             return
         gap = (expected, page.oldestSequence - 1) if expected < page.oldestSequence else None
         commit_started = time.perf_counter()
@@ -408,13 +430,17 @@ class Collector:
         self._cursors[index] = await self._archive.cursor(source.deviceId)
         if self._cursors[index] != (str(page.runId), page.snapshots[-1].sequence):
             raise RejectedBatch("RETIRED_RUN")
+        committed_at = self._now()
         commit_ms = round((time.perf_counter() - commit_started) * 1000, 3)
         for snapshot in page.snapshots:
             self._accept(index, snapshot, history=True, received=received)
         if cursor is not None and not same_run:
             self._event("COLLECTOR_RESTARTED", "UNKNOWN", source.deviceId, "SOURCE_RUN_CHANGED")
         self._states[index] = replace(self._states[index], archive_commit_ms=commit_ms,
-                                      available_sequence=page.latestSequence)
+            committed_at=committed_at, commit_cursor=self._cursors[index],
+            available_sequence=page.latestSequence,
+            pending=page.latestSequence - page.snapshots[-1].sequence
+            if gap is None and (cursor is None or same_run) else None)
         self._behind[index] = page.snapshots[-1].sequence < page.latestSequence
         if gap:
             state = self._states[index]
@@ -496,18 +522,47 @@ class Collector:
         return state.state
 
     def ingestion(self):
-        return [{"deviceId": source.deviceId, "equipmentId": source.equipmentId, "moduleId": source.moduleId,
+        now, tick = self._now(), self._clock()
+        rows = []
+        for source, state, cursor in zip(self.sources, self._states, self._cursors):
+            status = self._collection_status(state, cursor, now, tick)
+            rows.append({"deviceId": source.deviceId, "equipmentId": source.equipmentId, "moduleId": source.moduleId,
                  "transport": source.transport, "archiveEnabled": self._archive is not None and source.transport == "replay",
                  "signalCount": len(state.snapshot.signals) if state.snapshot else 0,
                  "acceptedSignalValues": state.accepted_values,
                  "archiveCommitMs": state.archive_commit_ms,
                  "latestAvailableSequence": state.available_sequence,
-                 "pendingBatches": max(0, state.available_sequence - cursor[1]) if state.available_sequence is not None and cursor else None,
-                 "observedLagMs": round(max(0, (self._now() - state.snapshot.observedAtUtc).total_seconds() * 1000), 3) if state.snapshot else None,
+                 "pendingBatches": status["pendingBatches"],
+                 "observedLagMs": round(max(0, (now - state.snapshot.observedAtUtc).total_seconds() * 1000), 3) if state.snapshot else None,
                  "lastObservedAtUtc": state.snapshot.observedAtUtc.isoformat() if state.snapshot else None,
                  "lastCommittedRunId": cursor[0] if cursor else None,
-                 "lastCommittedSequence": cursor[1] if cursor else None}
-                for source, state, cursor in zip(self.sources, self._states, self._cursors)]
+                 "lastCommittedSequence": cursor[1] if cursor else None,
+                 "collectionStatus": status})
+        return rows
+
+    def _collection_status(self, state, cursor, now, tick):
+        elapsed = tick - state.accepted_at if state.accepted_at is not None else None
+        deadline = None
+        freshness = "NO_RECEIPT"
+        if state.received is not None:
+            freshness = "RESTORED" if elapsed is None else "STALE"
+        if elapsed is not None and state.state == "CONNECTED" and 0 <= elapsed < self.stale_after:
+            observed = state.snapshot.observedAtUtc
+            valid_until = min(observed + timedelta(seconds=self.stale_after),
+                              state.received + timedelta(seconds=self.stale_after),
+                              now + timedelta(seconds=self.stale_after - elapsed))
+            if max(observed, state.received) <= now < valid_until:
+                deadline, freshness = valid_until, "CURRENT"
+        committed = state.committed_at if state.commit_cursor == cursor else None
+        return {"collectorMode": "SHARED", "declaredOrigin": "SYNTHETIC",
+            "receiptProvenance": "NONE" if state.received is None else
+                "RESTORED" if elapsed is None else "ACCEPTED",
+            "lastReceivedAtUtc": state.received.isoformat() if state.received else None,
+            "receivedAgeMs": int(elapsed * 1000) if elapsed is not None and elapsed >= 0 else None,
+            "freshness": freshness, "validUntilUtc": deadline.isoformat() if deadline else None,
+            "lastCommittedAtUtc": committed.isoformat() if committed else None,
+            "pendingBatches": state.pending if deadline else None,
+            "workerStatus": "NOT_APPLICABLE", "workerReason": None}
 
     def connections(self):
         # Publish from one immutable state reference per device, including thread-pool API readers.
@@ -517,7 +572,8 @@ class Collector:
             rows.append({"deviceId": source.deviceId, "state": effective,
                 "lastReceivedAtUtc": state.received, "lastSequence": state.snapshot.sequence if state.snapshot else None,
                 "acceptedBatches": state.accepted, "rejectedBatches": state.rejected, "droppedBatches": state.dropped,
-                "pollLatencyMs": state.latency_ms, "reasonCode": "NO_NEW_DATA" if effective == "STALE" else state.reason})
+                "pollLatencyMs": state.latency_ms,
+                "reasonCode": "NO_NEW_DATA" if effective == "STALE" and state.state == "CONNECTED" else state.reason})
         return rows
 
     def _index(self, device_id):

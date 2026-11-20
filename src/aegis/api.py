@@ -1,6 +1,7 @@
 """Local read-only API: explicit fixed fixtures or independent emulator sources."""
 
 import hmac
+import json
 import os
 import re
 from contextlib import asynccontextmanager
@@ -97,7 +98,7 @@ def _source_context(collector: Collector | None) -> dict:
 
 
 def create_app(token: str, log_path: Path | None = None, *, collector: Collector | None = None,
-               raw_archive_paths: dict[str, Path] | None = None) -> FastAPI:
+               raw_archive_paths: dict[str, Path] | None = None, stored_sources: list[dict] | None = None) -> FastAPI:
     if not isinstance(token, str) or len(token.strip()) < 32 or "\r" in token or "\n" in token:
         raise ValueError("AEGIS_API_TOKEN must contain at least 32 characters.")
     expected_token = token.encode("utf-8")
@@ -106,6 +107,10 @@ def create_app(token: str, log_path: Path | None = None, *, collector: Collector
                                          or not set(raw_archive_paths) <= replay_devices):
         raise ValueError("Raw archive paths must belong to configured replay devices.")
     raw_paths = {device: Path(path).resolve() for device, path in (raw_archive_paths or {}).items()}
+    from aegis.stored_records import MAX_OUTPUT_BYTES, _sources, query_stored_records, QueryError
+    if stored_sources is not None:
+        _sources(stored_sources)  # Trusted startup configuration only; never accept browser paths.
+        stored_sources = [dict(source) for source in stored_sources]
     @asynccontextmanager
     async def lifespan(_app):
         if collector is not None:
@@ -195,6 +200,37 @@ def create_app(token: str, log_path: Path | None = None, *, collector: Collector
         if collector is not None:
             return [{"deviceId": source.deviceId, "readOnly": True, "source": "SIMULATOR"} for source in collector.sources]
         return [{"deviceId": DEVICE_ID, "readOnly": True, "source": "SIMULATOR"}]
+
+    @app.get("/v1/stored-records")
+    def stored_records(request: Request, receivedFromUtc: str = Query(max_length=64),
+                       receivedToUtc: str = Query(max_length=64), signals: str | None = Query(default=None, max_length=2063),
+                       deviceId: str | None = Query(default=None, max_length=128),
+                       storeId: str | None = Query(default=None, max_length=64),
+                       runId: str | None = Query(default=None, max_length=36)):
+        if stored_sources is None:
+            raise HTTPException(404)
+        if set(request.query_params) - {"receivedFromUtc", "receivedToUtc", "signals", "deviceId", "storeId", "runId"} or any(
+                len(request.query_params.getlist(key)) != 1 for key in request.query_params):
+            raise HTTPException(422)
+        try:
+            result = query_stored_records(stored_sources, receivedFromUtc, receivedToUtc, signals=signals,
+                                          device_id=deviceId, store_id=storeId, run_id=runId)
+            # Browser numbers cannot preserve every stored integer; keep an exact display representation.
+            for row in result['records']:
+                identity = row['identity']
+                # Keep adjacent int64 sequences distinct in browsers with IEEE-754 numbers.
+                identity['nativeKeyText'] = json.dumps(identity['nativeKey'], ensure_ascii=False, separators=(',', ':'))
+                for signal in row['signals']:
+                    reading = signal['reading']
+                    if reading is not None:
+                        reading['valueText'] = None if reading['value'] is None else str(reading['value'])
+            response = JSONResponse(result)
+            if len(response.body) > MAX_OUTPUT_BYTES:
+                raise QueryError('QUERY_LIMIT')
+            return response
+        except QueryError as exc:
+            return _error(request, 422 if exc.code == "INVALID_QUERY" else 413 if exc.code == "QUERY_LIMIT" else 503,
+                          exc.code, "Stored history could not be read; narrow the window or check local configuration.")
 
     @app.get("/v1/connections")
     async def connections():
@@ -393,7 +429,11 @@ def main() -> None:
             parser.error("--archive requires at least one replay source.")
         if not args.isolate:
             collector = Collector(sources, log_path=log_path, evaluate=args.evaluate, archive=archive) if sources else None
-        app = create_app(os.environ.get("AEGIS_API_TOKEN", ""), log_path, collector=collector, raw_archive_paths=raw_paths)
+        encoded_sources = os.environ.get("AEGIS_STORED_SOURCES")
+        if encoded_sources is not None and len(encoded_sources.encode("utf-8")) > 65536:
+            raise ValueError("Stored source configuration is too large.")
+        app = create_app(os.environ.get("AEGIS_API_TOKEN", ""), log_path, collector=collector, raw_archive_paths=raw_paths,
+                         stored_sources=json.loads(encoded_sources) if encoded_sources is not None else None)
     except (ValueError, OSError):
         raise SystemExit("Check local API/emulator token environment variables and emulator configuration.") from None
     # Windows IOCP accept can remain failed after WinError 64; bounded local TCP needs no subprocess loop support.
