@@ -73,3 +73,29 @@
   .telemetry-workspace .topbar-tools { flex-basis: 100%; }
   .module-choices { grid-template-columns: minmax(0, 1fr); }
 }
+.archive-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem 1rem;
+  margin-bottom: .875rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: .875rem;
+}
+
+.dashboard-grid.archive-focus { grid-template-columns: minmax(0, 1fr); }
+.archive-focus .section-description { margin-bottom: .5rem; }
+.archive-focus article.evidence > div { width: 100%; min-width: 0; }
+.archive-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .5rem .75rem;
+  margin: .625rem 0;
+  align-items: end;
+}
+.archive-form label { min-width: 0; font-size: .8125rem; }
+.archive-form input { margin-top: .25rem; }
+@media (max-width: 740px) {
+  .archive-form { grid-template-columns: minmax(0, 1fr); }
+}
