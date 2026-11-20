@@ -1,9 +1,26 @@
 import {describe,it,expect} from 'vitest';
-import {appendHistory,collectionEvidence,interruptHistory,isCurrent,observationCurrent,parseSnapshot,selectDevice,type Snapshot,type Device} from './data';
+import {appendHistory,collectionEvidence,formatValue,interruptHistory,isCurrent,observationCurrent,parseSnapshot,selectDevice,tagState,type Snapshot,type Device} from './data';
 const stamp='2026-10-22T00:00:00Z';
 const device:Device={deviceId:'d1',equipmentId:'eq',moduleId:'m1',connection:{state:'CONNECTED'},ingestion:null,observations:[{observationId:'o1',signalKey:'actualFlowLpm',value:10,unit:'L/min',quality:'GOOD',observedAtUtc:stamp}],diagnostics:null,warnings:[],review:null,engineState:'ARCHIVE_NOT_CONFIGURED',nativeSequence:null};
 const snapshot:Snapshot={schemaVersion:'dashboard-1',generatedAtUtc:stamp,upstreamState:'CONNECTED',sourceMode:'EMULATORS',message:null,devices:[device],inference:{state:'NOT_REGISTERED',message:'No model'}};
 describe('honest bounded UI data',()=>{
+ it('distinguishes an actual zero, missing or absent tags, stale data and restored receipts',()=>{
+  const now = Date.parse(stamp);
+  const zero = {...device.observations[0], value:0};
+  expect(formatValue(zero.value)).toBe('0');
+  expect(tagState(snapshot,device,zero,now,true)).toBe('CURRENT');
+  expect(tagState(snapshot,device,zero,now+3000,true)).toBe('HISTORY');
+  expect(tagState(snapshot,device,undefined,now,true)).toBe('ABSENT');
+  expect(tagState(snapshot,device,{...zero,value:null,quality:'MISSING'},now,true)).toBe('MISSING');
+  expect(tagState(snapshot,device,{...zero,quality:'BAD'},now,true)).toBe('BAD');
+  expect(tagState({...snapshot,sourceMode:'FIXTURES'},device,zero,now,true)).toBe('FIXTURE');
+  const restored:Device = {...device,connection:{state:'DISCONNECTED'},ingestion:{archiveEnabled:true,
+   lastCommittedSequence:0,lastObservedAtUtc:stamp,pendingBatches:null,observedLagMs:0,
+   collectionStatus:{collectorMode:'ISOLATED',declaredOrigin:'SYNTHETIC',receiptProvenance:'RESTORED',
+    lastReceivedAtUtc:stamp,receivedAgeMs:null,freshness:'RESTORED',validUntilUtc:null,lastCommittedAtUtc:stamp,
+    pendingBatches:null,workerStatus:'RUNNING',workerReason:null}}};
+  expect(tagState(snapshot,restored,{...zero,quality:'STALE'},now,true)).toBe('RESTORED');
+ });
  it('expires collection evidence and retains historical timestamps',()=>{
   const row:Device={...device,ingestion:{archiveEnabled:true,lastCommittedSequence:0,lastObservedAtUtc:stamp,observedLagMs:0,pendingBatches:0,
    collectionStatus:{collectorMode:'ISOLATED',declaredOrigin:'SYNTHETIC',receiptProvenance:'ACCEPTED',

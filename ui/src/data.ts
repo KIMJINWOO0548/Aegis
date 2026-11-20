@@ -75,6 +75,15 @@ export function isCurrent(snapshot:Snapshot|null,device:Device|undefined,now=Dat
     (!device.ingestion?.collectionStatus||collectionEvidence(snapshot,device,now,transport)?.freshness==='CURRENT');
 }
 export function observationCurrent(snapshot:Snapshot|null,device:Device|undefined,o:Observation,now=Date.now(),transport=true):boolean{return isCurrent(snapshot,device,now,transport)&&o.quality==='GOOD'&&o.value!==null&&fresh(o.observedAtUtc,now);}
+export function tagState(snapshot:Snapshot|null,device:Device|undefined,observation:Observation|undefined,now:number,transport:boolean):
+  'ABSENT'|'MISSING'|'BAD'|'CURRENT'|'RESTORED'|'FIXTURE'|'HISTORY' {
+  if (!observation) return 'ABSENT';
+  if (observation.quality==='MISSING'||observation.value===null) return 'MISSING';
+  if (observation.quality==='BAD') return 'BAD';
+  if (observationCurrent(snapshot,device,observation,now,transport)) return 'CURRENT';
+  if (collectionEvidence(snapshot,device,now,transport)?.receiptProvenance==='RESTORED') return 'RESTORED';
+  return snapshot?.sourceMode==='FIXTURES'?'FIXTURE':'HISTORY';
+}
 export interface Point {t:number;v:number|null;id:string;marker?:'gap'|'transport'}
 export type HistoryRange='all'|30|60;
 export function historyWindow(points:readonly Point[],range:HistoryRange):readonly Point[]{
