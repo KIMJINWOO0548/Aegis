@@ -126,6 +126,7 @@ apiErrorRequiredFields:
 - message
 - requestId
 apiRoutesThinDemo:
+- GET /v1/ingestion
 - GET /v1/health
 - GET /v1/devices
 - GET /v1/devices/{id}/observations

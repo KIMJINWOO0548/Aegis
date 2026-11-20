@@ -1,0 +1,140 @@
+{
+  "schemaVersion": "aegis-storage-policy-diagnostics-evidence-1",
+  "date": "2026-11-09",
+  "baseCommit": "20f53e90a4f8a9df3cfdf90b8e15653e1ada5059",
+  "branch": "improve/storage-policy-diagnostics-20261109",
+  "historyScope": "Independent accessible remote history; no restricted preservation files or unavailable 5075ccd restored.",
+  "environment": {
+    "os": "Linux",
+    "python": "3.12.14",
+    "sqlite": "3.53.1",
+    "syntheticTemporaryDataOnly": true
+  },
+  "implemented": [
+    "Bounded read-only archive snapshot plus explicit regular backup-file metadata inventory",
+    "Distinct missing/permission/IO/unsupported/partial/unavailable states; no global healthy/PASS flag",
+    "Separate apparent bytes, reported allocation estimate, logical SQLite pages and non-superuser available volume blocks",
+    "No duplicate hardlink totals or summed same-volume free space; estimated next backup size never guaranteed to fit",
+    "Versioned canonical policy with unset/unavailable/exceeded/within-limit checks",
+    "First receipt age and maximum-age retention advisory, separate backup mtime review and unverified integrity",
+    "Optional bounded unsigned ingestion capture: active cursor coverage, finite duration, capture/receipt timing and recency checks",
+    "Regular-file nonblocking no-follow JSON inputs and explicit invalid/empty path rejection"
+  ],
+  "mutationBoundary": {
+    "applicationDataWrites": false,
+    "automaticDelete": false,
+    "overwrite": false,
+    "checkpoint": false,
+    "collectorWriterApiUiModified": false,
+    "backupManifestModified": false,
+    "closedWalMissingCompanions": "SQL refused with DB_UNAVAILABLE / WAL_COMPANIONS_REQUIRED; no initialization in synthetic regression",
+    "existingWalSharedMemory": "Ordinary read marks and OS metadata can change; no zero-metadata-effects promise",
+    "raceLimit": "Companion guard and filesystem sampling are non-atomic; concurrent close/rename can race them"
+  },
+  "measurementLimits": {
+    "sampling": "NON_ATOMIC",
+    "sourceCompleteness": "NOT_ASSERTED",
+    "backupIntegrity": "NOT_VERIFIED",
+    "backupCreationTime": "NOT_RECORDED",
+    "physicalAllocation": "FILESYSTEM_REPORTED_ESTIMATE",
+    "nextBackup": "SQLITE_LOGICAL_PAGES_ONLY_ESTIMATE_NOT_RESERVED",
+    "commitDuration": "LAST_REPORTED_APPEND_AND_CURSOR_DURATION_FROM_OPERATOR_UNSIGNED_CAPTURE",
+    "commitTimestamp": "NOT_RECORDED",
+    "actualLiveTelemetryFetch": false
+  },
+  "bounds": {
+    "rawRows": 10000,
+    "selectedBackupPaths": 32,
+    "jsonInputBytes": 65536,
+    "jsonOutputBytes": 65536,
+    "cooperativeSqlSeconds": 5,
+    "sqlVmSteps": 5000000,
+    "existingArchiveValidatorPageAndPayloadLimits": true,
+    "hardRealtimeIoCancellation": false
+  },
+  "tests": {
+    "focusedIncludingUnchangedStorageTests": {
+      "passed": 89,
+      "failures": 0,
+      "skipped": 0,
+      "seconds": 8.932,
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_storage_policy_diagnostics.py",
+        "tests/test_storage_diagnostics_cli.py",
+        "tests/test_storage_diagnostics.py"
+      ]
+    },
+    "full": {
+      "passed": 845,
+      "failures": 0,
+      "skipped": 1,
+      "seconds": 192.501,
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "skipScope": "Existing Windows PowerShell delivery test"
+    },
+    "emulatorPassed": 26,
+    "contractsCheck": true,
+    "v34Check": true,
+    "covered": [
+      "Unset/invalid/null/empty policies and deterministic canonical reference",
+      "Threshold equality and crossings; empty/future/invalid raw timestamps and corrupt cursor/schema",
+      "WAL companions included, closed-WAL initialization refused, original raw/first receipt/cursor/gap preserved",
+      "Permission/IO/missing capacity or file states, read-only volume, sparse allocation, partial inventories and hardlink deduplication",
+      "Fresh/stale/future/pre-receipt/mismatched/duplicate/missing source telemetry and inclusive recency boundary",
+      "Actual subprocess diagnosis/JSON failures/FIFO/no-follow/empty-option rejection",
+      "Raw rows/backups/time and nonzero SQL progress limit interruption with reader release"
+    ],
+    "tdd": {
+      "initialMissingModuleCoreFailures": 36,
+      "initialMissingModuleCliFailures": 26,
+      "boundaryRegressionsObservedBeforeFix": 8,
+      "emptyPathRegressionsObservedBeforeFix": 2,
+      "boundaryRedFreezeNote": "An unrelated CLI fixture was refined concurrently with the boundary RED run; that run is not a whole-tree freeze proof. Final focused/full source hashes are frozen."
+    },
+    "testedPythonFiles": 59,
+    "testedSourcesUnchanged": true,
+    "generatedEvidenceRestoredByteForByte": true,
+    "newSourceSha256": {
+      "src/aegis/storage_diagnostics.py": "610068759fb39470210c3c13bb25cfda83f8346dee16c8ae02e0942d545dbe30",
+      "tests/test_storage_policy_diagnostics.py": "95a71f7e4060808232fdcb53409f5834118562587c55c307528b2484be4aa7a8",
+      "tests/test_storage_diagnostics_cli.py": "d37bcc06ba78539512d545e16a9ccfdbdbaef28d0e0732e3a34b2fddc0cb4309"
+    }
+  },
+  "review": {
+    "independentWholeChangeAndFinalRereview": true,
+    "remainingCritical": 0,
+    "remainingImportant": 0,
+    "remainingMinor": 0,
+    "fixed": [
+      "Impossible capture timing",
+      "Explicit null field/file confusion",
+      "Configured duration without measurement prerequisites",
+      "Blocking FIFO JSON files",
+      "Closed WAL sidecar initialization",
+      "Empty CLI path option silently omitted"
+    ]
+  },
+  "preservation": {
+    "originalCleanCheckouts": 11,
+    "existingFilesIdenticalExceptReadme": 415,
+    "existingStorageTestRestoredAndUnmodified": true,
+    "restrictedPreservationFilesAccessed": false,
+    "forcePush": false
+  },
+  "unverified": [
+    "Windows and Windows services (unsupported platform rejected)",
+    "Actual equipment, field data or live telemetry capture integration",
+    "Physical disk exhaustion, quotas, power loss and long-duration/high-volume load",
+    "Remote filesystems and adversarial/concurrent path manipulation",
+    "Backup creation time, recoverability, continuous minimum retention or source authenticity"
+  ]
+}

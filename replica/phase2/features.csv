@@ -1,0 +1,11 @@
+feature,area,priority,original,clone,notes
+Select a visible time window,investigation,must,yes,partial,Documented Grafana pattern; Aegis only last120 memory rows not archive queries
+Display exact time context,investigation,must,yes,yes,Explicit retained start/end UTC anchored to data
+Read exact values in a table,investigation,should,yes,yes,Own native table with null and interruption text; browser checked separately
+Preserve gaps instead of connecting invalid values,integrity,must,yes,yes,Own parser/history/projection pipeline regressions; not equipment validation
+Overlay correlated signal series,investigation,should,yes,no,Only selected signal; no inferred causal correlation
+Query durable historical data,history,must,yes,no,Current browser history is memory only
+Inspect data queries,provenance,could,yes,no,No query inspector implemented
+Share or export investigation,collaboration,should,yes,no,No external transfer or persistence implemented
+Freeze independent contextual UI summaries,investigation,must,no,yes,Own addition; excluded from reference score
+Accessible inspection of retained null marker meaning,accessibility,must,no,yes,Own addition; does not restore quality details never retained

@@ -1,5 +1,75 @@
 # Aegis Insight
 
+## Platform preflight
+
+Before using the opt-in adapter/archive tools, run `python -m aegis.platform_support`.
+Windows supports the synthetic `AdapterStore` writer on a trusted local NTFS
+directory, with tested process recovery and explicit directory-sync limits.
+See [supported Windows storage and actual tests](docs/WINDOWS_ADAPTER_STORE_20261116.md).
+Nullable archive, archive backup/restore and storage diagnostics retain their
+own `PLATFORM_UNVERIFIED` gates.
+The preflight does not modify files or certify runtime behavior. See the
+[Gamja reconciliation and remaining Windows gates](docs/GAMJA_RECONCILIATION_20261116.md).
+
+nullable 원본과 출처 선언은 별도 새 쓰기 계약으로 저장하고 공통 조회로 다시 읽습니다.
+합성 collector 예제와 장애·재시작 시험을 제공하며 기존 스키마를 자동 변경하지 않습니다.
+[새 쓰기 계약·수집/재조회·검증 한계](docs/INPUT_ARCHIVE_20261109.md).
+
+raw-v1과 nullable adapter store는 opt-in 공통 읽기 CLI로 저장 원본을 함께 조회합니다.
+누락된 원본 시각·순번은 채우지 않고 최초 수신 시각 기준과 출처 근거를 구분합니다.
+[읽기 계약·조회 예제·한도와 남은 쓰기 이행](docs/DUAL_STORE_READ_20261109.md).
+
+## 모듈 생존·유한 복구 — 2026-11-09
+
+Python 모듈 분리 수집에서 내부 작업 종료와 살아 있는 무응답 worker를 감지하고 해당 모듈만
+유한 복구합니다. 정상 무데이터·긴 폴링 대기와 구분하고 기존 원본/커서를 유지합니다.
+[설계·실제 Linux 합성 시험·운영 한계](docs/COLLECTOR_LIVENESS_RECOVERY_20261109.md).
+실제 장비와 Windows 서비스 검증은 별도로 남아 있습니다.
+
+후속으로 시작 설정 pipe가 막히는 구간의 감시·안전한 중단을 보완했습니다.
+[설정 전송 복구와 검증 범위](docs/STARTUP_CONFIG_RECOVERY_20261109.md)를 확인하세요.
+
+저장 용량 실패는 `ARCHIVE_FULL` 사유로 구분하고 연결/저장 사유 전환의 이벤트 누락을
+보완했습니다. [실제 SQLite 장애 주입과 원본·커서 보전](docs/STORAGE_FAILURE_INTEGRITY_20261109.md).
+
+출처 선언과 수집 방식은 opt-in health 정보에서 별도로 구분합니다. 기본 응답은 유지하며,
+실제 장비 지원·과거 행의 출처 증명은 포함하지 않습니다.
+[현재 계약, 검증 범위와 단계별 이행](docs/SOURCE_CONTEXT_CONTRACT_20261109.md).
+
+원본 replay archive의 관찰 태그 사전과 기간·태그별 과거 조회를 별도 backend API로 제공합니다.
+device/run을 명시하는 제한된 조회이며 큰 run은 부분 성공 없이 거부합니다.
+[계약·조회 한도·원본 보전 검증](docs/RAW_HISTORY_20261109.md).
+
+후속으로 raw 조회의 극단 UTC 변환 오류를 검증 오류로 처리했습니다.
+[UTC 경계 회귀와 실제 모듈 IPC의 합성 검증](docs/RAW_QUERY_UTC_IPC_20261109.md).
+
+범용 숫자 tag의 설정형 상·하한은 별도 읽기 전용 archive 분석 CLI로 제공합니다.
+규칙 버전·적용 설정·근거를 기록하고 결측·불량·오래된 값은 평가 불가로 구분합니다.
+[설정형 규칙·평가 기준·검증 범위](docs/NUMERIC_LIMIT_RULES_20261109.md).
+
+선택 `--rule-lock`으로 같은 규칙 ID·버전의 내용 충돌과 미등록 버전을 조회 전에 거부합니다.
+[기준 생성·버전 추가·재현과 신뢰 경계](docs/RULE_VERSION_LOCK_20261109.md).
+
+수집 중 WAL archive를 고정된 시점으로 백업하고 보관한 manifest로 새 파일 복원을 검증하는
+별도 CLI를 추가했습니다. 기존 대상은 덮어쓰지 않으며 자동 삭제나 실행 중 원본 전환은 없습니다.
+[백업·복원 절차, 장애 결과와 검증 범위](docs/ARCHIVE_BACKUP_20261109.md).
+
+읽기 전용 저장 진단 CLI는 원본·명시한 백업의 크기, 볼륨 여유와 보존 검토 정책을 보고합니다.
+수신 시각 나이와 마지막 commit 측정값을 구분하고 정책 미설정·측정 불가·임계 초과를 명시합니다.
+[진단 절차·SQLite 읽기 경계·운영 한계](docs/STORAGE_DIAGNOSTICS_20261109.md).
+
+독립 어댑터 입력 계약은 별도 합성 replay CLI에서 원본 메타데이터의 제공/누락과 재전송을 검증합니다.
+기존 SIMULATOR 수집·저장에는 연결하지 않으며 새 검증 cursor는 메모리 제안값입니다.
+[입력 스키마·출처·timeout·보존 경계와 후속 이행](docs/ADAPTER_INPUT_20261109.md).
+
+선택한 별도 로컬 저장소는 어댑터 원본·최초 수신·cursor·EOF를 함께 commit하고 재확인한 뒤에만
+`LOCAL_STORE_COMMITTED`를 반환합니다. 기존 raw-v1 전달과 source ACK는 연결하지 않습니다.
+[저장 완료 확인·불명 결과 복구·재시작과 호환 한계](docs/ADAPTER_STORE_20261109.md).
+
+## Retained-summary investigation — 2026-11-06
+
+Freeze a contextual investigation, inspect exact UTC/null rows with native keyboard controls and resume following the stream. This is a maximum-120-row memory UI view, not archive/raw-signal recovery. UI tests **25 passed**; actual browser freeze/keyboard/mobile checks passed, idle chart clears were 3 → 0 in the same 3.3 s scenario, and isolated points remain visible. [Implementation, evidence and limits](docs/COMPETITIVE_DEPTH_20261106.md).
+
 노이즈가 많은 장비 신호에서 짧은 변화를 보존하고 판단 근거를 검토하는 로컬 개발 프로젝트입니다. CMP의 CMC·PMC·스케줄러 같은 모듈을 독립 프로세스로 수집하고, 수백 개 숫자 태그의 원본을 SQLite에 기록합니다. React·TypeScript의 밝은 화면을 ASP.NET Core·SignalR·Windows WebView2에 결합했습니다.
 
 **범위:** 합성 에뮬레이터를 이용한 개발용 프로토타입입니다. 실장비 연결, 고객 데이터, 현장 성능 검증, 판매 실적은 포함하지 않습니다. 개발용 EWMA는 점검 참고이며 학습된 고장 예측 모델이 아닙니다.

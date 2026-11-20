@@ -103,6 +103,62 @@ public static class GatewayApplication
         });
         app.MapDelete("/api/session", (HttpContext context, DashboardSessions sessions) => { sessions.Delete(context); return Results.NoContent(); });
         app.MapGet("/api/dashboard", (DashboardCache cache) => Results.Json(cache.Latest));
+        app.MapGet("/api/stored-records", async (HttpContext context, IHttpClientFactory clients) =>
+        {
+            if (settings.Upstream is null || settings.UpstreamToken is null) return Results.StatusCode(503);
+            var query = context.Request.Query;
+            bool selectedRun=query.ContainsKey("runId");
+            if (context.Request.QueryString.Value?.Length > 2600 || query.Keys.Any(key =>
+                key is not ("receivedFromUtc" or "receivedToUtc" or "signals" or "deviceId" or "storeId" or "runId") || query[key].Count != 1)
+                || !query.ContainsKey("receivedFromUtc") || !query.ContainsKey("receivedToUtc")
+                || selectedRun!=query.ContainsKey("storeId") || selectedRun&&!query.ContainsKey("deviceId")) return Results.BadRequest();
+            try
+            {
+                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
+                deadline.CancelAfter(TimeSpan.FromSeconds(7));
+                using var client = clients.CreateClient("upstream");
+                client.Timeout = TimeSpan.FromSeconds(7);
+                using var request = new HttpRequestMessage(HttpMethod.Get,
+                    new Uri(settings.Upstream, "v1/stored-records" + context.Request.QueryString));
+                request.Headers.Add("X-Aegis-Token", settings.UpstreamToken);
+                using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
+                await using var stream = await response.Content.ReadAsStreamAsync(deadline.Token);
+                var bytes = new byte[response.IsSuccessStatusCode ? 4 * 1024 * 1024 + 1 : 4097];
+                var length = 0;
+                while (length < bytes.Length)
+                { var count = await stream.ReadAsync(bytes.AsMemory(length), deadline.Token); if (count == 0) break; length += count; }
+                if (!response.IsSuccessStatusCode)
+                {
+                    var status=response.StatusCode switch
+                    { HttpStatusCode.NotFound => 404, HttpStatusCode.UnprocessableEntity => 422,
+                      HttpStatusCode.RequestEntityTooLarge => 413, _ => 503 };
+                    string? code=null;
+                    if(length>0&&length<bytes.Length)
+                    {
+                        try
+                        {
+                            using var error=JsonDocument.Parse(bytes.AsMemory(0,length),new(){MaxDepth=8});
+                            if(error.RootElement.ValueKind==JsonValueKind.Object&&error.RootElement.TryGetProperty("code",out var value)
+                                &&value.ValueKind==JsonValueKind.String)
+                                code=value.GetString();
+                        }
+                        catch(JsonException){}
+                    }
+                    return code is "INVALID_QUERY" or "QUERY_LIMIT" or "SOURCE_UNAVAILABLE" or "SOURCE_INVALID"
+                        or "SOURCE_BINDING_MISMATCH" or "DUPLICATE_SOURCE"
+                        ? Results.Json(new {code},statusCode:status) : Results.StatusCode(status);
+                }
+                if (length == bytes.Length) return Results.StatusCode(413);
+                using var body = JsonDocument.Parse(bytes.AsMemory(0, length), new() { MaxDepth = 32 });
+                if (!body.RootElement.TryGetProperty("schemaVersion", out var schema)
+                    || schema.GetString() != "stored-record-query-1") return Results.StatusCode(503);
+                if(selectedRun&&!WireValidation.ValidRunEvidence(body.RootElement,query["storeId"].ToString(),
+                    query["deviceId"].ToString(),query["runId"].ToString()))return Results.StatusCode(503);
+                return Results.Json(body.RootElement.Clone());
+            }
+            catch (Exception error) when (error is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)
+            { return Results.StatusCode(503); }
+        });
         app.MapHub<DashboardHub>("/hubs/dashboard", options =>
         { options.Transports = HttpTransportType.WebSockets | HttpTransportType.LongPolling; options.ApplicationMaxBufferSize = 4096; options.TransportMaxBufferSize = 65536; options.TransportSendTimeout = TimeSpan.FromSeconds(2); options.LongPolling.PollTimeout = TimeSpan.FromSeconds(20); });
         var staticDirectory = Path.Combine(app.Environment.ContentRootPath, "..", "..", "ui", "dist");

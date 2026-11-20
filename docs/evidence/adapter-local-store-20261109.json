@@ -1,0 +1,196 @@
+{
+  "schemaVersion": "aegis-adapter-local-store-evidence-1",
+  "date": "2026-11-09",
+  "baseCommit": "60e81f5b2929c16ebf20550c1b25ecd064b9adb6",
+  "branch": "improve/adapter-local-store-20261109",
+  "historyScope": "Independent accessible remote history; no restricted preservation copy or unavailable 5075ccd restored.",
+  "environment": {
+    "os": "Linux",
+    "python": "3.12.14",
+    "sqlite": "3.53.1",
+    "newTestDataSyntheticOnly": true,
+    "newDependencies": false
+  },
+  "implemented": [
+    "Separate adapter-store-1 SQLite receipts bound to one synthetic descriptor/stream/canonical finite fixture",
+    "Atomic original response wire/hash, canonical original records/first receipt and delivery cursor/EOF in one transaction",
+    "Local commit status only after WAL/FULL COMMIT and consistent full-store plus targeted prefix confirmation",
+    "Rebuild all committed admission from page order and compare records/receipts/cursor/EOF/count/source fixture",
+    "Idempotent identical replay, first evidence retention, whole-page changed-content refusal",
+    "Empty EOF persisted atomically with null JSON token key; transient no-data acknowledges no new page",
+    "Unknown commit/rollback/readback/output results fenced or reported without success; reopen validates actual state",
+    "Raw-v1/foreign/empty/symlink/hardlink/companion path rejection before writing; exact schema-object allowlist",
+    "Standalone synchronous local transaction with serialized cooperative async fixture reads, no executor append",
+    "Private summary-only CLI, canonical fixture restart binding and accurate per-session commit attribution"
+  ],
+  "scope": {
+    "persistenceStatus": "LOCAL_STORE_COMMITTED",
+    "legacyArchiveDelivery": "NOT_CONNECTED",
+    "sourceAcknowledgement": "NOT_SENT",
+    "realEquipmentSupported": false,
+    "hardRealtimeGuaranteed": false,
+    "legacyBridgeBlocker": "Raw-v1 requires SIMULATOR and original run/sequence/time plus other legacy fields; strict schema also rejects new adapter tables. Nullable generic data cannot be bridged losslessly by inventing fields.",
+    "safeAlternativeImplemented": "Side-by-side local receipt store preserving nullable original metadata and confirmed delivery progress.",
+    "productionCollectorIntegration": false,
+    "oldNotPersistedCliChanged": false
+  },
+  "confirmationProof": {
+    "requestedPage": "Canonical hash, exact stored wire hash and original host receipt",
+    "existingPrefix": "All precommit ordinal/token/canonical/wire/receipt metadata unchanged",
+    "fixtureEvidence": "Pinned canonical binding and first stored fixture wire hash unchanged",
+    "concurrentValidAppendsAllowed": true,
+    "singleConsistentReadSnapshot": true,
+    "cryptographicHardwareAuthenticationOrTamperProofOwnerStorage": false
+  },
+  "failureBoundary": {
+    "beforeCommitAttempt": "Rollback current page; preserve earlier committed prefix",
+    "commitExceptionOrFailedRollback": "STORE_RESULT_UNKNOWN and fence/close; transaction flag is not rollback proof",
+    "postCommitReadbackOrSpecificEvidenceMismatch": "STORE_RESULT_UNKNOWN and fence/close",
+    "callerCancellationOrProcessExitAfterCommit": "Response may be unobserved; authoritative stored state determines resume",
+    "outputFailureAfterCommit": "STORE_RESULT_UNKNOWN; preserve data and reopen",
+    "initializationFailure": "Preserve artifact; never delete/overwrite/reinitialize unknown file automatically"
+  },
+  "limits": {
+    "fixtureBytes": 1048576,
+    "responseBytes": 65536,
+    "acceptedPages": 64,
+    "records": 1024,
+    "logicalSqliteBytes": 33554432,
+    "sqliteBusySeconds": 0.2,
+    "sqlValidationSecondsPerPhase": 5,
+    "sqlVmStepsPerPhase": 5000000,
+    "confirmationStartsFreshBudget": true,
+    "endToEndOrOsIoDeadline": false,
+    "ioModel": "Synchronous SQLite in standalone fixture process; not production collector/UI event-loop integration"
+  },
+  "tests": {
+    "focused": {
+      "passed": 58,
+      "failures": 0,
+      "skipped": 0,
+      "seconds": 8.806,
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_adapter_store.py",
+        "tests/test_adapter_store_cli.py"
+      ]
+    },
+    "full": {
+      "passed": 990,
+      "failures": 0,
+      "skipped": 1,
+      "seconds": 206.794,
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "skipScope": "Existing Windows PowerShell delivery test",
+      "existingWarning": "Existing Starlette/httpx TestClient deprecation"
+    },
+    "emulatorPassed": 26,
+    "contractsCheck": true,
+    "v34Check": true,
+    "covered": [
+      "Original nullable metadata/timezone/integer fidelity and host first receipt kept separate",
+      "Data/page/cursor/EOF atomic commit, duplicate/conflict/first receipt and source fixture binding",
+      "Before/after actual commit exceptions, inserted-data rollback and failed rollback fencing",
+      "SQLite BUSY and actual SQLITE_FULL through a controlled page limit; injected ENOSPC/IO faults",
+      "Actual fresh-process exit immediately before/after COMMIT and restart/idempotent retry",
+      "Async pull timeout/cancel prevents page commit; caller cancel after commit resumes from DB",
+      "Raw-v1 file plus companion set unchanged on refusal; unsafe/unknown destinations refused",
+      "Wrong cursor/missing page/record/receipt/hash rejected on restart",
+      "Unexpected sqliteXeraser trigger cannot hide behind LIKE wildcard; no false commit confirmation",
+      "Postcommit requested-page deletion/receipt change/prior-prefix receipt change/fixture-wire change fenced",
+      "Concurrent valid writer append allowed and own-run commit count excludes its pages",
+      "Actual full-output-device failure reports unknown and preserves restart data"
+    ],
+    "tdd": {
+      "initialCoreMissingModuleFailures": 20,
+      "initialCliMissingModuleFailures": 26,
+      "schemaPageAndAttributionRed": {
+        "expectedFailures": 3,
+        "rollbackControlPassed": 1
+      },
+      "outputRed": {
+        "expectedFailures": 1,
+        "otherControlsPassed": 4
+      },
+      "receiptAndFixturePrefixRed": {
+        "expectedFailures": 3
+      }
+    },
+    "physicalHostDiskExhaustionPerformed": false,
+    "testedPythonFiles": 65,
+    "testedSourcesUnchanged": true,
+    "generatedEvidenceRestoredByteForByte": true,
+    "newSourceSha256": {
+      "src/aegis/adapter_store.py": "23fcb143d3126319ef38b0b0849e0a6bf67ff27dc1b3655ecca7eca6fe072e8e",
+      "tests/test_adapter_store.py": "8138d5e31ff509d263e030db5c20f3c35a986af0f473bb749797bc0fe13dd4bf",
+      "tests/test_adapter_store_cli.py": "2c8fc8fa9f98096d417cd1b38235ecf193e0f8ad554f21a6602a6defb5be9f61"
+    }
+  },
+  "example": {
+    "sourceFile": "examples/adapter-input.synthetic.json",
+    "fixtureSha256": "58f11876d7842151dfeaba324dfdf6d0d09e4d898de2f73ef41e0c0bd18fac8f",
+    "sourceUnchanged": true,
+    "firstCliCounts": {
+      "committedPages": 2,
+      "committedRecords": 2,
+      "missingSourceRunRecords": 1,
+      "missingSourceSequenceRecords": 1,
+      "missingSourceTimestampRecords": 1,
+      "pageReads": 2,
+      "thisRunCommittedPages": 2
+    },
+    "restartCliCounts": {
+      "committedPages": 2,
+      "committedRecords": 2,
+      "missingSourceRunRecords": 1,
+      "missingSourceSequenceRecords": 1,
+      "missingSourceTimestampRecords": 1,
+      "pageReads": 0,
+      "thisRunCommittedPages": 0
+    },
+    "persistenceStatus": "LOCAL_STORE_COMMITTED",
+    "legacyArchiveDelivery": "NOT_CONNECTED",
+    "sourceAcknowledgement": "NOT_SENT"
+  },
+  "review": {
+    "independentWholeChangeAndRereview": true,
+    "remainingCritical": 0,
+    "remainingImportant": 0,
+    "remainingMinor": 0,
+    "fixed": [
+      "SQL LIKE wildcard schema-object omission",
+      "Specific requested-page presence confirmation",
+      "First receipt/full-prefix/fixture evidence confirmation",
+      "Per-session count attribution",
+      "Postcommit report failure classification",
+      "Per-phase rather than whole-operation budget wording"
+    ]
+  },
+  "preservation": {
+    "originalCleanCheckouts": 13,
+    "existingFilesIdenticalExceptReadme": 429,
+    "simulatorAdapterCollectorRawArchiveSchemaIpcApiHealthUiModified": false,
+    "automaticUserDataDeletionOrOverwrite": false,
+    "restrictedPreservationFilesAccessed": false,
+    "forcePush": false
+  },
+  "remainingBlockers": {
+    "rawV1Delivery": "NOT_CONNECTED for the explicit lossless-contract/schema blockers above",
+    "sourceAck": "NOT_SENT; no transactional device ACK protocol implemented"
+  },
+  "unverified": [
+    "Physical devices/real field or company data/company libraries",
+    "Windows/Windows services, production collector/UI-loop operations and blocking-driver isolation",
+    "Actual host disk exhaustion/quotas/power loss/network filesystems/long-duration or high-volume load",
+    "General archive-v2/IPC/API migration, old/new writer cutover and legacy delivery",
+    "Adapter-store-specific live backup/restore verification and remote CI result"
+  ]
+}

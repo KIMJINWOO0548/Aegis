@@ -7,12 +7,13 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
@@ -47,6 +48,32 @@ def _valid_reason(value):
     return value is None or (isinstance(value, str) and _CODE.fullmatch(value) is not None)
 
 
+class CollectionStatus(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    collectorMode: Literal["SHARED", "ISOLATED", "FIXTURE"]
+    declaredOrigin: Literal["SYNTHETIC"]
+    receiptProvenance: Literal["ACCEPTED", "RESTORED", "NONE"]
+    lastReceivedAtUtc: UtcTimestamp | None
+    receivedAgeMs: Annotated[int, Field(strict=True, ge=0, le=2**63 - 1)] | None
+    freshness: Literal["CURRENT", "STALE", "RESTORED", "NO_RECEIPT", "UNAVAILABLE"]
+    validUntilUtc: UtcTimestamp | None
+    lastCommittedAtUtc: UtcTimestamp | None
+    pendingBatches: Annotated[int, Field(strict=True, ge=0, le=4095)] | None
+    workerStatus: Literal["RUNNING", "RESTARTING", "FAILED", "UNAVAILABLE", "NOT_APPLICABLE"]
+    workerReason: Literal["ARCHIVE_IDENTITY_MISMATCH", "WORKER_UNAVAILABLE"] | None
+
+    @model_validator(mode="after")
+    def coherent_current(self):
+        if self.freshness == "CURRENT":
+            if (self.receiptProvenance != "ACCEPTED" or self.lastReceivedAtUtc is None
+                    or self.receivedAgeMs is None or self.validUntilUtc is None
+                    or self.validUntilUtc <= self.lastReceivedAtUtc):
+                raise ValueError("Invalid current receipt evidence.")
+        elif self.pendingBatches is not None or self.validUntilUtc is not None:
+            raise ValueError("Unexpected current receipt evidence.")
+        return self
+
+
 class WorkerFrame(BaseModel):
     model_config = ConfigDict(extra="forbid")
     connection: dict
@@ -77,13 +104,17 @@ class WorkerFrame(BaseModel):
                 raise ValueError("Invalid module warning timeline.")
         if (set(self.connection) != {"deviceId", "state", "lastReceivedAtUtc", "lastSequence", "acceptedBatches",
                 "rejectedBatches", "droppedBatches", "pollLatencyMs", "reasonCode"}
-                or set(self.ingestion) != {"deviceId", "equipmentId", "moduleId", "transport", "archiveEnabled",
+                or set(self.ingestion) - {"collectionStatus"} != {"deviceId", "equipmentId", "moduleId", "transport", "archiveEnabled",
                 "signalCount", "acceptedSignalValues", "archiveCommitMs", "observedLagMs", "lastObservedAtUtc",
                 "lastCommittedRunId", "lastCommittedSequence", "latestAvailableSequence", "pendingBatches"}
                 or set(self.diagnostics) != {"deviceId", "enabled", "modelVersion", "evaluation", "sampleCount",
                 "flowErrorEwmaLpm", "issues"}):
             raise ValueError("Unexpected worker summary fields.")
         connection, ingestion, diagnostics = self.connection, self.ingestion, self.diagnostics
+        if "collectionStatus" in ingestion:
+            status = CollectionStatus.model_validate(ingestion["collectionStatus"])
+            if status.pendingBatches != ingestion["pendingBatches"]:
+                raise ValueError("Inconsistent worker backlog.")
         if (not isinstance(connection["state"], str) or connection["state"] not in
                 {"CONNECTING", "CONNECTED", "STALE", "DISCONNECTED", "REJECTED"}
                 or any(not _count(connection[key]) for key in ("acceptedBatches", "rejectedBatches", "droppedBatches"))
@@ -153,6 +184,11 @@ def decode_frame(line: bytes, device_id: str) -> WorkerFrame:
     return frame
 
 
+def archive_identity_failure_frame(device_id: str) -> bytes:
+    return json.dumps({"deviceId": device_id, "startupFailure": "ARCHIVE_IDENTITY_MISMATCH"},
+                      separators=(",", ":")).encode() + b"\n"
+
+
 @dataclass
 class ModuleProcess:
     source: SourceConfig
@@ -161,11 +197,19 @@ class ModuleProcess:
     summary: tuple[WorkerFrame, float] | None = None
     restart_count: int = 0
     state: str = "STARTING"
+    failure_reason: str | None = None
+    startup_identity_failure: bool = False
+    publication_lock: object = field(default_factory=threading.Lock, repr=False, compare=False)
 
 
 class ProcessCollector:
-    def __init__(self, sources, archive_directory, *, evaluate=False, log_path=None):
+    def __init__(self, sources, archive_directory, *, evaluate=False, log_path=None,
+                 worker_timeout=10.0, restart_limit=3, restart_delay=2.0):
         _unique_sources(sources)
+        if (not _finite_nonnegative(worker_timeout) or not .05 <= worker_timeout <= 300
+                or not _count(restart_limit, 10)
+                or not _finite_nonnegative(restart_delay) or not .01 <= restart_delay <= 60):
+            raise ValueError("Invalid bounded worker recovery policy.")
         self.sources = tuple(sources)
         self.archive_directory = Path(archive_directory)
         self.archive_paths = {source.deviceId: self.archive_directory /
@@ -174,17 +218,25 @@ class ProcessCollector:
         self._workers = [ModuleProcess(source, self.archive_paths[source.deviceId]) for source in self.sources]
         self._evaluate, self._log_path = evaluate, log_path
         self._executor = None
+        self._writer_executor = None
         self._tasks = []
         self._stopping = False
         self._stop_event = None
+        self._worker_timeout, self._restart_limit, self._restart_delay = worker_timeout, restart_limit, restart_delay
+        self._readers = set()
+        self._writers = set()
 
     @property
     def logging_degraded(self):
         return any(worker.summary is not None and worker.summary[0].loggingDegraded for worker in self._workers)
 
     async def start(self):
-        if self._executor is not None:
+        if self._executor is not None or self._writer_executor is not None:
             raise RuntimeError("Module collector already started.")
+        if (any(worker.process is not None and worker.process.poll() is None for worker in self._workers)
+                or any(not reader.done() for reader in self._readers)
+                or any(not writer.done() for writer in self._writers)):
+            raise RuntimeError("An owned worker or reader has not been reaped.")
         for source in self.sources:
             token = os.environ.get(source.tokenEnvironment, "")
             if len(token) < 32 or not all(33 <= ord(character) <= 126 for character in token):
@@ -192,7 +244,15 @@ class ProcessCollector:
         self.archive_directory.mkdir(parents=True, exist_ok=True)
         self._stopping = False
         self._stop_event = asyncio.Event()
+        self._readers.clear()
+        self._writers.clear()
+        for worker in self._workers:
+            worker.restart_count = 0
+            worker.failure_reason = None
+            worker.state = "STARTING"
         self._executor = ThreadPoolExecutor(max_workers=len(self.sources), thread_name_prefix="aegis-module")
+        # Long-lived readers cannot consume the slots needed for another module's startup write.
+        self._writer_executor = ThreadPoolExecutor(max_workers=len(self.sources), thread_name_prefix="aegis-config")
         self._tasks = [asyncio.create_task(self._monitor(worker)) for worker in self._workers]
 
     def _launch(self, worker, stderr):
@@ -204,12 +264,17 @@ class ProcessCollector:
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr, env=environment,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         worker.process = process
+        return process
+
+    def _write_config(self, worker, process):
         config = {"source": worker.source.model_dump(mode="json"), "archivePath": str(worker.archive.resolve()),
                   "evaluate": self._evaluate,
                   "logPath": str(worker.archive.with_suffix(".events.jsonl").resolve()) if self._log_path is not None else None}
-        process.stdin.write(json.dumps(config, separators=(",", ":")).encode() + b"\n")
+        line = json.dumps(config, separators=(",", ":")).encode() + b"\n"
+        if len(line) > MAX_FRAME_BYTES:
+            raise ValueError("Module configuration exceeds its bounded line protocol.")
+        process.stdin.write(line)
         process.stdin.flush()
-        return process
 
     def _read(self, worker, process):
         while True:
@@ -218,12 +283,20 @@ class ProcessCollector:
                 return
             if self._stopping:
                 continue
+            if line == archive_identity_failure_frame(worker.source.deviceId):
+                with worker.publication_lock:
+                    if worker.process is process and worker.state == "STARTING":
+                        worker.startup_identity_failure = True
+                continue
             frame = decode_frame(line, worker.source.deviceId)
-            if worker.process is not process:
-                return
-            # Publish receipt and frame together; API readers capture one immutable reference.
-            worker.summary = (frame, time.monotonic())
-            worker.state = "RUNNING"
+            with worker.publication_lock:
+                if worker.process is not process or worker.state not in {"STARTING", "RUNNING"}:
+                    return
+                # Publish receipt and frame together; API readers capture one immutable reference.
+                worker.summary = (frame, time.monotonic())
+                worker.state = "RUNNING"
+                worker.failure_reason = None
+                worker.startup_identity_failure = False
 
     @staticmethod
     def _finish(process):
@@ -235,48 +308,150 @@ class ProcessCollector:
         try:
             process.wait(timeout=5)
         except subprocess.TimeoutExpired:
-            process.kill()
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
             process.wait(timeout=5)
+
+    async def _watch(self, worker, process, reader, started):
+        while not self._stopping:
+            done, _ = await asyncio.wait({reader}, timeout=min(.1, self._worker_timeout))
+            if done:
+                await reader
+                return
+            summary = worker.summary
+            received = summary[1] if summary is not None and worker.process is process else started
+            if time.monotonic() - max(started, received) > self._worker_timeout:
+                raise TimeoutError("WORKER_SUMMARY_TIMEOUT")
+
+    async def _wait_configuration(self, writer, started):
+        while not self._stopping:
+            done, _ = await asyncio.wait({writer}, timeout=min(.1, self._worker_timeout))
+            if self._stopping:
+                return False
+            # No frame or partial write renews this fixed startup deadline.
+            if time.monotonic() - started > self._worker_timeout:
+                raise TimeoutError("WORKER_CONFIG_TIMEOUT")
+            if done:
+                await writer
+                return True
+        return False
+
+    @staticmethod
+    def _kill(process):
+        if process.poll() is None:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+        process.wait(timeout=5)
+
+    async def _reap(self, process, reader, writer=None):
+        if process is None:
+            return True
+        try:
+            configured = (writer is None or (writer.done() and not writer.cancelled()
+                                             and writer.exception() is None))
+            if not configured:
+                # close() may wait on the writer's buffered lock or flush its residual bytes.
+                # Kill/wait first to release the pipe, then join the actual uncancelled writer.
+                await asyncio.to_thread(self._kill, process)
+            if writer is not None:
+                done, _ = await asyncio.wait({writer}, timeout=2)
+                if not done or writer.cancelled():
+                    return False
+                writer.exception()
+            await asyncio.to_thread(self._finish, process)
+            if reader is not None:
+                # A timeout must not cancel the future and disguise a still-blocked read thread.
+                done, _ = await asyncio.wait({reader}, timeout=2)
+                if not done or reader.cancelled():
+                    return False
+                reader.exception()  # Any protocol/read failure was handled by the monitor.
+            if process.stdout is not None:
+                process.stdout.close()
+            return process.poll() is not None
+        except (OSError, subprocess.TimeoutExpired):
+            return False
 
     async def _monitor(self, worker):
         while not self._stopping:
             worker.state = "STARTING"
+            worker.failure_reason = None
             process = None
+            reader = None
+            writer = None
+            configured = False
+            stderr = None
             try:
-                with worker.archive.with_suffix(".stderr.log").open("ab") as stderr:
+                stderr = worker.archive.with_suffix(".stderr.log").open("ab")
+                process = self._launch(worker, stderr)
+                started = time.monotonic()  # Popen's own OS call is outside this I/O deadline.
+                loop = asyncio.get_running_loop()
+                writer = loop.run_in_executor(self._writer_executor, self._write_config, worker, process)
+                self._writers.add(writer)
+                writer.add_done_callback(self._writers.discard)
+                configured = await self._wait_configuration(writer, started)
+                if configured:
+                    reader = loop.run_in_executor(self._executor, self._read, worker, process)
+                    self._readers.add(reader)
+                    reader.add_done_callback(self._readers.discard)
+                    await self._watch(worker, process, reader, started)
+                    worker.failure_reason = "WORKER_EXITED"
+            except TimeoutError:
+                worker.failure_reason = "WORKER_SUMMARY_TIMEOUT" if configured else "WORKER_CONFIG_TIMEOUT"
+            except Exception as error:
+                worker.failure_reason = "WORKER_PROTOCOL_FAILED" if isinstance(error, ValueError) else "WORKER_FAILED"
+                if stderr is not None:
                     try:
-                        process = self._launch(worker, stderr)
-                        await asyncio.get_running_loop().run_in_executor(self._executor, self._read, worker, process)
-                    except (OSError, ValueError) as error:
                         stderr.write(f"Module worker lifecycle failed: {type(error).__name__}\n".encode())
                         stderr.flush()
-                    finally:
-                        worker.state = "STOPPED" if self._stopping else "RESTARTING"
-                        process = process or worker.process
-                        if process is not None:
-                            await asyncio.to_thread(self._finish, process)
-                            if process.stdout is not None:
-                                process.stdout.close()
-            except OSError:
-                worker.state = "STOPPED" if self._stopping else "RESTARTING"
+                    except OSError:
+                        pass
+            finally:
+                with worker.publication_lock:
+                    worker.state = "STOPPED" if self._stopping else "RESTARTING"
+                reaped = await self._reap(process or worker.process, reader, writer)
+                if stderr is not None:
+                    try:
+                        stderr.close()
+                    except OSError:
+                        worker.failure_reason = "WORKER_LOG_UNAVAILABLE"
+            if not reaped:
+                worker.state = "FAILED"
+                worker.failure_reason = "WORKER_CLEANUP_FAILED"
+                return
             if not self._stopping:
+                if worker.restart_count >= self._restart_limit:
+                    worker.state = "FAILED"
+                    worker.failure_reason = "WORKER_RECOVERY_EXHAUSTED"
+                    return
                 worker.restart_count += 1
                 try:
-                    await asyncio.wait_for(self._stop_event.wait(), 2)
+                    await asyncio.wait_for(self._stop_event.wait(), self._restart_delay)
                 except TimeoutError:
                     pass
 
     async def stop(self):
-        if self._executor is None:
+        if self._executor is None and self._writer_executor is None:
             return
         self._stopping = True
         self._stop_event.set()
-        processes = [worker.process for worker in self._workers if worker.process is not None]
-        await asyncio.gather(*(asyncio.to_thread(self._finish, process) for process in processes))
+        # Each monitor owns its child's teardown; do not race two _finish calls on its pipes.
         await asyncio.gather(*self._tasks, return_exceptions=True)
-        await asyncio.to_thread(self._executor.shutdown, wait=True)
+        pending_readers = any(not reader.done() for reader in self._readers)
+        pending_writers = any(not writer.done() for writer in self._writers)
+        for executor, pending in ((self._executor, pending_readers), (self._writer_executor, pending_writers)):
+            if executor is not None:
+                await asyncio.to_thread(executor.shutdown, wait=not pending)
         self._executor = None
+        self._writer_executor = None
         self._tasks.clear()
+        if (pending_readers or pending_writers or any(worker.process is not None and worker.process.poll() is None
+                                   for worker in self._workers)
+                or any(worker.failure_reason == "WORKER_CLEANUP_FAILED" for worker in self._workers)):
+            raise RuntimeError("An owned worker or reader could not be reaped; automatic recovery is blocked.")
 
     def _available(self, worker, summary):
         return (summary is not None and worker.state == "RUNNING" and worker.process is not None
@@ -311,7 +486,7 @@ class ProcessCollector:
                 "lastSequence": None, "acceptedBatches": 0, "rejectedBatches": 0,
                 "droppedBatches": 0, "pollLatencyMs": None, "reasonCode": None}
             if not self._available(worker, summary):
-                row.update(state="DISCONNECTED", reasonCode="WORKER_UNAVAILABLE")
+                row.update(state="DISCONNECTED", reasonCode=worker.failure_reason or "WORKER_UNAVAILABLE")
             elif row["state"] == "CONNECTED" and not self._current(worker, summary):
                 row.update(state="STALE", reasonCode="NO_NEW_DATA")
             rows.append(row)
@@ -321,7 +496,15 @@ class ProcessCollector:
         rows = []
         for worker in self._workers:
             source = worker.source
-            summary = worker.summary
+            with worker.publication_lock:
+                summary = worker.summary
+                available = self._available(worker, summary)
+                current = self._current(worker, summary) if available else False
+                worker_state = worker.state
+                restart_count = worker.restart_count
+                identity_failure = worker.startup_identity_failure
+                process = worker.process
+                worker_pid = process.pid if process is not None and process.poll() is None else None
             row = dict(summary[0].ingestion) if summary is not None else {
                 "deviceId": source.deviceId, "equipmentId": source.equipmentId, "moduleId": source.moduleId,
                 "transport": source.transport, "archiveEnabled": source.transport == "replay", "signalCount": 0,
@@ -331,8 +514,30 @@ class ProcessCollector:
                 "latestAvailableSequence": None, "pendingBatches": None}
             if summary is not None and row["observedLagMs"] is not None:
                 row["observedLagMs"] = round(self._observed_lag_ms(summary), 3)
-            row.update(workerPid=worker.process.pid if worker.process is not None and worker.process.poll() is None else None,
-                restartCount=worker.restart_count, workerState=worker.state if self._available(worker, summary) else "UNAVAILABLE")
+            status = dict(row["collectionStatus"]) if "collectionStatus" in row else {
+                "declaredOrigin": "SYNTHETIC", "receiptProvenance": "NONE", "lastReceivedAtUtc": None,
+                "lastCommittedAtUtc": None, "receivedAgeMs": None, "validUntilUtc": None,
+                "freshness": "UNAVAILABLE", "pendingBatches": None}
+            status.update(collectorMode="ISOLATED",
+                workerStatus=worker_state if worker_state in {"RESTARTING", "FAILED"} else
+                    "RUNNING" if available else "UNAVAILABLE",
+                workerReason=None if available else
+                    "ARCHIVE_IDENTITY_MISMATCH" if identity_failure else "WORKER_UNAVAILABLE")
+            if not available:
+                status.update(freshness="UNAVAILABLE", validUntilUtc=None, receivedAgeMs=None, pendingBatches=None)
+            elif status["freshness"] == "CURRENT":
+                elapsed = time.monotonic() - summary[1]
+                now = datetime.now(timezone.utc)
+                deadline = min(_UTC_TIMESTAMP.validate_python(status["validUntilUtc"]),
+                               now + timedelta(seconds=max(0, SUMMARY_STALE_SECONDS - elapsed)))
+                status["receivedAgeMs"] += int(max(0, elapsed) * 1000)
+                if not current or not _UTC_TIMESTAMP.validate_python(status["lastReceivedAtUtc"]) <= now < deadline:
+                    status.update(freshness="STALE", validUntilUtc=None, pendingBatches=None)
+                else:
+                    status["validUntilUtc"] = deadline.isoformat()
+            row.update(collectionStatus=status, pendingBatches=status["pendingBatches"])
+            row.update(workerPid=worker_pid, restartCount=restart_count,
+                workerState=worker_state if worker_state == "FAILED" or available else "UNAVAILABLE")
             rows.append(row)
         return rows
 

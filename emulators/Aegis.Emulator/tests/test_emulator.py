@@ -356,7 +356,15 @@ class HttpTests(EmulatorTest):
                 module.create_server(generator, token, port=0)
 
     def test_replay_http_pages_are_bounded_and_keep_the_same_auth_boundary(self):
-        with patch("aegis_emulator.core.time.monotonic", return_value=self.generator.started_monotonic + 300):
+        # Control both clock endpoints. Adding 300 to an arbitrary real float
+        # epoch can subtract back to 299.9999999999999 (observed in Windows CI).
+        # Do not round the runtime clock or relax the expected sequence instead.
+        self.generator.started_monotonic = 0.0
+        with patch("aegis_emulator.core.time.monotonic", return_value=math.nextafter(300.0, 0.0)) as clock:
+            status, body, _ = self.request(path="/v1/batches?after=-1&limit=256")
+            self.assertEqual(status, 200)
+            self.assertEqual(json.loads(body)["latestSequence"], 299)
+            clock.return_value = 300.0
             status, body, headers = self.request(path="/v1/batches?after=-1&limit=256")
             self.assertEqual(status, 200)
             page = json.loads(body)

@@ -15,6 +15,7 @@ public sealed record DashboardDevice(string DeviceId, string? EquipmentId, strin
 public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory clients, ArchiveReview archive,
     IHubContext<DashboardHub> hub) : BackgroundService
 {
+    private const int MaxWarningsPerDevice = 32;
     private static readonly object Inference = new { state = "NOT_REGISTERED", message = "No validated ONNX model is registered." };
     private DashboardSnapshot _latest = Empty("CONFIGURATION_REQUIRED");
     private readonly SemaphoreSlim _refresh = new(1, 1);
@@ -67,9 +68,15 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
             if (ids.Count != devices.Count) throw new InvalidDataException();
             var connections = Index(await GetAsync("v1/connections", deadline.Token), ids);
             var ingestions = Index(await GetAsync("v1/ingestion", deadline.Token), ids);
-            var warnings = WireValidation.Array(await GetAsync("v1/warnings", deadline.Token), 32);
+            var warnings = WireValidation.Array(await GetAsync("v1/warnings", deadline.Token), MaxWarningsPerDevice * ids.Count);
             ContractJson.Deserialize<Warning[]>(warnings.ToJsonString());
-            foreach (var warning in warnings) if (!ids.Contains(WireValidation.String(warning!, "deviceId"))) throw new InvalidDataException();
+            var warningCounts = ids.ToDictionary(id => id, _ => 0, StringComparer.Ordinal);
+            foreach (var warning in warnings)
+            {
+                var deviceId = WireValidation.String(warning!, "deviceId");
+                if (!warningCounts.TryGetValue(deviceId, out var count) || count >= MaxWarningsPerDevice) throw new InvalidDataException();
+                warningCounts[deviceId] = count + 1;
+            }
             var result = new List<DashboardDevice>(32);
             archive.Retain(ids);
             foreach (var id in ids)
@@ -94,6 +101,7 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
                 string? equipment = null, module = null;
                 if (ingestion is not null)
                 {
+                    var collection = WireValidation.CollectionStatus(ingestion["collectionStatus"]);
                     ingestion = WireValidation.Project(ingestion, ["deviceId", "equipmentId", "moduleId", "transport", "archiveEnabled", "signalCount", "acceptedSignalValues", "archiveCommitMs", "latestAvailableSequence", "pendingBatches", "observedLagMs", "lastObservedAtUtc", "lastCommittedRunId", "lastCommittedSequence"]);
                     equipment = WireValidation.NullableIdentity(ingestion, "equipmentId"); module = WireValidation.NullableIdentity(ingestion, "moduleId");
                     if ((equipment is null) != (module is null) || !new[] { "snapshot", "replay" }.Contains(WireValidation.String(ingestion, "transport"))) throw new InvalidDataException();
@@ -103,6 +111,11 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
                     if (ingestion["signalCount"]!.GetValue<int>() > 512) throw new InvalidDataException();
                     foreach (var key in new[] { "archiveCommitMs", "observedLagMs" }) if (ingestion[key] is { } number && number.GetValue<double>() < 0) throw new InvalidDataException();
                     if (ingestion["lastCommittedRunId"] is { } run && !Guid.TryParse(run.GetValue<string>(), out _)) throw new InvalidDataException();
+                    if (collection is not null && !JsonNode.DeepEquals(collection["pendingBatches"], ingestion["pendingBatches"]))
+                        collection = null;
+                    if (collection is not null)
+                        ingestion["collectionStatus"] = collection;
+                    ingestion["pendingBatches"] = collection?["pendingBatches"]?.DeepClone();
                 }
                 var now = DateTimeOffset.UtcNow;
                 foreach (var observation in observations)
@@ -125,6 +138,17 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
             var history = previous.Devices.Select(device =>
             {
                 if (device.Connection is { } connection) connection["state"] = "DISCONNECTED";
+                if (device.Ingestion is { } ingestion)
+                {
+                    ingestion["pendingBatches"] = null;
+                    if (ingestion["collectionStatus"] is { } status)
+                    {
+                        status["freshness"] = "UNAVAILABLE";
+                        status["validUntilUtc"] = null;
+                        status["receivedAgeMs"] = null;
+                        status["pendingBatches"] = null;
+                    }
+                }
                 foreach (var observation in device.Observations)
                     if (observation?["quality"]?.GetValue<string>() == "GOOD") observation["quality"] = "STALE";
                 var unavailable = archive.Snapshot(device.DeviceId);

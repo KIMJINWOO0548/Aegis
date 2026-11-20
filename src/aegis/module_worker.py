@@ -8,9 +8,9 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from aegis.archive import RawArchive
-from aegis.collector import Collector, SourceConfig
-from aegis.processes import MAX_FRAME_BYTES
+from aegis.archive import ArchiveIdentityError, RawArchive
+from aegis.collector import Collector, CollectorLivenessError, SourceConfig
+from aegis.processes import MAX_FRAME_BYTES, archive_identity_failure_frame
 
 
 class WorkerConfig(BaseModel):
@@ -62,8 +62,13 @@ async def run(config):
 
     threading.Thread(target=watch_parent, name="aegis-parent", daemon=True).start()
     try:
-        await collector.start()
+        try:
+            await collector.start()
+        except ArchiveIdentityError:
+            await asyncio.to_thread(_write, archive_identity_failure_frame(source.deviceId))
+            raise
         while not stopped.is_set():
+            collector.ensure_live()
             # Only the latest contracted flow rows cross the pipe; raw tags stay in this process.
             line = json.dumps(build_frame(collector), separators=(",", ":"), allow_nan=False).encode() + b"\n"
             if len(line) > MAX_FRAME_BYTES:
@@ -84,6 +89,9 @@ def main():
             raise ValueError("Invalid module configuration line.")
         config = WorkerConfig.model_validate_json(line)
         asyncio.run(run(config))
+    except CollectorLivenessError as error:
+        print(f"Module acquisition stopped ({error}); inspect the module before restarting.", file=sys.stderr)
+        raise SystemExit(1) from None
     except (OSError, ValueError) as error:
         print(f"Module worker configuration or I/O failed ({type(error).__name__}, "
               f"winerror={getattr(error, 'winerror', None)}); inspect its local configuration and storage.", file=sys.stderr)

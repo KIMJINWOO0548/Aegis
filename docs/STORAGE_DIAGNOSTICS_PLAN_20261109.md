@@ -1,0 +1,13 @@
+# Read-only storage diagnostics first step
+
+Base: `20f53e90a4f8a9df3cfdf90b8e15653e1ada5059`; independent accessible history, not restoration of restricted preservation files.
+
+Implement a separate bounded CLI/library without changing collector/writer/API/UI or backup manifest. Inputs explicitly select one archive, one existing backup directory and up to 32 backup files. No recursive discovery, application-directed data writes, deletions, checkpoint, activation or overwrite. Missing policy is explicit; thresholds have no hidden defaults. SQLite readers may maintain existing shared-memory read marks; this does not promise zero filesystem metadata effects. A WAL archive missing its ordinary companions is not opened for SQL, avoiding initialization of a closed WAL database. Filesystem sampling and the companion guard are non-atomic, so concurrent close/rename races are outside a zero-file-creation guarantee.
+
+Measure archive main/WAL/SHM/journal and selected regular backup files with lstat; reject symlinks and classify missing, permission and other filesystem errors separately. Deduplicate hardlinks within each inventory. Report apparent length separately from filesystem-reported allocated-block estimates; measure non-superuser available volume bytes without summing the same filesystem twice. Footprint and capacity samples are non-atomic and are not quota or successful-backup guarantees.
+
+Read a bounded consistent archive snapshot and validate raw/cursor/gap structure using existing read-only validators. Report logical page size, rows and first-receipt age/retention advisory counts. Receipt time is not commit time. Backup mtime is an advisory review age, not creation time, guaranteed retention or recoverability. No backup receives an integrity-verification claim from a size scan.
+
+Actual last reported append/cursor duration can optionally come from an explicit bounded, timestamped ingestion capture. Match active archive cursor identities; require explicit recency and duration policies, finite nonnegative values, fresh capture and fresh matching first receipts. Missing/stale/mismatched samples cannot become a successful latency evaluation. No network fetch or automatic alarm integration.
+
+Use 64 KiB policy/capture bounds, 10,000 archive rows, 32 backup paths, 5-second cooperative SQL/elapsed bounds and bounded JSON stdout. Refuse unsupported platforms before filesystem work; Windows, physical devices, true disk exhaustion and long-duration load remain unverified. Test synthetic/temp data first, full suite and independent review, then privacy/noreply checks and normal separate-branch push with remote SHA verification.

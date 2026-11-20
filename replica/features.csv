@@ -1,0 +1,5 @@
+feature,area,priority,original,clone,notes
+Choose a limited recent time range,time series,must,yes,yes,30s or60s of retained UI history; no new server query
+Expose timestamps of displayed range,time series,must,yes,yes,Exact displayed UTC endpoints and shown versus retained summary counts
+Preserve null discontinuities and original history,time series,must,no,yes,Three independent RED to GREEN tests; existing current-quality rules unchanged
+Arbitrary archived-data queries and cross-dashboard range sharing,time series,could,yes,skip,Outside memory-only prototype scope

@@ -17,6 +17,7 @@ def test_verifier_keeps_junit_output_as_one_unicode_path_argument(tmp_path):
     script = Path(__file__).resolve().parents[1] / "scripts/verify.ps1"
     command = r"""
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $ast = [System.Management.Automation.Language.Parser]::ParseFile($env:AEGIS_TEST_SCRIPT, [ref]$null, [ref]$null)
 $root = $env:AEGIS_TEST_ROOT
 $results = Join-Path $root 'TestResults'

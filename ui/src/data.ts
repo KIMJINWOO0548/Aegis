@@ -1,7 +1,20 @@
 export interface Observation { observationId:string; signalKey:string; value:number|null; unit:string; observedAtUtc:string; quality:string }
 export interface ReviewEvent {eventId:number; disposition:'UNRESOLVED'; startAtUtc:string; lastAtUtc:string; peakDeviationLpm:number; sampleCount:number; endReason:string|null; relatedSignalKeys:string[]}
 export interface Review {algorithmVersion:string; state:string; observedAtUtc:string|null; rawErrorLpm:number|null; trendErrorLpm:number|null; contextReason:string|null; eventCount:number; omittedEventCount:number; events:ReviewEvent[]}
-export interface Device {deviceId:string;equipmentId:string|null;moduleId:string|null;connection:{state:string;lastReceivedAtUtc?:string;acceptedBatches?:number;rejectedBatches?:number;reasonCode?:string;pollLatencyMs?:number}|null;ingestion:{archiveEnabled:boolean;lastCommittedSequence:number|null;lastObservedAtUtc:string|null;pendingBatches:number|null;observedLagMs:number|null;acceptedSignalValues?:number}|null;observations:Observation[];diagnostics:{evaluation:string;enabled:boolean;issues:{signalKey:string;reasonCode:string;message:string}[]}|null;warnings:{id:string;state:string;createdAtUtc:string}[];review:Review|null;engineState:string;nativeSequence:number|null}
+export interface CollectionStatus {
+  collectorMode:'SHARED'|'ISOLATED'|'FIXTURE';
+  declaredOrigin:'SYNTHETIC';
+  receiptProvenance:'ACCEPTED'|'RESTORED'|'NONE';
+  lastReceivedAtUtc:string|null;
+  receivedAgeMs:number|null;
+  freshness:'CURRENT'|'STALE'|'RESTORED'|'NO_RECEIPT'|'UNAVAILABLE';
+  validUntilUtc:string|null;
+  lastCommittedAtUtc:string|null;
+  pendingBatches:number|null;
+  workerStatus:'RUNNING'|'RESTARTING'|'FAILED'|'UNAVAILABLE'|'NOT_APPLICABLE';
+  workerReason:'ARCHIVE_IDENTITY_MISMATCH'|'WORKER_UNAVAILABLE'|null;
+}
+export interface Device {deviceId:string;equipmentId:string|null;moduleId:string|null;connection:{state:string;lastReceivedAtUtc?:string;acceptedBatches?:number;rejectedBatches?:number;reasonCode?:string;pollLatencyMs?:number}|null;ingestion:{archiveEnabled:boolean;lastCommittedSequence:number|null;lastObservedAtUtc:string|null;pendingBatches:number|null;observedLagMs:number|null;acceptedSignalValues?:number;collectionStatus?:CollectionStatus}|null;observations:Observation[];diagnostics:{evaluation:string;enabled:boolean;issues:{signalKey:string;reasonCode:string;message:string}[]}|null;warnings:{id:string;state:string;createdAtUtc:string}[];review:Review|null;engineState:string;nativeSequence:number|null}
 export interface Snapshot {schemaVersion:'dashboard-1';generatedAtUtc:string;upstreamState:'CONNECTED'|'UNAVAILABLE'|'CONFIGURATION_REQUIRED';sourceMode:'EMULATORS'|'FIXTURES'|'UNKNOWN';message:string|null;devices:Device[];inference:{state:'NOT_REGISTERED';message:string}}
 const record=(v:unknown):v is Record<string,unknown>=>typeof v==='object'&&v!==null&&!Array.isArray(v);
 const text=(v:unknown):v is string=>typeof v==='string'&&v.length<=512;
@@ -10,6 +23,19 @@ const timestamp=(v:unknown):v is string=>typeof v==='string'&&/^\d{4}-\d\d-\d\dT
 const nullable=(v:unknown,test:(v:unknown)=>boolean)=>v===null||test(v);
 const number=(v:unknown)=>typeof v==='number'&&Number.isFinite(v);
 const count=(v:unknown)=>number(v)&&Number.isSafeInteger(v)&&Number(v)>=0;
+function validCollection(v:unknown):v is CollectionStatus {
+  const oneOf=(value:unknown, choices:string[])=>typeof value==='string'&&choices.includes(value);
+  return record(v)&&Object.keys(v).length===11&&
+    oneOf(v.collectorMode,['SHARED','ISOLATED','FIXTURE'])&&v.declaredOrigin==='SYNTHETIC'&&
+    oneOf(v.receiptProvenance,['ACCEPTED','RESTORED','NONE'])&&
+    nullable(v.lastReceivedAtUtc,timestamp)&&nullable(v.lastCommittedAtUtc,timestamp)&&
+    nullable(v.receivedAgeMs,count)&&nullable(v.pendingBatches,n=>count(n)&&Number(n)<=4095)&&
+    oneOf(v.workerStatus,['RUNNING','RESTARTING','FAILED','UNAVAILABLE','NOT_APPLICABLE'])&&
+    nullable(v.workerReason,reason=>oneOf(reason,['ARCHIVE_IDENTITY_MISMATCH','WORKER_UNAVAILABLE']))&&
+    (v.freshness==='CURRENT'
+      ? v.receiptProvenance==='ACCEPTED'&&count(v.receivedAgeMs)&&timestamp(v.validUntilUtc)&&timestamp(v.lastReceivedAtUtc)&&Date.parse(v.validUntilUtc)>Date.parse(v.lastReceivedAtUtc)
+      : oneOf(v.freshness,['STALE','RESTORED','NO_RECEIPT','UNAVAILABLE'])&&v.validUntilUtc===null&&v.pendingBatches===null);
+}
 const quality=(v:unknown)=>['GOOD','BAD','MISSING','STALE'].includes(String(v));
 const units:Record<string,string>={setpointFlowLpm:'L/min',actualFlowLpm:'L/min',supplyPressureKpa:'kPa',valveCommandPct:'%',valveFeedbackPct:'%',motorCurrentAmp:'A',temperatureC:'degC',cycleCount:'count'};
 export function parseSnapshot(value:unknown):Snapshot {
@@ -22,6 +48,7 @@ export function parseSnapshot(value:unknown):Snapshot {
     for(const o of d.observations) {if(!record(o)||!text(o.observationId)||!o.observationId||typeof o.signalKey!=='string'||!Object.hasOwn(units,o.signalKey)||signals.has(o.signalKey)||o.unit!==units[o.signalKey]||!quality(o.quality)||!timestamp(o.observedAtUtc)||!nullable(o.value,number)||(o.quality==='GOOD'&&o.value===null)) throw Error('신호 데이터 형식을 확인할 수 없습니다.');signals.add(o.signalKey);}
     if(d.connection!==null&&(!record(d.connection)||!['CONNECTING','CONNECTED','DISCONNECTED','REJECTED','STALE'].includes(String(d.connection.state))||('lastReceivedAtUtc' in d.connection&&!nullable(d.connection.lastReceivedAtUtc,timestamp))))throw Error('연결 상태 형식 오류');
     if(d.ingestion!==null&&(!record(d.ingestion)||typeof d.ingestion.archiveEnabled!=='boolean'||!nullable(d.ingestion.lastCommittedSequence,count)||!nullable(d.ingestion.lastObservedAtUtc,timestamp)||!nullable(d.ingestion.pendingBatches,count)||!nullable(d.ingestion.observedLagMs,v=>number(v)&&Number(v)>=0)))throw Error('보관 상태 형식 오류');
+    if(record(d.ingestion)&&'collectionStatus' in d.ingestion&&!validCollection(d.ingestion.collectionStatus))throw Error('수집 근거 형식 오류');
     if(d.diagnostics!==null&&(!record(d.diagnostics)||typeof d.diagnostics.enabled!=='boolean'||!['INSUFFICIENT_DATA','NORMAL','ANOMALOUS','UNAVAILABLE'].includes(String(d.diagnostics.evaluation))||!Array.isArray(d.diagnostics.issues)||d.diagnostics.issues.length>8||d.diagnostics.issues.some(i=>!record(i)||!text(i.signalKey)||!Object.hasOwn(units,i.signalKey)||!text(i.reasonCode)||!text(i.message))))throw Error('진단 상태 형식 오류');
     if(d.warnings.some(w=>!record(w)||!text(w.id)||!text(w.state)||!timestamp(w.createdAtUtc)))throw Error('경고 형식 오류');
     if(d.review!==null&&(!record(d.review)||d.review.algorithmVersion!=='flow-review-dotnet-dev-1'||!text(d.review.state)||!nullable(d.review.observedAtUtc,timestamp)||!nullable(d.review.rawErrorLpm,number)||!nullable(d.review.trendErrorLpm,number)||!nullable(d.review.contextReason,text)||!count(d.review.eventCount)||!count(d.review.omittedEventCount)||!Array.isArray(d.review.events)||d.review.events.length>32||d.review.events.some(e=>!record(e)||e.disposition!=='UNRESOLVED'||!count(e.eventId)||!timestamp(e.startAtUtc)||!timestamp(e.lastAtUtc)||!number(e.peakDeviationLpm)||!count(e.sampleCount)||!nullable(e.endReason,text)||!Array.isArray(e.relatedSignalKeys)||e.relatedSignalKeys.length>8||e.relatedSignalKeys.some(k=>typeof k!=='string'||!Object.hasOwn(units,k))))) throw Error('검토 근거 형식을 확인할 수 없습니다.');
@@ -30,16 +57,38 @@ export function parseSnapshot(value:unknown):Snapshot {
 }
 export const signalLabels:Record<string,string>={setpointFlowLpm:'설정 유량',actualFlowLpm:'실측 유량',supplyPressureKpa:'공급 압력',valveCommandPct:'밸브 명령',valveFeedbackPct:'밸브 피드백',motorCurrentAmp:'모터 전류',temperatureC:'온도',cycleCount:'사이클 수'};
 export const fresh=(stamp:string,now:number)=>now-Date.parse(stamp)<3000&&now-Date.parse(stamp)>=-1000;
-export function isCurrent(snapshot:Snapshot|null,device:Device|undefined,now=Date.now(),transport=true):boolean {return transport&&!!snapshot&&!!device&&snapshot.upstreamState==='CONNECTED'&&device.connection?.state==='CONNECTED'&&fresh(snapshot.generatedAtUtc,now);}
+function connectedSnapshot(snapshot:Snapshot|null,now:number,transport:boolean):boolean {
+  return transport&&!!snapshot&&snapshot.upstreamState==='CONNECTED'&&snapshot.sourceMode!=='FIXTURES'&&fresh(snapshot.generatedAtUtc,now);
+}
+export function collectionEvidence(snapshot:Snapshot|null,device:Device|undefined,now:number,transport:boolean):CollectionStatus|null {
+  const status=device?.ingestion?.collectionStatus;
+  if(!status)return null;
+  if(!connectedSnapshot(snapshot,now,transport))return {...status,freshness:'UNAVAILABLE',receivedAgeMs:null,validUntilUtc:null,pendingBatches:null};
+  if(status.freshness!=='CURRENT')return status;
+  const receipt=Date.parse(status.lastReceivedAtUtc!);
+  if(device?.connection?.state!=='CONNECTED'||status.collectorMode==='FIXTURE'||now<receipt||now>=Date.parse(status.validUntilUtc!))
+    return {...status,freshness:'STALE',validUntilUtc:null,pendingBatches:null};
+  return {...status,receivedAgeMs:Math.max(status.receivedAgeMs!,now-receipt)};
+}
+export function isCurrent(snapshot:Snapshot|null,device:Device|undefined,now=Date.now(),transport=true):boolean {
+  return connectedSnapshot(snapshot,now,transport)&&device?.connection?.state==='CONNECTED'&&
+    (!device.ingestion?.collectionStatus||collectionEvidence(snapshot,device,now,transport)?.freshness==='CURRENT');
+}
 export function observationCurrent(snapshot:Snapshot|null,device:Device|undefined,o:Observation,now=Date.now(),transport=true):boolean{return isCurrent(snapshot,device,now,transport)&&o.quality==='GOOD'&&o.value!==null&&fresh(o.observedAtUtc,now);}
-export interface Point {t:number;v:number|null;id:string}
+export interface Point {t:number;v:number|null;id:string;marker?:'gap'|'transport'}
+export type HistoryRange='all'|30|60;
+export function historyWindow(points:readonly Point[],range:HistoryRange):readonly Point[]{
+  if(range==='all'||!points.length)return points;
+  const start=points[points.length-1].t-range*1000;
+  return points.filter(point=>point.t>=start);
+}
 export type History=Record<string,Record<string,Point[]>>;
-export function interruptHistory(history:History,now=Date.now()):History {return Object.fromEntries(Object.entries(history).map(([device,signals])=>[device,Object.fromEntries(Object.entries(signals).map(([signal,points])=>[signal,points.length&&points.at(-1)?.v!==null?[...points,{t:Math.max(now,points.at(-1)!.t+1),v:null,id:`transport:${now}`}].slice(-120):points]))]));}
+export function interruptHistory(history:History,now=Date.now()):History {return Object.fromEntries(Object.entries(history).map(([device,signals])=>[device,Object.fromEntries(Object.entries(signals).map(([signal,points])=>[signal,points.length&&points.at(-1)?.v!==null?[...points,{t:Math.max(now,points.at(-1)!.t+1),v:null,id:`transport:${now}`,marker:'transport' as const}].slice(-120):points]))]));}
 export function appendHistory(history:History,snapshot:Snapshot):History {
   const next:History={};
   for(const d of snapshot.devices){
     const series={...(history[d.deviceId]??{})};
-    for(const o of d.observations){const points=series[o.signalKey]??[];const t=Date.parse(o.observedAtUtc);if(points.some(p=>p.id===o.observationId)||points.length&&t<=points[points.length-1].t)continue;const gap=points.length&&t-points[points.length-1].t>2500?[{t:t-1,v:null,id:`gap:${o.observationId}`}]:[];series[o.signalKey]=[...points,...gap,{t,v:observationCurrent(snapshot,d,o,Date.parse(snapshot.generatedAtUtc))?o.value:null,id:o.observationId}].slice(-120);}
+    for(const o of d.observations){const points=series[o.signalKey]??[];const t=Date.parse(o.observedAtUtc);if(points.some(p=>p.id===o.observationId)||points.length&&t<=points[points.length-1].t)continue;const gap=points.length&&t-points[points.length-1].t>2500?[{t:t-1,v:null,id:`gap:${o.observationId}`,marker:'gap' as const}]:[];const at=Date.parse(snapshot.generatedAtUtc);const fixture=snapshot.sourceMode==='FIXTURES'&&o.quality==='GOOD'&&fresh(o.observedAtUtc,at);series[o.signalKey]=[...points,...gap,{t,v:fixture||observationCurrent(snapshot,d,o,at)?o.value:null,id:o.observationId}].slice(-120);}
     next[d.deviceId]=series;
   }
   return next;

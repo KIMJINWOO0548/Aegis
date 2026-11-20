@@ -1,9 +1,22 @@
 import {describe,it,expect} from 'vitest';
-import {appendHistory,interruptHistory,isCurrent,observationCurrent,parseSnapshot,selectDevice,type Snapshot,type Device} from './data';
+import {appendHistory,collectionEvidence,interruptHistory,isCurrent,observationCurrent,parseSnapshot,selectDevice,type Snapshot,type Device} from './data';
 const stamp='2026-10-22T00:00:00Z';
 const device:Device={deviceId:'d1',equipmentId:'eq',moduleId:'m1',connection:{state:'CONNECTED'},ingestion:null,observations:[{observationId:'o1',signalKey:'actualFlowLpm',value:10,unit:'L/min',quality:'GOOD',observedAtUtc:stamp}],diagnostics:null,warnings:[],review:null,engineState:'ARCHIVE_NOT_CONFIGURED',nativeSequence:null};
 const snapshot:Snapshot={schemaVersion:'dashboard-1',generatedAtUtc:stamp,upstreamState:'CONNECTED',sourceMode:'EMULATORS',message:null,devices:[device],inference:{state:'NOT_REGISTERED',message:'No model'}};
 describe('honest bounded UI data',()=>{
+ it('expires collection evidence and retains historical timestamps',()=>{
+  const row:Device={...device,ingestion:{archiveEnabled:true,lastCommittedSequence:0,lastObservedAtUtc:stamp,observedLagMs:0,pendingBatches:0,
+   collectionStatus:{collectorMode:'ISOLATED',declaredOrigin:'SYNTHETIC',receiptProvenance:'ACCEPTED',
+    lastReceivedAtUtc:stamp,receivedAgeMs:0,freshness:'CURRENT',validUntilUtc:'2026-10-22T00:00:01Z',
+    lastCommittedAtUtc:stamp,pendingBatches:0,workerStatus:'RUNNING',workerReason:null}}};
+  expect(collectionEvidence(snapshot,row,Date.parse(stamp),true)?.pendingBatches).toBe(0);
+  expect(collectionEvidence(snapshot,row,Date.parse(stamp)+1000,true)).toMatchObject({freshness:'STALE',pendingBatches:null,lastReceivedAtUtc:stamp});
+  expect(collectionEvidence(snapshot,row,Date.parse(stamp),false)).toMatchObject({freshness:'UNAVAILABLE',pendingBatches:null,lastCommittedAtUtc:stamp});
+  expect(collectionEvidence(snapshot,device,Date.parse(stamp),true)).toBeNull();
+  expect(collectionEvidence({...snapshot,sourceMode:'FIXTURES'},row,Date.parse(stamp),true)?.freshness).toBe('UNAVAILABLE');
+  expect(()=>parseSnapshot({...snapshot,devices:[{...row,ingestion:{...row.ingestion,
+    collectionStatus:{...row.ingestion?.collectionStatus,pendingBatches:false}}}]})).toThrow('수집 근거');
+ });
  it('expires at three seconds and never treats GOOD alone as current',()=>{const now=Date.parse(stamp);expect(isCurrent(snapshot,device,now+1000)).toBe(true);expect(isCurrent(snapshot,device,now+3000)).toBe(false);expect(isCurrent(snapshot,device,now,false)).toBe(false);expect(observationCurrent(snapshot,device,device.observations[0],now,false)).toBe(false);expect(observationCurrent({...snapshot,upstreamState:'UNAVAILABLE'},device,device.observations[0],now)).toBe(false);expect(observationCurrent(snapshot,device,{...device.observations[0],quality:'STALE'},now)).toBe(false);});
  it('deduplicates observations, bounds 120 points and preserves invalid gaps',()=>{let h={};for(let i=0;i<140;i++){const at=new Date(Date.parse(stamp)+i*1000).toISOString();h=appendHistory(h,{...snapshot,generatedAtUtc:at,devices:[{...device,observations:[{...device.observations[0],observationId:`o${i}`,observedAtUtc:at,quality:i===139?'BAD':'GOOD'}]}]});}const next=appendHistory(h,{...snapshot,devices:[{...device,observations:[{...device.observations[0],observationId:'o139',observedAtUtc:new Date(Date.parse(stamp)+139000).toISOString()}]}]});expect(next.d1.actualFlowLpm).toHaveLength(120);expect(next.d1.actualFlowLpm.at(-1)?.v).toBeNull();expect(next.d1.actualFlowLpm.at(-2)?.v).toBe(10);});
  it('inserts nulls for stale values, gaps and a short transport interruption',()=>{const h=appendHistory({},snapshot);expect(h.d1.actualFlowLpm[0].v).toBe(10);const stopped=interruptHistory(h,Date.parse(stamp)+500);expect(stopped.d1.actualFlowLpm.at(-1)?.v).toBeNull();const at=new Date(Date.parse(stamp)+4000).toISOString();const resumed=appendHistory(h,{...snapshot,generatedAtUtc:at,devices:[{...device,observations:[{...device.observations[0],observationId:'o2',observedAtUtc:at}]}]});expect(resumed.d1.actualFlowLpm.map(p=>p.v)).toEqual([10,null,10]);expect(appendHistory({}, {...snapshot,generatedAtUtc:at}).d1.actualFlowLpm[0].v).toBeNull();expect(appendHistory(h,{...snapshot,devices:[{...device,deviceId:'d2'}]}).d1).toBeUndefined();});

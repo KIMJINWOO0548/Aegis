@@ -1,0 +1,3434 @@
+{
+  "schemaVersion": "windows-regression-classification-1",
+  "python": "3.12.10",
+  "revision": "6e443eb80e1453438c25880a7fca42ea3c335413",
+  "summary": {
+    "failed": 298,
+    "passed": 966,
+    "skipped": 11,
+    "errors": 30,
+    "warnings": 2,
+    "seconds": 363.34
+  },
+  "rawArtifacts": {
+    "pytest.log": {
+      "sha256": "a8b1b9c986ed3ad89a63e67158c369821a49f879662defc99451607e2ae261dd",
+      "bytes": 246731
+    },
+    "results.xml": {
+      "sha256": "a37ef86242262766ecbd0bfbe4f2956273c9984c685e06200ed0e449e1e77661",
+      "bytes": 422983
+    }
+  },
+  "cases": [
+    {
+      "test": "tests.test_adapter_input_cli::test_cli_refuses_nonregular_or_followed_fixture_paths_without_blocking[symlink]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_adapter_input_cli::test_cli_refuses_nonregular_or_followed_fixture_paths_without_blocking[fifo]",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    },
+    {
+      "test": "tests.test_adapter_store::test_page_record_receipt_and_cursor_commit_together_and_resume_after_reopen",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_identical_retransmission_preserves_first_receipt_and_changed_page_fails",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_conflict_rejects_whole_page_including_valid_new_records",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_empty_eof_is_durable_but_transient_no_data_has_no_page_commit",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_no_uncommitted_proposal_is_exposed_before_commit_confirmation",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_failure_after_inserts_rolls_back_page_records_and_cursor_then_can_retry",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_commit_exception_is_unknown_and_fenced_until_reopen[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_commit_exception_is_unknown_and_fenced_until_reopen[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_failed_postcommit_confirmation_never_returns_success",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_sqlite_busy_and_full_fail_without_cursor_progress",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[UPDATE store_state SET cursor_key='\"wrong\"']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[DELETE FROM adapter_records]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[DELETE FROM adapter_pages]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[UPDATE adapter_records SET first_received_at_utc='2026-11-10T00:00:00Z']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[UPDATE adapter_pages SET wire_sha='0000']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[UPDATE store_state SET ended=0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_actual_process_crash_before_or_after_commit_recovers_atomic_state[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_actual_process_crash_before_or_after_commit_recovers_atomic_state[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_caller_cancellation_after_commit_resumes_from_durable_state_without_duplicate",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_sqlite_like_wildcard_cannot_hide_an_unexpected_trigger",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_confirmation_requires_the_requested_page_to_still_exist",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_this_run_count_does_not_include_another_valid_writer_commit",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_failed_rollback_fences_without_a_success_acknowledgement",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_output_failure_after_commit_reports_unknown_and_preserves_restart_data",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    },
+    {
+      "test": "tests.test_adapter_store::test_empty_eof_initial_cursor_key_is_unique_and_retransmission_remains_durable",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_timeout_or_cancellation_during_pull_never_commits_a_page[timeout]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_timeout_or_cancellation_during_pull_never_commits_a_page[cancel]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_first_page_cannot_silently_change_the_bound_fixture_payload",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_confirmation_pins_original_prefix_receipts_and_fixture_evidence[requested_receipt]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_confirmation_pins_original_prefix_receipts_and_fixture_evidence[prior_receipt]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store::test_confirmation_pins_original_prefix_receipts_and_fixture_evidence[fixture_wire]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_commits_two_pages_and_restart_preserves_all_rows_receipts_and_cursor",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_same_canonical_fixture_accepts_whitespace_and_key_order_changes_without_writes",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_changed_fixture_binding_is_rejected_without_changing_durable_store[content]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_changed_fixture_binding_is_rejected_without_changing_durable_store[stream]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_empty_terminal_page_and_transient_no_data_have_distinct_durable_results[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_empty_terminal_page_and_transient_no_data_have_distinct_durable_results[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_refuses_store_aliases_even_when_referent_is_a_valid_owned_store[symlink]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_refuses_store_aliases_even_when_referent_is_a_valid_owned_store[dangling_symlink]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_refuses_store_aliases_even_when_referent_is_a_valid_owned_store[hardlink]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_refuses_nonregular_fixture_before_store_writes_without_blocking[fifo]",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    },
+    {
+      "test": "tests.test_adapter_store_cli::test_cli_refuses_nonregular_fixture_before_store_writes_without_blocking[symlink]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_validates_on_readonly_connection_without_lifecycle_or_write_access[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_validates_on_readonly_connection_without_lifecycle_or_write_access[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_expected_binding_mismatch_keeps_writer_error_contract[descriptor]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_expected_binding_mismatch_keeps_writer_error_contract[fixture]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_expected_binding_mismatch_keeps_writer_error_contract[both]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_matching_expected_binding_validates_and_descriptor_bootstrap_is_independent",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_meta SET adapter_id='other']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_meta SET stream_id='22222222-2222-4222-8222-222222222222']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_meta SET fixture_sha='wrong']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_meta SET fixture_wire_sha='wrong']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_state SET cursor_key='\"wrong\"']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_state SET page_count=0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_state SET ended=0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE adapter_pages SET canonical_sha='wrong']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE adapter_pages SET wire_sha='wrong']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE adapter_pages SET received_at_utc='2026-11-09T12:01:00Z']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE adapter_records SET first_received_at_utc='2026-11-09T12:01:00Z']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[DELETE FROM adapter_records]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_self_consistent_changed_page_and_record_cannot_replace_fixture_response",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_adapter_store_validation::test_unexpected_schema_object_is_rejected_by_both_connection_helpers",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_roundtrip_preserves_original_text_receipt_cursor_gap_and_no_source_mutation",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_fixed_wal_snapshot_has_same_raw_cursor_gap_cutoff_and_writer_progresses",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_uncommitted_transaction_is_excluded_and_reader_releases",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_sparse_retired_run_and_empty_archive_are_supported",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_existing_destinations_and_sidecars_are_preserved[symlink]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_archive_backup::test_existing_destinations_and_sidecars_are_preserved[dangling]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_archive_backup::test_existing_destinations_and_sidecars_are_preserved[hardlink]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_archive_backup::test_publish_race_preserves_competing_file",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD_BEFORE_FAULT_INJECTION"
+    },
+    {
+      "test": "tests.test_archive_backup::test_post_publication_sync_failure_preserves_valid_file",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[raw]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[receipt]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[cursor]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[gap]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[manifest]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[truncate]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_stdout_failure_reports_already_published_file[backup]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD_BEFORE_FAULT_INJECTION"
+    },
+    {
+      "test": "tests.test_archive_backup::test_stdout_failure_reports_already_published_file[restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_actual_cli_full_stdout_has_structured_error_and_exit_two",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    },
+    {
+      "test": "tests.test_archive_backup::test_cleanup_failure_is_explicit_and_preserves_published_destination[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_cleanup_failure_is_explicit_and_preserves_published_destination[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_remaining_reference_and_table_limits[MAX_MANIFEST_BYTES]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup::test_nonzero_sql_progress_budget_interrupts_and_releases_reader",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD_BEFORE_FAULT_INJECTION"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_roundtrip_preserves_exact_rows_first_receipts_cursors_gaps_and_resume",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_rejects_tampered_expected_manifest_without_publishing[artifactSha256-verify]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_rejects_tampered_expected_manifest_without_publishing[artifactSha256-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_rejects_tampered_expected_manifest_without_publishing[snapshot-verify]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_rejects_tampered_expected_manifest_without_publishing[snapshot-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_rejects_changed_sqlite_content_even_when_database_integrity_is_ok[verify]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_rejects_changed_sqlite_content_even_when_database_integrity_is_ok[restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[file-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[directory-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[symlink-backup]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[symlink-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[dangling_symlink-backup]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[dangling_symlink-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[hardlink-backup]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[hardlink-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_sidecars[-wal-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_sidecars[-shm-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_sidecars[-journal-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_refuses_absent_source_companion_as_destination[-wal-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_refuses_absent_source_companion_as_destination[-shm-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_refuses_absent_source_companion_as_destination[-journal-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_does_not_create_or_rewrite_missing_or_corrupt_source[missing-verify]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_does_not_create_or_rewrite_missing_or_corrupt_source[missing-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_does_not_create_or_rewrite_missing_or_corrupt_source[corrupt-verify]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_does_not_create_or_rewrite_missing_or_corrupt_source[corrupt-restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_rejects_corrupt_manifest_without_partial_stdout_or_source_change[verify]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_backup_cli::test_cli_rejects_corrupt_manifest_without_partial_stdout_or_source_change[restore]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_shipped_example_and_two_actual_cli_runs_preserve_originals_and_first_receipts",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_session_captures_host_receipt_after_read_and_preserves_missing_source_metadata",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_session_refreshes_external_committed_cursor_before_reading",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_changed_committed_fixture_prefix_fails_before_read_even_at_eof[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_changed_committed_fixture_prefix_fails_before_read_even_at_eof[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_uncommitted_tail_can_change_while_prior_wire_and_receipt_are_preserved",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_concurrent_different_tail_cannot_turn_own_retransmission_into_completed_claim",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_original_uuid_spelling_is_preserved_and_mixed_headers_fail_before_creation",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_actual_cli_collect_then_stored_records_cli_queries_nullable_originals",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_timeout_retries_are_bounded_and_never_capture_a_receipt_or_commit",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_cancellation_before_append_never_creates_a_committed_page[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_cancellation_before_append_never_creates_a_committed_page[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_source_io_failure_is_sanitized_and_cannot_advance_archive",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_read_limit_preserves_a_valid_prefix_then_restart_resumes",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_empty_no_data_stops_and_terminal_eof_is_durable[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_empty_no_data_stops_and_terminal_eof_is_durable[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_fixture_reader_is_bounded_strict_and_nonblocking[fifo]",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_broken_stdout_after_commit_is_unknown_but_durable_archive_remains",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_close_error_after_commit_is_unknown_and_success_json_is_not_emitted[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD_BEFORE_FAULT_INJECTION"
+    },
+    {
+      "test": "tests.test_archive_ingest::test_close_error_after_commit_is_unknown_and_success_json_is_not_emitted[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD_BEFORE_FAULT_INJECTION"
+    },
+    {
+      "test": "tests.test_delivery::test_verifier_keeps_junit_output_as_one_unicode_path_argument",
+      "kind": "failure",
+      "category": "HARNESS_OUTPUT_ENCODING_FIXED"
+    },
+    {
+      "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SOURCE_BUFFER_REPLAY-DEVICE]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SOURCE_BUFFER_REPLAY-SYNTHETIC]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SOURCE_BUFFER_REPLAY-UNKNOWN]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SNAPSHOT_READ-DEVICE]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SNAPSHOT_READ-SYNTHETIC]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SNAPSHOT_READ-UNKNOWN]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change1]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change2]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change3]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change4]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change5]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change6]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change7]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[missing-observedAtUtc-timestampStatus]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[missing-sequence-sequenceStatus]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[missing-runId-runIdStatus]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[contradiction-observedAtUtc-timestampStatus]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[contradiction-sequence-sequenceStatus]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[contradiction-runId-runIdStatus]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_reopen_and_page_binding_mismatches_preserve_existing_state[change0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_reopen_and_page_binding_mismatches_preserve_existing_state[change1]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_reopen_and_page_binding_mismatches_preserve_existing_state[change2]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_reopen_and_page_binding_mismatches_preserve_existing_state[change3]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_descriptor_input_is_copied_and_cannot_change_committed_binding",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_canonical_retransmission_preserves_first_wire_receipt_and_cursor",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_record_deduplication_keeps_first_receipt_and_conflict_rolls_back_whole_page",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_token_order_loops_and_eof_never_advance_invalid_delivery[out_of_order]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_token_order_loops_and_eof_never_advance_invalid_delivery[loop]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_token_order_loops_and_eof_never_advance_invalid_delivery[after_eof]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_empty_nonterminal_has_no_commit_but_empty_terminal_is_durable[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_empty_nonterminal_has_no_commit_but_empty_terminal_is_durable[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_failure_after_page_and_record_inserts_rolls_back_cursor_and_can_retry",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_precommit_write_hook_cannot_rewrite_preexisting_prefix_and_rolls_back_whole_page[wire]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_precommit_write_hook_cannot_rewrite_preexisting_prefix_and_rolls_back_whole_page[receipt]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_sqlite_busy_and_full_leave_no_records_or_cursor_and_retry_succeeds",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_uncommitted_proposal_is_never_exposed_by_public_properties",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_commit_exception_is_unknown_and_fenced_until_verified_reopen[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_commit_exception_is_unknown_and_fenced_until_verified_reopen[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_postcommit_readback_failure_cannot_return_success",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_confirmation_pins_requested_wire_receipt_and_precommit_page_prefix[wire-0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_confirmation_pins_requested_wire_receipt_and_precommit_page_prefix[wire-1]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_confirmation_pins_requested_wire_receipt_and_precommit_page_prefix[receipt-0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_confirmation_pins_requested_wire_receipt_and_precommit_page_prefix[receipt-1]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_admission_limits_leave_preexisting_page_and_cursor_unchanged[MAX_ACCEPTED_PAGES]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_admission_limits_leave_preexisting_page_and_cursor_unchanged[MAX_ADMITTED_RECORDS]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_naive_or_utc_overflow_receipt_does_not_change_archive[receipt0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_naive_or_utc_overflow_receipt_does_not_change_archive[receipt1]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_expired_write_budget_rolls_back_and_retry_after_restoring_budget_succeeds",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_state SET cursor_key='\"wrong\"']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_state SET ended=0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_state SET page_count=0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[DELETE FROM archive_records]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[DELETE FROM archive_pages]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_pages SET wire_sha='wrong']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_pages SET canonical_sha='wrong']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_pages SET received_at_utc='2026-11-10T00:00:00Z']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_records SET first_received_at_utc='2026-11-10T00:00:00Z']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE stream_meta SET descriptor_sha='wrong']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_actual_process_exit_before_or_after_commit_recovers_atomic_state[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_actual_process_exit_before_or_after_commit_recovers_atomic_state[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_snapshot_helper_uses_readonly_connection_without_writes_or_lifecycle_ownership[False]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_snapshot_helper_uses_readonly_connection_without_writes_or_lifecycle_ownership[True]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_unexpected_sqlite_prefixed_trigger_is_rejected_by_readonly_schema_and_snapshot_helpers",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_foreign_store_is_refused_before_sqlite_without_changing_files_or_companions[adapter]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_unsafe_archive_links_are_refused_and_original_is_unchanged[symlink]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive::test_unsafe_archive_links_are_refused_and_original_is_unchanged[hardlink]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SOURCE_BUFFER_REPLAY-SYNTHETIC]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SOURCE_BUFFER_REPLAY-DEVICE]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SOURCE_BUFFER_REPLAY-UNKNOWN]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SNAPSHOT_READ-SYNTHETIC]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SNAPSHOT_READ-DEVICE]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SNAPSHOT_READ-UNKNOWN]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_three_formats_share_query_and_keep_separate_identities",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[update archive_state set cursor_key='null']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[update archive_records set record_json='{}']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[update archive_records set first_received_at_utc='2026-10-18T00:00:09Z']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[update archive_pages set wire_sha='invalid']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[update stream_meta set descriptor_json='{}']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[create table sqliteXhidden(value)]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_query_reader_uses_no_writer_and_pins_new_archive_wal_prefix",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_write_failure_reopen_retry_then_actual_common_query_preserves_first_receipt",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_input_archive_query::test_new_write_target_refuses_old_raw_and_adapter_without_mutation",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_raw_history::test_history_uses_exact_half_open_source_time_not_lexical_time_or_receipt",
+      "kind": "failure",
+      "category": "HARNESS_WINDOWS_FILENAME_FIXED"
+    },
+    {
+      "test": "tests.test_startup_recovery::test_blocked_configuration_does_not_block_the_shared_event_loop",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    },
+    {
+      "test": "tests.test_startup_recovery::test_stop_reaps_a_worker_whose_configuration_write_is_still_blocked",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    },
+    {
+      "test": "tests.test_startup_recovery::test_valid_stdout_frames_cannot_extend_the_configuration_deadline_or_recovery_budget",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    },
+    {
+      "test": "tests.test_startup_recovery::test_startup_recovery_preserves_two_real_replay_workers_and_original_archive_rows",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_unconfigured_report_preserves_exact_archive_cursor_gap_and_backups",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_without_backup_or_telemetry_does_not_invent_measurements",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_thresholds_report_exceeded_and_keep_all_inputs_unchanged",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_configured_measured_values_can_be_within_limits_without_global_pass",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_empty_archive_receipt_measurements_are_unavailable",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_commit_threshold_requires_fresh_matching_cursor_capture[capture0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_commit_threshold_requires_fresh_matching_cursor_capture[capture1]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_commit_threshold_requires_fresh_matching_cursor_capture[capture2]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_commit_threshold_requires_fresh_matching_cursor_capture[capture3]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_explicit_future_evaluation_time_is_used_instead_of_wall_clock",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_archive_failure_is_reported_without_creating_or_repairing_it[missing]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_archive_failure_is_reported_without_creating_or_repairing_it[corrupt]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_missing_requested_backup_is_unavailable_and_is_not_created",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_diagnostics_cli::test_cli_policy_reference_is_independent_of_json_whitespace_and_key_order",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_unconfigured_is_explicit_and_receipt_age_is_not_commit_latency",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_receipt_and_retention_boundaries_preserve_cursor_and_gap[2-EXCEEDED]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_receipt_and_retention_boundaries_preserve_cursor_and_gap[2.001-WITHIN_LIMIT]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_retention_is_first_receipt_advisory_and_backup_age_is_only_mtime",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_capacity_uses_non_superuser_available_bytes_and_exact_boundary",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stat_failures_are_not_silently_missing_or_zero[2-MISSING]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stat_failures_are_not_silently_missing_or_zero[13-PERMISSION_DENIED]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stat_failures_are_not_silently_missing_or_zero[1-PERMISSION_DENIED]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stat_failures_are_not_silently_missing_or_zero[5-IO_ERROR]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_capacity_failure_does_not_pass_threshold[13-PERMISSION_DENIED]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_capacity_failure_does_not_pass_threshold[5-IO_ERROR]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_wal_companions_and_hardlinks_are_measured_without_double_count",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_symlink_and_special_backup_are_not_followed",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_unavailable_archive_measurement_is_never_a_pass[empty]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_unavailable_archive_measurement_is_never_a_pass[corrupt]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_unavailable_archive_measurement_is_never_a_pass[cursor]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_unavailable_archive_measurement_is_never_a_pass[future]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_valid_fresh_identity_bound_commit_measurement_has_separate_threshold",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[capture_stale]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[capture_future]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[cursor_mismatch]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[missing]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[bad_number]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[receipt_stale]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[duplicate]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[recency_unconfigured]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_limits_are_explicit_and_never_publish_data[MAX_ARCHIVE_ROWS-1]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_limits_are_explicit_and_never_publish_data[MAX_SECONDS-0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_limits_are_explicit_and_never_publish_data[MAX_SQL_STEPS-0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_capture_cannot_precede_the_matching_stored_receipt",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_closed_wal_without_companions_is_not_initialized_by_diagnostics",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_explicit_invalid_json_files_are_rejected_without_hanging[fifo---policy]",
+      "kind": "failure",
+      "category": "POSIX_PRIMITIVE_UNAVAILABLE"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_explicit_invalid_json_files_are_rejected_without_hanging[fifo---telemetry]",
+      "kind": "failure",
+      "category": "POSIX_PRIMITIVE_UNAVAILABLE"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_explicit_invalid_json_files_are_rejected_without_hanging[symlink---policy]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_explicit_invalid_json_files_are_rejected_without_hanging[symlink---telemetry]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_partial_backup_inventory_never_reports_an_understated_successful_total",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_sparse_file_apparent_length_is_separate_from_reported_allocation",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_readonly_volume_is_unavailable_even_with_free_blocks",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_nonzero_sql_work_limit_interrupts_and_releases_the_reader",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_commit_recency_boundary_is_inclusive[12-WITHIN_LIMIT]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_storage_policy_diagnostics::test_commit_recency_boundary_is_inclusive[12.000001-UNAVAILABLE]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_dual_projection_preserves_null_originals_receipt_and_namespaced_evidence",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_missing_tag_and_present_missing_are_distinct",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_window_uses_receipt_utc_half_open_and_not_original_time",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_namespaces_do_not_collapse_equal_physical_looking_samples",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_long_colon_adapter_device_selector",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_adapter_corruption_fails_whole_query_without_writes[update store_state set cursor_key='null']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_adapter_corruption_fails_whole_query_without_writes[update adapter_records set first_received_at_utc='2026-10-18T00:00:03Z']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_adapter_corruption_fails_whole_query_without_writes[update adapter_records set record_json='{}']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_adapter_corruption_fails_whole_query_without_writes[update adapter_pages set wire_sha='invalid']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_adapter_corruption_fails_whole_query_without_writes[create table sqliteXhidden(x)]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_raw_corruption_and_hidden_objects_fail_closed[update ingest_cursors set sequence=999]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_raw_corruption_and_hidden_objects_fail_closed[update raw_batches set received_at_utc='invalid']",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_raw_corruption_and_hidden_objects_fail_closed[create table sqliteXhidden(x)]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_raw_corruption_and_hidden_objects_fail_closed[create view hidden as select 1]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_binding_pin_and_duplicate_physical_source",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_limits_fail_instead_of_truncating",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_reader_does_not_construct_writer_and_keeps_pinned_wal_snapshot",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_rollback_restart_and_retry_keep_first_receipt_and_provenance",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_read_authorizer_observes_no_dml_and_inherited_records_exact_hash",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_empty_adapter_snapshot_is_not_source_coverage_or_ack",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_valid_fixture_pin_is_reported_as_binding_not_authentication",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_resource_limits_fail_whole_query[MAX_OUTPUT_BYTES-1]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_resource_limits_fail_whole_query[MAX_SECONDS-0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_resource_limits_fail_whole_query[MAX_SQL_STEPS-0]",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_unsafe_source_is_rejected_before_sqlite_open[fifo]",
+      "kind": "failure",
+      "category": "POSIX_PRIMITIVE_UNAVAILABLE"
+    },
+    {
+      "test": "tests.test_stored_records::test_unsafe_source_is_rejected_before_sqlite_open[symlink]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_stored_records::test_unsafe_source_is_rejected_before_sqlite_open[hardlink]",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_stored_records::test_legacy_wal_snapshot_pins_rows_cursor_gap_together",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records::test_gap_evidence_is_not_inferred_as_window_completeness",
+      "kind": "failure",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_queries_both_native_stores_by_first_receipt_without_changing_them",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_signal_projection_preserves_missing_quality_and_distinguishes_absent_tag",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_receipt_window_excludes_records_outside_half_open_bounds[start0-end0]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_receipt_window_excludes_records_outside_half_open_bounds[start1-end1]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_any_failed_source_prevents_partial_stdout_and_does_not_repair_sources[missing]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_any_failed_source_prevents_partial_stdout_and_does_not_repair_sources[corrupt]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_any_failed_source_prevents_partial_stdout_and_does_not_repair_sources[wrong_kind]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_any_failed_source_prevents_partial_stdout_and_does_not_repair_sources[wrong_binding]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_source_configuration_has_only_private_structured_stderr[extra]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_source_configuration_has_only_private_structured_stderr[empty_sources]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_source_configuration_has_only_private_structured_stderr[duplicate_store_id]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_source_configuration_has_only_private_structured_stderr[unknown_kind]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_source_configuration_has_only_private_structured_stderr[raw_hash]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_or_utc_overflow_window_never_emits_partial_json[start0-end0]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_or_utc_overflow_window_never_emits_partial_json[start1-end1]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_or_utc_overflow_window_never_emits_partial_json[2026-01-01T00:00:00-2026-01-02T00:00:00Z]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_or_utc_overflow_window_never_emits_partial_json[0001-01-01T00:00:00+14:00-0001-01-02T00:00:00Z]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_or_utc_overflow_window_never_emits_partial_json[9999-12-30T00:00:00Z-9999-12-31T23:59:59-12:00]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_record_limit_has_no_partial_report[0]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_record_limit_has_no_partial_report[-1]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_record_limit_has_no_partial_report[true]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_invalid_record_limit_has_no_partial_report[not-an-int]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_bounded_utf8_configuration_rejects_ambiguous_or_invalid_json[duplicate]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_bounded_utf8_configuration_rejects_ambiguous_or_invalid_json[escaped_duplicate]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_bounded_utf8_configuration_rejects_ambiguous_or_invalid_json[nan]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_bounded_utf8_configuration_rejects_ambiguous_or_invalid_json[oversize]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_bounded_utf8_configuration_rejects_ambiguous_or_invalid_json[invalid_utf8]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_configuration_requires_regular_nofollow_file_and_never_blocks[fifo]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_configuration_requires_regular_nofollow_file_and_never_blocks[symlink]",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_stored_records_cli::test_cli_closed_stdout_pipe_cannot_report_success_or_modify_sources",
+      "kind": "error",
+      "category": "PLATFORM_GUARD"
+    },
+    {
+      "test": "tests.test_windows_fixture.TestWindowsFixture::test_final_symlink_is_not_followed",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    },
+    {
+      "test": "tests.test_windows_journal_candidate.WindowsJournalTests::test_hardlink_rejected",
+      "kind": "failure",
+      "category": "WINDOWS_PERMISSION"
+    },
+    {
+      "test": "tests.test_worker_recovery::test_sigstop_worker_recovers_its_archive_while_peer_keeps_committing",
+      "kind": "skipped",
+      "category": "SKIPPED"
+    }
+  ],
+  "postFixRun": {
+    "status": "COMPLETED_WITH_FAILURES",
+    "summary": {
+      "failed": 296,
+      "passed": 968,
+      "skipped": 11,
+      "errors": 30,
+      "warnings": 1,
+      "seconds": 340.91
+    },
+    "rawArtifacts": {
+      "pytest-after.log": {
+        "sha256": "3e4b60d1fe7433024b2d10cfd394ef8b6f8a08a38d51bc2861169f0d0b91c247",
+        "bytes": 243378
+      },
+      "results-after.xml": {
+        "sha256": "c315c81522936de3eaec138ae976ab3a23be2ad34529877217f0580fc46fc602",
+        "bytes": 421009
+      }
+    },
+    "resolvedTests": [
+      "tests.test_delivery::test_verifier_keeps_junit_output_as_one_unicode_path_argument",
+      "tests.test_raw_history::test_history_uses_exact_half_open_source_time_not_lexical_time_or_receipt"
+    ],
+    "newFailingOrErroredTests": [],
+    "cases": [
+      {
+        "test": "tests.test_adapter_input_cli::test_cli_refuses_nonregular_or_followed_fixture_paths_without_blocking[symlink]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_adapter_input_cli::test_cli_refuses_nonregular_or_followed_fixture_paths_without_blocking[fifo]",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      },
+      {
+        "test": "tests.test_adapter_store::test_page_record_receipt_and_cursor_commit_together_and_resume_after_reopen",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_identical_retransmission_preserves_first_receipt_and_changed_page_fails",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_conflict_rejects_whole_page_including_valid_new_records",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_empty_eof_is_durable_but_transient_no_data_has_no_page_commit",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_no_uncommitted_proposal_is_exposed_before_commit_confirmation",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_failure_after_inserts_rolls_back_page_records_and_cursor_then_can_retry",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_commit_exception_is_unknown_and_fenced_until_reopen[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_commit_exception_is_unknown_and_fenced_until_reopen[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_failed_postcommit_confirmation_never_returns_success",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_sqlite_busy_and_full_fail_without_cursor_progress",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[UPDATE store_state SET cursor_key='\"wrong\"']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[DELETE FROM adapter_records]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[DELETE FROM adapter_pages]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[UPDATE adapter_records SET first_received_at_utc='2026-11-10T00:00:00Z']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[UPDATE adapter_pages SET wire_sha='0000']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_restart_rejects_cursor_record_page_receipt_or_hash_inconsistency[UPDATE store_state SET ended=0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_actual_process_crash_before_or_after_commit_recovers_atomic_state[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_actual_process_crash_before_or_after_commit_recovers_atomic_state[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_caller_cancellation_after_commit_resumes_from_durable_state_without_duplicate",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_sqlite_like_wildcard_cannot_hide_an_unexpected_trigger",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_confirmation_requires_the_requested_page_to_still_exist",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_this_run_count_does_not_include_another_valid_writer_commit",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_failed_rollback_fences_without_a_success_acknowledgement",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_output_failure_after_commit_reports_unknown_and_preserves_restart_data",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      },
+      {
+        "test": "tests.test_adapter_store::test_empty_eof_initial_cursor_key_is_unique_and_retransmission_remains_durable",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_timeout_or_cancellation_during_pull_never_commits_a_page[timeout]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_timeout_or_cancellation_during_pull_never_commits_a_page[cancel]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_first_page_cannot_silently_change_the_bound_fixture_payload",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_confirmation_pins_original_prefix_receipts_and_fixture_evidence[requested_receipt]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_confirmation_pins_original_prefix_receipts_and_fixture_evidence[prior_receipt]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store::test_confirmation_pins_original_prefix_receipts_and_fixture_evidence[fixture_wire]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_commits_two_pages_and_restart_preserves_all_rows_receipts_and_cursor",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_same_canonical_fixture_accepts_whitespace_and_key_order_changes_without_writes",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_changed_fixture_binding_is_rejected_without_changing_durable_store[content]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_changed_fixture_binding_is_rejected_without_changing_durable_store[stream]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_empty_terminal_page_and_transient_no_data_have_distinct_durable_results[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_empty_terminal_page_and_transient_no_data_have_distinct_durable_results[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_refuses_store_aliases_even_when_referent_is_a_valid_owned_store[symlink]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_refuses_store_aliases_even_when_referent_is_a_valid_owned_store[dangling_symlink]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_refuses_store_aliases_even_when_referent_is_a_valid_owned_store[hardlink]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_refuses_nonregular_fixture_before_store_writes_without_blocking[fifo]",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      },
+      {
+        "test": "tests.test_adapter_store_cli::test_cli_refuses_nonregular_fixture_before_store_writes_without_blocking[symlink]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_validates_on_readonly_connection_without_lifecycle_or_write_access[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_validates_on_readonly_connection_without_lifecycle_or_write_access[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_expected_binding_mismatch_keeps_writer_error_contract[descriptor]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_expected_binding_mismatch_keeps_writer_error_contract[fixture]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_expected_binding_mismatch_keeps_writer_error_contract[both]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_matching_expected_binding_validates_and_descriptor_bootstrap_is_independent",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_meta SET adapter_id='other']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_meta SET stream_id='22222222-2222-4222-8222-222222222222']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_meta SET fixture_sha='wrong']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_meta SET fixture_wire_sha='wrong']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_state SET cursor_key='\"wrong\"']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_state SET page_count=0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE store_state SET ended=0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE adapter_pages SET canonical_sha='wrong']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE adapter_pages SET wire_sha='wrong']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE adapter_pages SET received_at_utc='2026-11-09T12:01:00Z']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[UPDATE adapter_records SET first_received_at_utc='2026-11-09T12:01:00Z']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_stored_fixture_binding_and_evidence_tampering_are_rejected_without_changes[DELETE FROM adapter_records]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_self_consistent_changed_page_and_record_cannot_replace_fixture_response",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_adapter_store_validation::test_unexpected_schema_object_is_rejected_by_both_connection_helpers",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_roundtrip_preserves_original_text_receipt_cursor_gap_and_no_source_mutation",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_fixed_wal_snapshot_has_same_raw_cursor_gap_cutoff_and_writer_progresses",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_uncommitted_transaction_is_excluded_and_reader_releases",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_sparse_retired_run_and_empty_archive_are_supported",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_existing_destinations_and_sidecars_are_preserved[symlink]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_archive_backup::test_existing_destinations_and_sidecars_are_preserved[dangling]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_archive_backup::test_existing_destinations_and_sidecars_are_preserved[hardlink]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_archive_backup::test_publish_race_preserves_competing_file",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD_BEFORE_FAULT_INJECTION"
+      },
+      {
+        "test": "tests.test_archive_backup::test_post_publication_sync_failure_preserves_valid_file",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[raw]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[receipt]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[cursor]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[gap]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[manifest]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_expected_manifest_rejects_changed_backup_and_preserves_restore_target[truncate]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_stdout_failure_reports_already_published_file[backup]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD_BEFORE_FAULT_INJECTION"
+      },
+      {
+        "test": "tests.test_archive_backup::test_stdout_failure_reports_already_published_file[restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_actual_cli_full_stdout_has_structured_error_and_exit_two",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      },
+      {
+        "test": "tests.test_archive_backup::test_cleanup_failure_is_explicit_and_preserves_published_destination[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_cleanup_failure_is_explicit_and_preserves_published_destination[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_remaining_reference_and_table_limits[MAX_MANIFEST_BYTES]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup::test_nonzero_sql_progress_budget_interrupts_and_releases_reader",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD_BEFORE_FAULT_INJECTION"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_roundtrip_preserves_exact_rows_first_receipts_cursors_gaps_and_resume",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_rejects_tampered_expected_manifest_without_publishing[artifactSha256-verify]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_rejects_tampered_expected_manifest_without_publishing[artifactSha256-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_rejects_tampered_expected_manifest_without_publishing[snapshot-verify]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_rejects_tampered_expected_manifest_without_publishing[snapshot-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_rejects_changed_sqlite_content_even_when_database_integrity_is_ok[verify]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_rejects_changed_sqlite_content_even_when_database_integrity_is_ok[restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[file-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[directory-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[symlink-backup]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[symlink-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[dangling_symlink-backup]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[dangling_symlink-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[hardlink-backup]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_and_aliases[hardlink-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_sidecars[-wal-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_sidecars[-shm-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_preserves_existing_destination_sidecars[-journal-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_refuses_absent_source_companion_as_destination[-wal-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_refuses_absent_source_companion_as_destination[-shm-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_refuses_absent_source_companion_as_destination[-journal-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_does_not_create_or_rewrite_missing_or_corrupt_source[missing-verify]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_does_not_create_or_rewrite_missing_or_corrupt_source[missing-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_does_not_create_or_rewrite_missing_or_corrupt_source[corrupt-verify]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_does_not_create_or_rewrite_missing_or_corrupt_source[corrupt-restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_rejects_corrupt_manifest_without_partial_stdout_or_source_change[verify]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_backup_cli::test_cli_rejects_corrupt_manifest_without_partial_stdout_or_source_change[restore]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_shipped_example_and_two_actual_cli_runs_preserve_originals_and_first_receipts",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_session_captures_host_receipt_after_read_and_preserves_missing_source_metadata",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_session_refreshes_external_committed_cursor_before_reading",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_changed_committed_fixture_prefix_fails_before_read_even_at_eof[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_changed_committed_fixture_prefix_fails_before_read_even_at_eof[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_uncommitted_tail_can_change_while_prior_wire_and_receipt_are_preserved",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_concurrent_different_tail_cannot_turn_own_retransmission_into_completed_claim",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_original_uuid_spelling_is_preserved_and_mixed_headers_fail_before_creation",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_actual_cli_collect_then_stored_records_cli_queries_nullable_originals",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_timeout_retries_are_bounded_and_never_capture_a_receipt_or_commit",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_cancellation_before_append_never_creates_a_committed_page[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_cancellation_before_append_never_creates_a_committed_page[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_source_io_failure_is_sanitized_and_cannot_advance_archive",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_read_limit_preserves_a_valid_prefix_then_restart_resumes",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_empty_no_data_stops_and_terminal_eof_is_durable[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_empty_no_data_stops_and_terminal_eof_is_durable[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_fixture_reader_is_bounded_strict_and_nonblocking[fifo]",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_broken_stdout_after_commit_is_unknown_but_durable_archive_remains",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_close_error_after_commit_is_unknown_and_success_json_is_not_emitted[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD_BEFORE_FAULT_INJECTION"
+      },
+      {
+        "test": "tests.test_archive_ingest::test_close_error_after_commit_is_unknown_and_success_json_is_not_emitted[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD_BEFORE_FAULT_INJECTION"
+      },
+      {
+        "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SOURCE_BUFFER_REPLAY-DEVICE]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SOURCE_BUFFER_REPLAY-SYNTHETIC]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SOURCE_BUFFER_REPLAY-UNKNOWN]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SNAPSHOT_READ-DEVICE]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SNAPSHOT_READ-SYNTHETIC]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_nullable_original_metadata_and_declared_provenance_survive_commit_and_reopen[SNAPSHOT_READ-UNKNOWN]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change1]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change2]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change3]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change4]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change5]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change6]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_invalid_page_contract_does_not_create_partial_records[change7]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[missing-observedAtUtc-timestampStatus]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[missing-sequence-sequenceStatus]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[missing-runId-runIdStatus]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[contradiction-observedAtUtc-timestampStatus]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[contradiction-sequence-sequenceStatus]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_original_metadata_presence_is_validated_without_fabrication[contradiction-runId-runIdStatus]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_reopen_and_page_binding_mismatches_preserve_existing_state[change0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_reopen_and_page_binding_mismatches_preserve_existing_state[change1]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_reopen_and_page_binding_mismatches_preserve_existing_state[change2]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_reopen_and_page_binding_mismatches_preserve_existing_state[change3]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_descriptor_input_is_copied_and_cannot_change_committed_binding",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_canonical_retransmission_preserves_first_wire_receipt_and_cursor",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_record_deduplication_keeps_first_receipt_and_conflict_rolls_back_whole_page",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_token_order_loops_and_eof_never_advance_invalid_delivery[out_of_order]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_token_order_loops_and_eof_never_advance_invalid_delivery[loop]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_token_order_loops_and_eof_never_advance_invalid_delivery[after_eof]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_empty_nonterminal_has_no_commit_but_empty_terminal_is_durable[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_empty_nonterminal_has_no_commit_but_empty_terminal_is_durable[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_failure_after_page_and_record_inserts_rolls_back_cursor_and_can_retry",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_precommit_write_hook_cannot_rewrite_preexisting_prefix_and_rolls_back_whole_page[wire]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_precommit_write_hook_cannot_rewrite_preexisting_prefix_and_rolls_back_whole_page[receipt]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_sqlite_busy_and_full_leave_no_records_or_cursor_and_retry_succeeds",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_uncommitted_proposal_is_never_exposed_by_public_properties",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_commit_exception_is_unknown_and_fenced_until_verified_reopen[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_commit_exception_is_unknown_and_fenced_until_verified_reopen[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_postcommit_readback_failure_cannot_return_success",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_confirmation_pins_requested_wire_receipt_and_precommit_page_prefix[wire-0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_confirmation_pins_requested_wire_receipt_and_precommit_page_prefix[wire-1]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_confirmation_pins_requested_wire_receipt_and_precommit_page_prefix[receipt-0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_confirmation_pins_requested_wire_receipt_and_precommit_page_prefix[receipt-1]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_admission_limits_leave_preexisting_page_and_cursor_unchanged[MAX_ACCEPTED_PAGES]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_admission_limits_leave_preexisting_page_and_cursor_unchanged[MAX_ADMITTED_RECORDS]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_naive_or_utc_overflow_receipt_does_not_change_archive[receipt0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_naive_or_utc_overflow_receipt_does_not_change_archive[receipt1]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_expired_write_budget_rolls_back_and_retry_after_restoring_budget_succeeds",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_state SET cursor_key='\"wrong\"']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_state SET ended=0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_state SET page_count=0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[DELETE FROM archive_records]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[DELETE FROM archive_pages]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_pages SET wire_sha='wrong']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_pages SET canonical_sha='wrong']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_pages SET received_at_utc='2026-11-10T00:00:00Z']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE archive_records SET first_received_at_utc='2026-11-10T00:00:00Z']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_restart_rejects_state_record_page_receipt_and_descriptor_tampering[UPDATE stream_meta SET descriptor_sha='wrong']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_actual_process_exit_before_or_after_commit_recovers_atomic_state[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_actual_process_exit_before_or_after_commit_recovers_atomic_state[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_snapshot_helper_uses_readonly_connection_without_writes_or_lifecycle_ownership[False]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_snapshot_helper_uses_readonly_connection_without_writes_or_lifecycle_ownership[True]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_unexpected_sqlite_prefixed_trigger_is_rejected_by_readonly_schema_and_snapshot_helpers",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_foreign_store_is_refused_before_sqlite_without_changing_files_or_companions[adapter]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_unsafe_archive_links_are_refused_and_original_is_unchanged[symlink]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive::test_unsafe_archive_links_are_refused_and_original_is_unchanged[hardlink]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SOURCE_BUFFER_REPLAY-SYNTHETIC]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SOURCE_BUFFER_REPLAY-DEVICE]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SOURCE_BUFFER_REPLAY-UNKNOWN]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SNAPSHOT_READ-SYNTHETIC]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SNAPSHOT_READ-DEVICE]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_write_requery_preserves_original_nulls_source_declaration_and_receipt[SNAPSHOT_READ-UNKNOWN]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_three_formats_share_query_and_keep_separate_identities",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[update archive_state set cursor_key='null']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[update archive_records set record_json='{}']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[update archive_records set first_received_at_utc='2026-10-18T00:00:09Z']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[update archive_pages set wire_sha='invalid']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[update stream_meta set descriptor_json='{}']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_invalid_new_store_fails_entire_query_and_preserves_files[create table sqliteXhidden(value)]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_query_reader_uses_no_writer_and_pins_new_archive_wal_prefix",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_write_failure_reopen_retry_then_actual_common_query_preserves_first_receipt",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_input_archive_query::test_new_write_target_refuses_old_raw_and_adapter_without_mutation",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_startup_recovery::test_blocked_configuration_does_not_block_the_shared_event_loop",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      },
+      {
+        "test": "tests.test_startup_recovery::test_stop_reaps_a_worker_whose_configuration_write_is_still_blocked",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      },
+      {
+        "test": "tests.test_startup_recovery::test_valid_stdout_frames_cannot_extend_the_configuration_deadline_or_recovery_budget",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      },
+      {
+        "test": "tests.test_startup_recovery::test_startup_recovery_preserves_two_real_replay_workers_and_original_archive_rows",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_unconfigured_report_preserves_exact_archive_cursor_gap_and_backups",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_without_backup_or_telemetry_does_not_invent_measurements",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_thresholds_report_exceeded_and_keep_all_inputs_unchanged",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_configured_measured_values_can_be_within_limits_without_global_pass",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_empty_archive_receipt_measurements_are_unavailable",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_commit_threshold_requires_fresh_matching_cursor_capture[capture0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_commit_threshold_requires_fresh_matching_cursor_capture[capture1]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_commit_threshold_requires_fresh_matching_cursor_capture[capture2]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_commit_threshold_requires_fresh_matching_cursor_capture[capture3]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_explicit_future_evaluation_time_is_used_instead_of_wall_clock",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_archive_failure_is_reported_without_creating_or_repairing_it[missing]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_archive_failure_is_reported_without_creating_or_repairing_it[corrupt]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_missing_requested_backup_is_unavailable_and_is_not_created",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_diagnostics_cli::test_cli_policy_reference_is_independent_of_json_whitespace_and_key_order",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_unconfigured_is_explicit_and_receipt_age_is_not_commit_latency",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_receipt_and_retention_boundaries_preserve_cursor_and_gap[2-EXCEEDED]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_receipt_and_retention_boundaries_preserve_cursor_and_gap[2.001-WITHIN_LIMIT]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_retention_is_first_receipt_advisory_and_backup_age_is_only_mtime",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_capacity_uses_non_superuser_available_bytes_and_exact_boundary",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stat_failures_are_not_silently_missing_or_zero[2-MISSING]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stat_failures_are_not_silently_missing_or_zero[13-PERMISSION_DENIED]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stat_failures_are_not_silently_missing_or_zero[1-PERMISSION_DENIED]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stat_failures_are_not_silently_missing_or_zero[5-IO_ERROR]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_capacity_failure_does_not_pass_threshold[13-PERMISSION_DENIED]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_capacity_failure_does_not_pass_threshold[5-IO_ERROR]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_wal_companions_and_hardlinks_are_measured_without_double_count",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_symlink_and_special_backup_are_not_followed",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_unavailable_archive_measurement_is_never_a_pass[empty]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_unavailable_archive_measurement_is_never_a_pass[corrupt]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_unavailable_archive_measurement_is_never_a_pass[cursor]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_unavailable_archive_measurement_is_never_a_pass[future]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_valid_fresh_identity_bound_commit_measurement_has_separate_threshold",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[capture_stale]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[capture_future]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[cursor_mismatch]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[missing]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[bad_number]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[receipt_stale]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[duplicate]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_stale_invalid_missing_or_mismatched_commit_data_cannot_pass[recency_unconfigured]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_limits_are_explicit_and_never_publish_data[MAX_ARCHIVE_ROWS-1]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_limits_are_explicit_and_never_publish_data[MAX_SECONDS-0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_limits_are_explicit_and_never_publish_data[MAX_SQL_STEPS-0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_capture_cannot_precede_the_matching_stored_receipt",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_closed_wal_without_companions_is_not_initialized_by_diagnostics",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_explicit_invalid_json_files_are_rejected_without_hanging[fifo---policy]",
+        "kind": "failure",
+        "category": "POSIX_PRIMITIVE_UNAVAILABLE"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_explicit_invalid_json_files_are_rejected_without_hanging[fifo---telemetry]",
+        "kind": "failure",
+        "category": "POSIX_PRIMITIVE_UNAVAILABLE"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_explicit_invalid_json_files_are_rejected_without_hanging[symlink---policy]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_explicit_invalid_json_files_are_rejected_without_hanging[symlink---telemetry]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_partial_backup_inventory_never_reports_an_understated_successful_total",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_sparse_file_apparent_length_is_separate_from_reported_allocation",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_readonly_volume_is_unavailable_even_with_free_blocks",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_nonzero_sql_work_limit_interrupts_and_releases_the_reader",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_commit_recency_boundary_is_inclusive[12-WITHIN_LIMIT]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_storage_policy_diagnostics::test_commit_recency_boundary_is_inclusive[12.000001-UNAVAILABLE]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_dual_projection_preserves_null_originals_receipt_and_namespaced_evidence",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_missing_tag_and_present_missing_are_distinct",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_window_uses_receipt_utc_half_open_and_not_original_time",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_namespaces_do_not_collapse_equal_physical_looking_samples",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_long_colon_adapter_device_selector",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_adapter_corruption_fails_whole_query_without_writes[update store_state set cursor_key='null']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_adapter_corruption_fails_whole_query_without_writes[update adapter_records set first_received_at_utc='2026-10-18T00:00:03Z']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_adapter_corruption_fails_whole_query_without_writes[update adapter_records set record_json='{}']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_adapter_corruption_fails_whole_query_without_writes[update adapter_pages set wire_sha='invalid']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_adapter_corruption_fails_whole_query_without_writes[create table sqliteXhidden(x)]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_raw_corruption_and_hidden_objects_fail_closed[update ingest_cursors set sequence=999]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_raw_corruption_and_hidden_objects_fail_closed[update raw_batches set received_at_utc='invalid']",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_raw_corruption_and_hidden_objects_fail_closed[create table sqliteXhidden(x)]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_raw_corruption_and_hidden_objects_fail_closed[create view hidden as select 1]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_binding_pin_and_duplicate_physical_source",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_limits_fail_instead_of_truncating",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_reader_does_not_construct_writer_and_keeps_pinned_wal_snapshot",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_rollback_restart_and_retry_keep_first_receipt_and_provenance",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_read_authorizer_observes_no_dml_and_inherited_records_exact_hash",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_empty_adapter_snapshot_is_not_source_coverage_or_ack",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_valid_fixture_pin_is_reported_as_binding_not_authentication",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_resource_limits_fail_whole_query[MAX_OUTPUT_BYTES-1]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_resource_limits_fail_whole_query[MAX_SECONDS-0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_resource_limits_fail_whole_query[MAX_SQL_STEPS-0]",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_unsafe_source_is_rejected_before_sqlite_open[fifo]",
+        "kind": "failure",
+        "category": "POSIX_PRIMITIVE_UNAVAILABLE"
+      },
+      {
+        "test": "tests.test_stored_records::test_unsafe_source_is_rejected_before_sqlite_open[symlink]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_stored_records::test_unsafe_source_is_rejected_before_sqlite_open[hardlink]",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_stored_records::test_legacy_wal_snapshot_pins_rows_cursor_gap_together",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records::test_gap_evidence_is_not_inferred_as_window_completeness",
+        "kind": "failure",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_queries_both_native_stores_by_first_receipt_without_changing_them",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_signal_projection_preserves_missing_quality_and_distinguishes_absent_tag",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_receipt_window_excludes_records_outside_half_open_bounds[start0-end0]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_receipt_window_excludes_records_outside_half_open_bounds[start1-end1]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_any_failed_source_prevents_partial_stdout_and_does_not_repair_sources[missing]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_any_failed_source_prevents_partial_stdout_and_does_not_repair_sources[corrupt]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_any_failed_source_prevents_partial_stdout_and_does_not_repair_sources[wrong_kind]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_any_failed_source_prevents_partial_stdout_and_does_not_repair_sources[wrong_binding]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_source_configuration_has_only_private_structured_stderr[extra]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_source_configuration_has_only_private_structured_stderr[empty_sources]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_source_configuration_has_only_private_structured_stderr[duplicate_store_id]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_source_configuration_has_only_private_structured_stderr[unknown_kind]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_source_configuration_has_only_private_structured_stderr[raw_hash]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_or_utc_overflow_window_never_emits_partial_json[start0-end0]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_or_utc_overflow_window_never_emits_partial_json[start1-end1]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_or_utc_overflow_window_never_emits_partial_json[2026-01-01T00:00:00-2026-01-02T00:00:00Z]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_or_utc_overflow_window_never_emits_partial_json[0001-01-01T00:00:00+14:00-0001-01-02T00:00:00Z]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_or_utc_overflow_window_never_emits_partial_json[9999-12-30T00:00:00Z-9999-12-31T23:59:59-12:00]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_record_limit_has_no_partial_report[0]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_record_limit_has_no_partial_report[-1]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_record_limit_has_no_partial_report[true]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_invalid_record_limit_has_no_partial_report[not-an-int]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_bounded_utf8_configuration_rejects_ambiguous_or_invalid_json[duplicate]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_bounded_utf8_configuration_rejects_ambiguous_or_invalid_json[escaped_duplicate]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_bounded_utf8_configuration_rejects_ambiguous_or_invalid_json[nan]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_bounded_utf8_configuration_rejects_ambiguous_or_invalid_json[oversize]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_bounded_utf8_configuration_rejects_ambiguous_or_invalid_json[invalid_utf8]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_configuration_requires_regular_nofollow_file_and_never_blocks[fifo]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_configuration_requires_regular_nofollow_file_and_never_blocks[symlink]",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_stored_records_cli::test_cli_closed_stdout_pipe_cannot_report_success_or_modify_sources",
+        "kind": "error",
+        "category": "PLATFORM_GUARD"
+      },
+      {
+        "test": "tests.test_windows_fixture.TestWindowsFixture::test_final_symlink_is_not_followed",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      },
+      {
+        "test": "tests.test_windows_journal_candidate.WindowsJournalTests::test_hardlink_rejected",
+        "kind": "failure",
+        "category": "WINDOWS_PERMISSION"
+      },
+      {
+        "test": "tests.test_worker_recovery::test_sigstop_worker_recovers_its_archive_while_peer_keeps_committing",
+        "kind": "skipped",
+        "category": "SKIPPED"
+      }
+    ],
+    "independentReview": "Baseline classification independently recomputed; focused suites independently passed 41/41. Post-fix full run inspected, not independently rerun."
+  }
+}

@@ -8,6 +8,26 @@ servers:
 security:
 - LocalToken: []
 paths:
+  /v1/ingestion:
+    get:
+      operationId: listIngestion
+      responses:
+        '200':
+          description: Per-device synthetic collector evidence. Fixtures have no ingestion rows.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 32
+                items:
+                  type: object
+                  required: [deviceId, archiveEnabled, pendingBatches]
+                  properties:
+                    deviceId: {type: string}
+                    archiveEnabled: {type: boolean}
+                    pendingBatches: {type: integer, minimum: 0, nullable: true}
+                    collectionStatus:
+                      $ref: '#/components/schemas/CollectionStatus'
   /v1/health:
     get:
       operationId: getHealth
@@ -256,6 +276,22 @@ components:
       in: header
       name: X-Aegis-Token
   schemas:
+    CollectionStatus:
+      type: object
+      additionalProperties: false
+      required: [collectorMode, declaredOrigin, receiptProvenance, lastReceivedAtUtc, receivedAgeMs, freshness, validUntilUtc, lastCommittedAtUtc, pendingBatches, workerStatus, workerReason]
+      properties:
+        collectorMode: {type: string, enum: [SHARED, ISOLATED, FIXTURE]}
+        declaredOrigin: {type: string, enum: [SYNTHETIC]}
+        receiptProvenance: {type: string, enum: [ACCEPTED, RESTORED, NONE]}
+        lastReceivedAtUtc: {type: string, format: date-time, nullable: true}
+        receivedAgeMs: {type: integer, minimum: 0, nullable: true}
+        freshness: {type: string, enum: [CURRENT, STALE, RESTORED, NO_RECEIPT, UNAVAILABLE]}
+        validUntilUtc: {type: string, format: date-time, nullable: true}
+        lastCommittedAtUtc: {type: string, format: date-time, nullable: true}
+        pendingBatches: {type: integer, minimum: 0, maximum: 4095, nullable: true}
+        workerStatus: {type: string, enum: [RUNNING, RESTARTING, FAILED, UNAVAILABLE, NOT_APPLICABLE]}
+        workerReason: {type: string, nullable: true, enum: [ARCHIVE_IDENTITY_MISMATCH, WORKER_UNAVAILABLE, null]}
     TimeWindow:
       type: object
       additionalProperties: false

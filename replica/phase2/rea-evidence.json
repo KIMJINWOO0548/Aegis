@@ -1,0 +1,10 @@
+{
+  "tool": "REA 6.8.0",
+  "actual_execution": true,
+  "source_url": "https://play.grafana.org/",
+  "exit_code": 0,
+  "summary_sha256": "3d4207eb8cddb85ef57bc84702da199712dcd056e8ff0b70bd0d25979a9e2ff8",
+  "limitations": "Public home to dashboard library navigation observed; search/tag/owner/sort controls and table shell; table placeholders still loading. Data panel/time-range/live investigation and competitor performance NOT_RUN.",
+  "third_party_assets_shipped": false,
+  "competitor_performance": "NOT_RUN"
+}

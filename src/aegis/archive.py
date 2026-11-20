@@ -8,6 +8,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+class ArchiveIdentityError(ValueError):
+    """An archive payload disagrees with the key of its committed batch."""
+
+
 COLUMNS = {
     "raw_batches": ("device_id", "run_id", "sequence", "observed_at_utc", "received_at_utc", "equipment_id", "module_id", "payload_json"),
     "ingest_cursors": ("device_id", "run_id", "sequence"),
@@ -97,11 +101,21 @@ class RawArchive:
             "SELECT run_id,sequence FROM ingest_cursors WHERE device_id=?", (device_id,)).fetchone())
 
     async def latest(self, device_id) -> dict | None:
+        record = await self.latest_record(device_id)
+        return record[0] if record is not None else None
+
+    async def latest_record(self, device_id) -> tuple[dict, str] | None:
         def read():
-            row = self._connection.execute("""SELECT payload_json FROM raw_batches b JOIN ingest_cursors c
+            row = self._connection.execute("""SELECT payload_json,received_at_utc,b.device_id,b.run_id,b.sequence
+                FROM raw_batches b JOIN ingest_cursors c
                 ON b.device_id=c.device_id AND b.run_id=c.run_id AND b.sequence=c.sequence WHERE b.device_id=?""",
                 (device_id,)).fetchone()
-            return json.loads(row[0]) if row is not None else None
+            if row is None:
+                return None
+            payload = json.loads(row[0])
+            if not isinstance(payload, dict) or tuple(payload.get(key) for key in ('deviceId', 'runId', 'sequence')) != row[2:]:
+                raise ArchiveIdentityError("Stored raw batch identity does not match its committed row.")
+            return payload, row[1]
         return await self._run(read)
 
     async def append(self, snapshots: list[dict], received_at: datetime, *, equipment_id=None, module_id=None, gap: tuple[int, int] | None = None):

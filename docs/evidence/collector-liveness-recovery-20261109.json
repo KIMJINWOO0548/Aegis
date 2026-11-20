@@ -1,0 +1,525 @@
+{
+  "schema_version": 1,
+  "verification_date_utc": "2026-11-09",
+  "base_branch": "improve/numeric-tag-integrity-20261109",
+  "base_sha": "bbb0ed10bb43b0aec65d9d0c8d7b79c40b9c4144",
+  "new_branch": "improve/collector-liveness-recovery-20261109",
+  "visibility": "public unchanged",
+  "scope": "Python --isolate local synthetic module collection only; no UI or deployment change",
+  "policy": {
+    "active_poll_timeout_seconds": "max(10, HTTP timeout * 2), excludes inter-poll sleep",
+    "valid_frame_timeout_seconds": 10,
+    "restart_limit_per_start_lifetime": 3,
+    "initial_attempt_in_budget": false,
+    "restart_delay_seconds": 2,
+    "valid_frame_resets_budget": false,
+    "reap_before_replacement": true,
+    "cleanup_failure_blocks_replacement": true,
+    "watchdog_activation": "After synchronous startup configuration delivery completes and the reader is registered; not a bound on configuration pipe writes."
+  },
+  "test_runs": {
+    "baseline": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 85.358,
+      "counts": {
+        "tests": 308,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true
+    },
+    "collector-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_collector_liveness.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 2.961,
+      "counts": {
+        "tests": 6,
+        "failures": 6,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_collector_liveness::test_worker_stops_publishing_when_its_real_collector_task_ends[return]",
+          "type": "failure",
+          "message": "TimeoutError"
+        },
+        {
+          "test": "tests.test_collector_liveness::test_worker_stops_publishing_when_its_real_collector_task_ends[error]",
+          "type": "failure",
+          "message": "TimeoutError"
+        },
+        {
+          "test": "tests.test_collector_liveness::test_worker_stops_publishing_when_its_real_collector_task_ends[cancel]",
+          "type": "failure",
+          "message": "TimeoutError"
+        },
+        {
+          "test": "tests.test_collector_liveness::test_inflight_poll_deadline_does_not_depend_on_new_samples",
+          "type": "failure",
+          "message": "AttributeError: 'Collector' object has no attribute 'ensure_live'"
+        },
+        {
+          "test": "tests.test_collector_liveness::test_completed_failed_poll_and_long_idle_remain_live[unavailable]",
+          "type": "failure",
+          "message": "AttributeError: 'Collector' object has no attribute 'ensure_live'"
+        },
+        {
+          "test": "tests.test_collector_liveness::test_completed_failed_poll_and_long_idle_remain_live[timeout]",
+          "type": "failure",
+          "message": "AttributeError: 'Collector' object has no attribute 'ensure_live'"
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true
+    },
+    "collector-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_collector_liveness.py",
+        "tests/test_collector.py",
+        "tests/test_replay_collector.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.411,
+      "counts": {
+        "tests": 51,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true
+    },
+    "worker-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_worker_recovery.py",
+        "-k",
+        "not sigstop"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.102,
+      "counts": {
+        "tests": 24,
+        "failures": 23,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options0]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options1]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options2]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options3]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options4]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options5]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options6]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'restart_limit'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options7]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'restart_limit'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options8]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'restart_limit'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options9]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'restart_limit'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options10]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'restart_delay'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options11]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'restart_delay'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options12]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'restart_delay'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options13]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'restart_delay'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options14]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'restart_delay'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_recovery_options_reject_unbounded_or_ambiguous_values[options15]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'restart_delay'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_live_worker_without_complete_frames_is_reaped_and_recovery_is_bounded[silent]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_live_worker_without_complete_frames_is_reaped_and_recovery_is_bounded[partial]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_valid_frame_then_exit_does_not_reset_the_lifetime_recovery_budget",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_zero_recovery_budget_still_allows_the_initial_worker_attempt",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_real_worker_heartbeats_keep_healthy_idle_and_handled_timeouts_out_of_recovery[no_new_data]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_real_worker_heartbeats_keep_healthy_idle_and_handled_timeouts_out_of_recovery[long_idle]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        },
+        {
+          "test": "tests.test_worker_recovery::test_real_worker_heartbeats_keep_healthy_idle_and_handled_timeouts_out_of_recovery[timeout]",
+          "type": "failure",
+          "message": "TypeError: ProcessCollector.__init__() got an unexpected keyword argument 'worker_timeout'"
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true
+    },
+    "worker-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_worker_recovery.py",
+        "-k",
+        "not sigstop"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 22.528,
+      "counts": {
+        "tests": 24,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_worker_recovery::test_real_worker_heartbeats_keep_healthy_idle_and_handled_timeouts_out_of_recovery[no_new_data]",
+          "type": "failure",
+          "message": "AssertionError: Worker condition did not become ready."
+        },
+        {
+          "test": "tests.test_worker_recovery::test_real_worker_heartbeats_keep_healthy_idle_and_handled_timeouts_out_of_recovery[long_idle]",
+          "type": "failure",
+          "message": "AssertionError: Worker condition did not become ready."
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true
+    },
+    "recovery-boundary-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_collector_liveness.py",
+        "-k",
+        "late_frame or log_close"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 0.703,
+      "counts": {
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.test_collector_liveness::test_late_frame_from_a_worker_being_reaped_cannot_publish_running_state",
+          "type": "failure",
+          "message": "AssertionError: A late frame was accepted after teardown began"
+        },
+        {
+          "test": "tests.test_collector_liveness::test_log_close_failure_does_not_silently_end_the_module_monitor",
+          "type": "failure",
+          "message": "AssertionError: assert 'UNAVAILABLE' == 'FAILED'"
+        }
+      ],
+      "existing_generated_evidence_restored_byte_for_byte": true
+    },
+    "recovery-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_collector_liveness.py",
+        "tests/test_worker_recovery.py",
+        "tests/test_processes.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 50.118,
+      "counts": {
+        "tests": 83,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [],
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_sha256": {
+        "src/aegis/__init__.py": "754aa74235bbb4d61265e3accb499af04b36d2027e7a59de0c9c7dc061b82700",
+        "src/aegis/api.py": "38a2a8ce6839ccb66835b2ee96f3a7dbdd58fe80f32d955e5ec63048207160d2",
+        "src/aegis/archive.py": "526d2a0c3091585c70c68945927328b0f8b771e152b551cee6e8067a59b2e0bf",
+        "src/aegis/collector.py": "b09b9571d6d39029c07d2ae89f5048e1303a039e3ae2af01ce201213c938341a",
+        "src/aegis/contracts.py": "dd0361bfb63a85c2365c25e4df39224ef35ae3544ea4ca65bb7040a67d6088f4",
+        "src/aegis/contracts_generated.py": "dc58e3317253cdc3d7bf4f6084082609fecea429c853ecced10b67189cfaf08e",
+        "src/aegis/evaluation.py": "2c9d0f86ed45ce352b119998a31f42f84877b8fae073691e3d8a7f2cc95ed415",
+        "src/aegis/heartbeat.py": "9af346374faa551b4ddc05d96cdb8ef3e5ad78f4d1413003355d2f8fb8f2d0c7",
+        "src/aegis/module_worker.py": "74a516ea3061ac601546db911b70329a7d49dfe8acd6c9a4942178dc8e81a6ce",
+        "src/aegis/observability.py": "48e412af56f89174e9ef290f2b53ceaac99fa7ccea7c3e2663f5e732f0a45790",
+        "src/aegis/processes.py": "5b63c244b801cbf8c330bb8f07a07d6ce604fc49a0d896706a5f45520884bd6c",
+        "src/aegis/signal_review.py": "f8fc8e5fe6a31f05b9ac68badc725f961e4fa79912a80a8c7e463efcca345496",
+        "tests/test_collector_liveness.py": "25779630b83fa6b07e7a6abaebaeecee0cd3ccf99ef60430aa325156992e9488",
+        "tests/test_worker_recovery.py": "e96d212c9f036d35b790c3944c12ca1ec6b7483ed09949a368b180964b2f8d21"
+      },
+      "tested_source_unchanged_during_run": true
+    }
+  },
+  "full_verification": {
+    "status": "PASS",
+    "passed": 344,
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "-q"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 122.671,
+    "counts": {
+      "tests": 345,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "failures": [],
+    "existing_generated_evidence_restored_byte_for_byte": true,
+    "tested_source_sha256": {
+      "src/aegis/__init__.py": "754aa74235bbb4d61265e3accb499af04b36d2027e7a59de0c9c7dc061b82700",
+      "src/aegis/api.py": "38a2a8ce6839ccb66835b2ee96f3a7dbdd58fe80f32d955e5ec63048207160d2",
+      "src/aegis/archive.py": "526d2a0c3091585c70c68945927328b0f8b771e152b551cee6e8067a59b2e0bf",
+      "src/aegis/collector.py": "b09b9571d6d39029c07d2ae89f5048e1303a039e3ae2af01ce201213c938341a",
+      "src/aegis/contracts.py": "dd0361bfb63a85c2365c25e4df39224ef35ae3544ea4ca65bb7040a67d6088f4",
+      "src/aegis/contracts_generated.py": "dc58e3317253cdc3d7bf4f6084082609fecea429c853ecced10b67189cfaf08e",
+      "src/aegis/evaluation.py": "2c9d0f86ed45ce352b119998a31f42f84877b8fae073691e3d8a7f2cc95ed415",
+      "src/aegis/heartbeat.py": "9af346374faa551b4ddc05d96cdb8ef3e5ad78f4d1413003355d2f8fb8f2d0c7",
+      "src/aegis/module_worker.py": "74a516ea3061ac601546db911b70329a7d49dfe8acd6c9a4942178dc8e81a6ce",
+      "src/aegis/observability.py": "48e412af56f89174e9ef290f2b53ceaac99fa7ccea7c3e2663f5e732f0a45790",
+      "src/aegis/processes.py": "5b63c244b801cbf8c330bb8f07a07d6ce604fc49a0d896706a5f45520884bd6c",
+      "src/aegis/signal_review.py": "f8fc8e5fe6a31f05b9ac68badc725f961e4fa79912a80a8c7e463efcca345496",
+      "tests/test_collector_liveness.py": "25779630b83fa6b07e7a6abaebaeecee0cd3ccf99ef60430aa325156992e9488",
+      "tests/test_worker_recovery.py": "e96d212c9f036d35b790c3944c12ca1ec6b7483ed09949a368b180964b2f8d21"
+    },
+    "tested_source_unchanged_during_run": true
+  },
+  "supplementary_checks": [
+    {
+      "label": "contract-drift",
+      "exit_code": 0,
+      "command": [
+        "python",
+        "scripts/generate_contracts.py",
+        "--check"
+      ]
+    },
+    {
+      "label": "contract-v34",
+      "exit_code": 0,
+      "command": [
+        "python",
+        "scripts/validate_v34.py"
+      ]
+    },
+    {
+      "label": "emulator-tests",
+      "exit_code": 0,
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ]
+    }
+  ],
+  "preservation": {
+    "protected_tracked_files": 223,
+    "all_protected_files_byte_identical": true,
+    "includes": "UI/.NET/config/emulator/archive/contract/evaluation/dependency inputs and every prior tracked docs/evidence file",
+    "existing_generated_evidence_restored_byte_for_byte": true
+  },
+  "not_run": [
+    "Actual equipment/customer data",
+    "Windows and Windows services",
+    "PowerShell7 delivery-script case (one skipped test)",
+    "Dotnet/WPF/WebView2 execution",
+    "Long-duration load and power-loss durability"
+  ],
+  "history_limit": "No access-restricted preservation files read or retried; not restoration/equivalence/integration of earlier 5075ccd.",
+  "rulings": [
+    {
+      "decision": "No automatic budget reset after healthy frames",
+      "cost": "Three failures spread through one start/stop lifetime may require explicit operator restart."
+    },
+    {
+      "decision": "Prototype 10-second default deadlines",
+      "cost": "Legitimate slower disk/CPU work may trigger recovery; on-site timing not validated."
+    },
+    {
+      "decision": "Keep the current synchronous configuration path in this bounded post-configuration recovery step",
+      "reason": "Review identified an unexecuted startup pipe-capacity scenario outside the exercised fault window.",
+      "cost": "Before configuration delivery completes, host/peer response deadlines are not guaranteed; startup I/O supervision remains follow-up work."
+    }
+  ],
+  "limitations": [
+    "Non-isolated Collector host/API supervision is not added.",
+    "Source retention overrun follows existing gap semantics; no universal lossless recovery claim.",
+    "Unreaped worker/reader blocks new writer and raises on stop; Python cannot force-stop a blocked OS I/O thread.",
+    "The initial worker-red failures were missing new keyword arguments, not behavioral timeout proof.",
+    "The first worker-green failures were two invalid snapshot-age control fixtures, corrected before recovery-green.",
+    "Synchronous _launch/config stdin write remains before watchdog activation; a stalled child before reading a pipe-filling config can block host/peers. Not reproduced or fixed in this stage."
+  ],
+  "raw_logs_databases_binaries_or_tokens_committed": false,
+  "linux_sigstop_integration": {
+    "scope": "Linux synthetic local workers; no physical device or Windows-service claim.",
+    "workerRestarted": true,
+    "peerPidUnchanged": true,
+    "originalPrefixAndReceivedTimestampsPreserved": true,
+    "originalPrefixRows": 25,
+    "cursorAdvanced": true,
+    "allOwnedWorkersExited": true,
+    "contiguousArchives": true,
+    "sqliteIntegrity": true
+  },
+  "skip_reason": "tests/test_delivery.py::test_verifier_keeps_junit_output_as_one_unicode_path_argument requires Windows delivery PowerShell7.",
+  "verification_commands": [
+    "python -m pytest -q",
+    "python -m unittest discover -s tests -v (independent emulator project)",
+    "python scripts/generate_contracts.py --check",
+    "python scripts/validate_v34.py"
+  ],
+  "source_files": {
+    "src/aegis/collector.py": {
+      "sha256": "b09b9571d6d39029c07d2ae89f5048e1303a039e3ae2af01ce201213c938341a",
+      "bytes": 28467
+    },
+    "src/aegis/module_worker.py": {
+      "sha256": "74a516ea3061ac601546db911b70329a7d49dfe8acd6c9a4942178dc8e81a6ce",
+      "bytes": 3766
+    },
+    "src/aegis/processes.py": {
+      "sha256": "5b63c244b801cbf8c330bb8f07a07d6ce604fc49a0d896706a5f45520884bd6c",
+      "bytes": 24384
+    },
+    "tests/test_collector_liveness.py": {
+      "sha256": "25779630b83fa6b07e7a6abaebaeecee0cd3ccf99ef60430aa325156992e9488",
+      "bytes": 6015
+    },
+    "tests/test_worker_recovery.py": {
+      "sha256": "e96d212c9f036d35b790c3944c12ca1ec6b7483ed09949a368b180964b2f8d21",
+      "bytes": 21830
+    }
+  },
+  "dependency_installation": "No new packages installed; reused prior authorized project venv with pinned versions.",
+  "independent_review": {
+    "critical_or_important_confirmed": 0,
+    "minor_findings": 0,
+    "read_only": true,
+    "tests_rerun_by_reviewer": false,
+    "deferred_judgment": "Synchronous startup configuration delivery occurs before watchdog activation; unverified pipe-capacity stall possible. Explicitly excluded from current deadline guarantee."
+  },
+  "evidence_postprocessing_note": "A pytest current-directory symlink initially duplicated one artifact match; paths were resolved/deduplicated before recording the single actual SIGSTOP artifact. No tests or product files changed.",
+  "warnings": [
+    "Existing Starlette TestClient/httpx deprecation warning (1)."
+  ],
+  "author_check": {
+    "author_committer_match": true,
+    "matches_authenticated_origin_owner": true,
+    "owner_github_noreply": true,
+    "identity_source_commit": "bbb0ed10bb43b0aec65d9d0c8d7b79c40b9c4144",
+    "actual_identity_omitted": true
+  },
+  "precommit_remote_check": {
+    "base_sha_unchanged": true,
+    "existing_heads": 5,
+    "all_existing_refs_unchanged": true,
+    "target_ref_absent": true,
+    "original_and_numeric_checkouts_unchanged_and_clean": true,
+    "visibility": "public unchanged",
+    "push_scope": "New independent branch only; actual commit/push and remote SHA verification reported separately after source evidence is committed."
+  }
+}

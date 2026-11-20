@@ -1,0 +1,337 @@
+{
+  "schema_version": 1,
+  "verification_date_utc": "2026-11-09",
+  "base_branch": "improve/raw-history-query-20261109",
+  "base_sha": "5b189ef239ca5107698c98275d5c2bb7659ed988",
+  "new_branch": "improve/raw-query-utc-ipc-20261109",
+  "visibility": "public unchanged",
+  "scope": "Raw query UTC validation fix and live synthetic module IPC/archive/HTTP integration verification.",
+  "product_change": {
+    "file": "src/aegis/raw_history.py",
+    "changed_lines": 2,
+    "query_boundary": "OverflowError ->422 INVALID_QUERY",
+    "stored_payload_index_receipt_boundary": "OverflowError ->409 RAW_ARCHIVE_INVALID",
+    "global_timestamp_parser_changed": false,
+    "fallback_or_fabricated_source_timestamp_sequence_added": false
+  },
+  "manual_before_fix_reproduction": {
+    "inputs": [
+      "0001-01-01T00:00:00+01:00",
+      "9999-12-31T23:00:00-02:00"
+    ],
+    "query_exception": "OverflowError",
+    "stored_payload_exception": "OverflowError",
+    "root_cause": "UTC normalization exceeds Python datetime range; existing raw validation exception lists omitted OverflowError."
+  },
+  "baseline_reuse": {
+    "exact_verified_base_sha": "5b189ef239ca5107698c98275d5c2bb7659ed988",
+    "prior_full_suite_counts": {
+      "tests": 482,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "prior_full_passed": 481,
+    "all_prior_tested_python_sources_and_tests_byte_identical": true,
+    "no_dependency_changes": true,
+    "current_checkout_baseline": "baseline-raw-utc"
+  },
+  "test_runs": {
+    "baseline-raw-utc": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history.py",
+        "tests/test_raw_history_api.py",
+        "tests/test_api.py",
+        "tests/test_contracts.py",
+        "tests/test_source_context_api.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 6.356,
+      "counts": {
+        "tests": 189,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    },
+    "utc-red": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history_utc.py"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.673,
+      "counts": {
+        "tests": 30,
+        "failures": 22,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": [
+        "OverflowError: date value out of range",
+        "assert 500 == 409",
+        "assert 500 == 422"
+      ]
+    },
+    "utc-green": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history_utc.py",
+        "tests/test_raw_history.py",
+        "tests/test_raw_history_api.py",
+        "tests/test_contracts.py",
+        "tests/test_api.py",
+        "tests/test_source_context_api.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 6.485,
+      "counts": {
+        "tests": 219,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    },
+    "raw-ipc-integration-valid": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_raw_history_ipc.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 19.313,
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": [],
+      "interpretation": "Integration characterization of existing real IPC/storage/API connection; not a feature RED."
+    },
+    "full-verification": {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 154.576,
+      "counts": {
+        "tests": 513,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "existing_generated_evidence_restored_byte_for_byte": true,
+      "tested_source_unchanged_during_run": true,
+      "failure_messages_unique": []
+    }
+  },
+  "supplementary": {
+    "emulator-unit": {
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.574,
+      "tests": 26
+    },
+    "generated-contracts": {
+      "command": [
+        "python",
+        "scripts/generate_contracts.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.083
+    },
+    "contract-v34": {
+      "command": [
+        "python",
+        "scripts/validate_v34.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.232
+    }
+  },
+  "live_ipc_standalone": {
+    "scope": "Synthetic Linux/local HTTP with real emulator/API/module processes, stdin/stdout IPC and SQLite WAL.",
+    "moduleCount": 2,
+    "signalsPerModule": 256,
+    "sampleIntervalMs": 200,
+    "initialDistinctModuleWorkers": 2,
+    "ownedWorkerGenerationsExited": 3,
+    "targetWorkerRestartCount": 1,
+    "peerWorkerRestartCount": 0,
+    "capturedHistoricalBatches": 2,
+    "actualMissingNullSamples": 2,
+    "explicitAbsentTagSamples": 2,
+    "rawNumericTagMatchedStoredValue": true,
+    "storedSourceMetadataAndFirstReceiptPreserved": true,
+    "historicalResponseIdenticalAfterWorkerReplay": true,
+    "queryLimit413WithoutPartialSuccess": true,
+    "peerContinuedDuringQueriesAndTargetRecovery": true,
+    "committedBatchesAfterStop": [
+      94,
+      94
+    ],
+    "cursorMatchesCommittedContiguousRows": true,
+    "archiveIntegrity": "ok",
+    "knownGaps": 0,
+    "ownedDirectChildrenStopped": true,
+    "allKnownOwnedModuleWorkersExited": true,
+    "notRun": [
+      "Windows",
+      "Actual equipment",
+      "Customer data",
+      "Long-duration/high-load performance"
+    ]
+  },
+  "full_verification_status": "COMPLETE",
+  "independent_review_status": "COMPLETE",
+  "preservation_status": "COMPLETE",
+  "scope_preserved": {
+    "query_limits_and_result_contract_changed": false,
+    "ui_design_changed": false,
+    "api_collector_archive_writer_schema_cursor_worker_ipc_emulator_changed": false,
+    "canonical_yaml_generated_native_contract_changed": false,
+    "previous_access_denied_preservation_retried_or_bypassed": false,
+    "previous_5075ccd_restoration_or_equivalence_claimed": false
+  },
+  "not_run": [
+    "Actual equipment/customer data",
+    "Windows/Windows services/PowerShell7 delivery case",
+    "Dotnet/WPF/WebView2/UI",
+    "Long-duration/high-load/concurrent-many-query performance"
+  ],
+  "rulings": [
+    {
+      "decision": "Restrict OverflowError handling to the two raw query validation boundaries.",
+      "cost": "Other existing timestamp subsystems remain outside this fix."
+    }
+  ],
+  "new_dependencies_installed": false,
+  "raw_logs_databases_credentials_or_identity_committed": false,
+  "git_commit_push_remote_sha": "Recorded separately after actual operation; not inferred from precommit evidence.",
+  "test_authoring_note": "First IPC test authoring had a condition-expression SyntaxError during collection before services started; corrected before the recorded live integration PASS.",
+  "source_file_fingerprints": {
+    "src/aegis/raw_history.py": {
+      "sha256": "72f303a675a85bf925ced43b32131af668583c8fc0919d2630cfa0e1dde46668",
+      "bytes": 10864
+    },
+    "tests/test_raw_history_utc.py": {
+      "sha256": "467e8a1dc5520d606a4452f9368cb56bfb85e759c8e28fd3527cbc018203b038",
+      "bytes": 6044
+    },
+    "tests/test_raw_history_ipc.py": {
+      "sha256": "ef12ad71c42e997277c9b49fd7888a7dfc4d4e8531d507150cd6dcfb4ab81349",
+      "bytes": 11803
+    }
+  },
+  "live_ipc_full_suite": {
+    "scope": "Synthetic Linux/local HTTP with real emulator/API/module processes, stdin/stdout IPC and SQLite WAL.",
+    "moduleCount": 2,
+    "signalsPerModule": 256,
+    "sampleIntervalMs": 200,
+    "initialDistinctModuleWorkers": 2,
+    "ownedWorkerGenerationsExited": 3,
+    "targetWorkerRestartCount": 1,
+    "peerWorkerRestartCount": 0,
+    "capturedHistoricalBatches": 2,
+    "actualMissingNullSamples": 2,
+    "explicitAbsentTagSamples": 2,
+    "rawNumericTagMatchedStoredValue": true,
+    "storedSourceMetadataAndFirstReceiptPreserved": true,
+    "historicalResponseIdenticalAfterWorkerReplay": true,
+    "queryLimit413WithoutPartialSuccess": true,
+    "peerContinuedDuringQueriesAndTargetRecovery": true,
+    "committedBatchesAfterStop": [
+      93,
+      94
+    ],
+    "cursorMatchesCommittedContiguousRows": true,
+    "archiveIntegrity": "ok",
+    "knownGaps": 0,
+    "ownedDirectChildrenStopped": true,
+    "allKnownOwnedModuleWorkersExited": true,
+    "notRun": [
+      "Windows",
+      "Actual equipment",
+      "Customer data",
+      "Long-duration/high-load performance"
+    ]
+  },
+  "independent_review": {
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "independent_read_only_timestamp_probes_passed": 14,
+    "reviewer_reran_full_suite": false,
+    "reviewer_inspected_targeted_integration_supplementary_records": true,
+    "controller_checked_actual_full_result_after_review": true,
+    "other_subsystems_windows_hardware_sustained_load_not_judged": true
+  },
+  "preservation": {
+    "protected_baseline_files": 385,
+    "baseline_exceptions": [
+      "README.md",
+      "docs/RAW_HISTORY_20261109.md",
+      "src/aegis/raw_history.py"
+    ],
+    "all_protected_files_byte_identical": true,
+    "filename_inventory_uses_nul_delimiters": true,
+    "previous_seven_checkouts_unchanged_and_clean": true,
+    "all_previous_ten_remote_heads_unchanged": true,
+    "new_target_absent": true,
+    "legacy_six_generated_evidence_restored_byte_for_byte": true
+  },
+  "author_check": {
+    "author_committer_match": true,
+    "origin_owner_name_match": true,
+    "owner_github_noreply": true,
+    "authenticated_origin_owner_match": true,
+    "actual_identity_omitted": true,
+    "source_commit": "5b189ef239ca5107698c98275d5c2bb7659ed988"
+  },
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux",
+    "new_dependencies_installed": false
+  },
+  "skip_reason": "Existing Windows PowerShell7 delivery-script test.",
+  "warnings": [
+    "Existing Starlette TestClient/httpx deprecation warning (1)."
+  ],
+  "ipc_product_changes_required": false,
+  "all_tested_python_files_byte_identical_after_full": 47
+}

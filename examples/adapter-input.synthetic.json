@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "synthetic-adapter-fixture-1",
+  "adapterId": "synthetic-01",
+  "adapterVersion": "1.0",
+  "streamId": "11111111-1111-4111-8111-111111111111",
+  "pages": [
+    {
+      "afterToken": null,
+      "response": {
+        "schemaVersion": "adapter-input-1",
+        "adapterId": "synthetic-01",
+        "adapterVersion": "1.0",
+        "streamId": "11111111-1111-4111-8111-111111111111",
+        "declaredOrigin": "SYNTHETIC",
+        "originEvidence": "DECLARED_ONLY",
+        "acquisitionMethod": "SOURCE_BUFFER_REPLAY",
+        "sourceAccessMode": "READ_ONLY",
+        "afterToken": null,
+        "nextToken": "synthetic-token-a",
+        "endOfStream": false,
+        "records": [
+          {
+            "recordId": "delivery-sample-a",
+            "deviceId": "SYNTHETIC-01",
+            "sourceMetadata": {
+              "observedAtUtc": null,
+              "timestampStatus": "NOT_PROVIDED",
+              "sequence": null,
+              "sequenceStatus": "NOT_PROVIDED",
+              "runId": null,
+              "runIdStatus": "NOT_PROVIDED"
+            },
+            "signals": [
+              {
+                "signalKey": "synthetic.temperature",
+                "value": -2.5,
+                "unit": "degC",
+                "quality": "GOOD"
+              },
+              {
+                "signalKey": "synthetic.optional",
+                "value": null,
+                "unit": "count",
+                "quality": "MISSING"
+              }
+            ]
+          }
+        ]
+      },
+      "delayMs": 0
+    },
+    {
+      "afterToken": "synthetic-token-a",
+      "response": {
+        "schemaVersion": "adapter-input-1",
+        "adapterId": "synthetic-01",
+        "adapterVersion": "1.0",
+        "streamId": "11111111-1111-4111-8111-111111111111",
+        "declaredOrigin": "SYNTHETIC",
+        "originEvidence": "DECLARED_ONLY",
+        "acquisitionMethod": "SOURCE_BUFFER_REPLAY",
+        "sourceAccessMode": "READ_ONLY",
+        "afterToken": "synthetic-token-a",
+        "nextToken": "synthetic-token-b",
+        "endOfStream": true,
+        "records": [
+          {
+            "recordId": "delivery-sample-b",
+            "deviceId": "SYNTHETIC-01",
+            "sourceMetadata": {
+              "observedAtUtc": "2026-11-09T13:00:00+01:00",
+              "timestampStatus": "PROVIDED",
+              "sequence": 1152921504606846976,
+              "sequenceStatus": "PROVIDED",
+              "runId": "22222222-2222-4222-8222-222222222222",
+              "runIdStatus": "PROVIDED"
+            },
+            "signals": [
+              {
+                "signalKey": "synthetic.temperature",
+                "value": 1152921504606846976,
+                "unit": "degC",
+                "quality": "GOOD"
+              }
+            ]
+          }
+        ]
+      },
+      "delayMs": 0
+    }
+  ]
+}

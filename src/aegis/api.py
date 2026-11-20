@@ -1,6 +1,7 @@
 """Local read-only API: explicit fixed fixtures or independent emulator sources."""
 
 import hmac
+import json
 import os
 import re
 from contextlib import asynccontextmanager
@@ -28,6 +29,7 @@ from aegis.contracts import (
 )
 from aegis.observability import make_event, write_event
 from aegis.collector import Collector, load_sources
+from aegis.raw_history import RawQueryError, read_raw_archive
 
 
 DEVICE_ID = INITIAL_DEVICE
@@ -75,10 +77,40 @@ def _utc(value: str) -> datetime:
         raise HTTPException(422) from None
 
 
-def create_app(token: str, log_path: Path | None = None, *, collector: Collector | None = None) -> FastAPI:
+def _source_context(collector: Collector | None) -> dict:
+    """Describe current configuration, never provenance inferred for archived rows."""
+    if collector is None:
+        sources = [{"deviceId": DEVICE_ID, "declaredOrigin": "SYNTHETIC",
+                    "producerKind": "FIXTURE", "acquisitionMethod": "FIXED_FIXTURE",
+                    "sourceAccessMode": "NOT_APPLICABLE", "originEvidence": "BUILT_IN_FIXTURE",
+                    "sourceTimestampPolicy": "FIXTURE_DEFINED", "sourceSequencePolicy": "NOT_EXPOSED"}]
+    else:
+        methods = {"snapshot": "SNAPSHOT_POLL", "replay": "SOURCE_BUFFER_REPLAY"}
+        # Whitelist metadata: source configuration also contains private URLs and token names.
+        sources = [{"deviceId": source.deviceId, "declaredOrigin": "SYNTHETIC",
+                    "producerKind": "SIMULATOR", "acquisitionMethod": methods[source.transport],
+                    "sourceAccessMode": "READ_ONLY", "originEvidence": "CONTRACT_DECLARED",
+                    "sourceTimestampPolicy": "PRODUCER_REQUIRED", "sourceSequencePolicy": "PRODUCER_REQUIRED"}
+                   for source in collector.sources]
+    return {"schemaVersion": "source-context-1", "scope": "CURRENT_CONFIGURATION",
+            "archivedRowProvenance": "NOT_INFERRED", "realEquipmentSupported": False,
+            "hardRealtimeGuaranteed": False, "sources": sources}
+
+
+def create_app(token: str, log_path: Path | None = None, *, collector: Collector | None = None,
+               raw_archive_paths: dict[str, Path] | None = None, stored_sources: list[dict] | None = None) -> FastAPI:
     if not isinstance(token, str) or len(token.strip()) < 32 or "\r" in token or "\n" in token:
         raise ValueError("AEGIS_API_TOKEN must contain at least 32 characters.")
     expected_token = token.encode("utf-8")
+    replay_devices = {source.deviceId for source in collector.sources if source.transport == "replay"} if collector else set()
+    if raw_archive_paths is not None and (not isinstance(raw_archive_paths, dict)
+                                         or not set(raw_archive_paths) <= replay_devices):
+        raise ValueError("Raw archive paths must belong to configured replay devices.")
+    raw_paths = {device: Path(path).resolve() for device, path in (raw_archive_paths or {}).items()}
+    from aegis.stored_records import MAX_OUTPUT_BYTES, _sources, query_stored_records, QueryError
+    if stored_sources is not None:
+        _sources(stored_sources)  # Trusted startup configuration only; never accept browser paths.
+        stored_sources = [dict(source) for source in stored_sources]
     @asynccontextmanager
     async def lifespan(_app):
         if collector is not None:
@@ -153,18 +185,52 @@ def create_app(token: str, log_path: Path | None = None, *, collector: Collector
         return _error(request, exc.status_code, code, message)
 
     @app.get("/v1/health")
-    async def health():
+    async def health(includeSourceContext: bool = Query(False, description="Include current source declarations; not archived-row provenance.")):
         degraded = app.state.logging_degraded or (collector is not None and (
             collector.logging_degraded or any(row["state"] != "CONNECTED" for row in collector.connections())))
-        return {"status": "DEGRADED" if degraded else "OK", "schemaVersion": VERSION,
-                "stage": "EMULATOR_LINK" if collector else "D0a", "mock": True,
-                "mode": "EMULATORS" if collector else "FIXTURE"}
+        result = {"status": "DEGRADED" if degraded else "OK", "schemaVersion": VERSION,
+                  "stage": "EMULATOR_LINK" if collector else "D0a", "mock": True,
+                  "mode": "EMULATORS" if collector else "FIXTURE"}
+        if includeSourceContext:
+            result["sourceContext"] = _source_context(collector)
+        return result
 
     @app.get("/v1/devices")
     async def devices():
         if collector is not None:
             return [{"deviceId": source.deviceId, "readOnly": True, "source": "SIMULATOR"} for source in collector.sources]
         return [{"deviceId": DEVICE_ID, "readOnly": True, "source": "SIMULATOR"}]
+
+    @app.get("/v1/stored-records")
+    def stored_records(request: Request, receivedFromUtc: str = Query(max_length=64),
+                       receivedToUtc: str = Query(max_length=64), signals: str | None = Query(default=None, max_length=2063),
+                       deviceId: str | None = Query(default=None, max_length=128),
+                       storeId: str | None = Query(default=None, max_length=64),
+                       runId: str | None = Query(default=None, max_length=36)):
+        if stored_sources is None:
+            raise HTTPException(404)
+        if set(request.query_params) - {"receivedFromUtc", "receivedToUtc", "signals", "deviceId", "storeId", "runId"} or any(
+                len(request.query_params.getlist(key)) != 1 for key in request.query_params):
+            raise HTTPException(422)
+        try:
+            result = query_stored_records(stored_sources, receivedFromUtc, receivedToUtc, signals=signals,
+                                          device_id=deviceId, store_id=storeId, run_id=runId)
+            # Browser numbers cannot preserve every stored integer; keep an exact display representation.
+            for row in result['records']:
+                identity = row['identity']
+                # Keep adjacent int64 sequences distinct in browsers with IEEE-754 numbers.
+                identity['nativeKeyText'] = json.dumps(identity['nativeKey'], ensure_ascii=False, separators=(',', ':'))
+                for signal in row['signals']:
+                    reading = signal['reading']
+                    if reading is not None:
+                        reading['valueText'] = None if reading['value'] is None else str(reading['value'])
+            response = JSONResponse(result)
+            if len(response.body) > MAX_OUTPUT_BYTES:
+                raise QueryError('QUERY_LIMIT')
+            return response
+        except QueryError as exc:
+            return _error(request, 422 if exc.code == "INVALID_QUERY" else 413 if exc.code == "QUERY_LIMIT" else 503,
+                          exc.code, "Stored history could not be read; narrow the window or check local configuration.")
 
     @app.get("/v1/connections")
     async def connections():
@@ -291,6 +357,27 @@ def create_app(token: str, log_path: Path | None = None, *, collector: Collector
     async def ingestion():
         return collector.ingestion() if collector is not None else []
 
+    def _raw_query(request, device, run, start, end, signals, limit):
+        _known_device(device)
+        if device not in raw_paths:
+            return _error(request, 501, "RAW_ARCHIVE_NOT_SUPPORTED", "This device has no configured raw archive reader.")
+        try:
+            return read_raw_archive(raw_paths[device], device, run, start, end, signals=signals, max_batches=limit)
+        except RawQueryError as error:
+            return _error(request, error.status, error.code, error.message)
+
+    @app.get("/v1/devices/{id}/raw-tags")
+    def raw_tags(request: Request, id: str, runId: str = Query(min_length=36, max_length=36),
+                 fromUtc: str = Query(max_length=64), toUtc: str = Query(max_length=64),
+                 maxBatches: int = Query(default=64, ge=1, le=64)):
+        return _raw_query(request, id, runId, fromUtc, toUtc, None, maxBatches)
+
+    @app.get("/v1/devices/{id}/raw-history")
+    def raw_history(request: Request, id: str, runId: str = Query(min_length=36, max_length=36),
+                    fromUtc: str = Query(max_length=64), toUtc: str = Query(max_length=64),
+                    signals: str = Query(max_length=2063), maxBatches: int = Query(default=64, ge=1, le=64)):
+        return _raw_query(request, id, runId, fromUtc, toUtc, signals, maxBatches)
+
     @app.get("/v1/devices/{id}/signal-review")
     async def signal_review(id: str):
         _known_device(id)
@@ -328,17 +415,25 @@ def main() -> None:
         log_path = Path("runtime/local_api.jsonl")
         sources = load_sources(args.emulators) if args.emulators else []
         archive = None
+        raw_paths = {}
         if args.isolate:
             from aegis.processes import ProcessCollector
             collector = ProcessCollector(sources, args.archive_directory or Path("runtime/modules"), evaluate=args.evaluate, log_path=log_path)
+            raw_paths = {source.deviceId: collector.archive_paths[source.deviceId]
+                         for source in sources if source.transport == "replay"}
         elif any(source.transport == "replay" for source in sources):
             from aegis.archive import RawArchive
             archive = RawArchive(args.archive or Path("runtime/raw.sqlite3"))
+            raw_paths = {source.deviceId: archive.path for source in sources if source.transport == "replay"}
         elif args.archive:
             parser.error("--archive requires at least one replay source.")
         if not args.isolate:
             collector = Collector(sources, log_path=log_path, evaluate=args.evaluate, archive=archive) if sources else None
-        app = create_app(os.environ.get("AEGIS_API_TOKEN", ""), log_path, collector=collector)
+        encoded_sources = os.environ.get("AEGIS_STORED_SOURCES")
+        if encoded_sources is not None and len(encoded_sources.encode("utf-8")) > 65536:
+            raise ValueError("Stored source configuration is too large.")
+        app = create_app(os.environ.get("AEGIS_API_TOKEN", ""), log_path, collector=collector, raw_archive_paths=raw_paths,
+                         stored_sources=json.loads(encoded_sources) if encoded_sources is not None else None)
     except (ValueError, OSError):
         raise SystemExit("Check local API/emulator token environment variables and emulator configuration.") from None
     # Windows IOCP accept can remain failed after WinError 64; bounded local TCP needs no subprocess loop support.

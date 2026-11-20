@@ -1,0 +1,45 @@
+name: Aegis Linux archive checks
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-archive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install recorded Python dependencies
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python -m pip check
+      - name: Require the production POSIX primitives
+        run: python -c "import os; assert os.name == 'posix' and all(hasattr(os, k) for k in ('O_DIRECTORY','O_NOFOLLOW','statvfs','mkfifo'))"
+      - name: Exercise archive, backup, diagnostics and stored reads on Linux
+        run: >-
+          python -m pytest -q --junitxml=TestResults/posix-archive.xml
+          tests/test_archive.py
+          tests/test_archive_backup.py
+          tests/test_archive_backup_cli.py
+          tests/test_archive_ingest.py
+          tests/test_input_archive.py
+          tests/test_input_archive_query.py
+          tests/test_storage_diagnostics.py
+          tests/test_storage_diagnostics_cli.py
+          tests/test_storage_policy_diagnostics.py
+          tests/test_stored_records.py
+          tests/test_stored_records_cli.py
+      - name: Require every moved POSIX scenario to execute
+        run: python scripts/check_posix_archive_lane.py TestResults/posix-archive.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-archive-check-evidence
+          path: TestResults/posix-archive.xml
+          if-no-files-found: warn

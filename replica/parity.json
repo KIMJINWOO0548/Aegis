@@ -1,0 +1,34 @@
+{
+  "feature_score": 100.0,
+  "counted": 2,
+  "must_have_done": 2,
+  "must_have_total": 2,
+  "by_area": [
+    {
+      "area": "time series",
+      "score": 100.0,
+      "features": 2
+    }
+  ],
+  "missing": [],
+  "skipped": [
+    {
+      "feature": "Arbitrary archived-data queries and cross-dashboard range sharing",
+      "area": "time series",
+      "priority": "could",
+      "clone": "skip",
+      "notes": "Outside memory-only prototype scope"
+    }
+  ],
+  "extras": [
+    {
+      "feature": "Preserve null discontinuities and original history",
+      "area": "time series",
+      "priority": "must",
+      "clone": "yes",
+      "notes": "Three independent RED to GREEN tests; existing current-quality rules unchanged"
+    }
+  ],
+  "problems": [],
+  "overall": 100.0
+}
