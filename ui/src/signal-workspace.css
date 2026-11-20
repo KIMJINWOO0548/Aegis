@@ -1,0 +1,101 @@
+.telemetry-workspace .topbar {
+  min-height: 58px;
+  height: auto;
+  padding: 9px 21px;
+  gap: 12px;
+}
+.telemetry-workspace .topbar h1 { font-size: 20px; }
+.telemetry-workspace .topbar-tools { gap: 9px; margin-left: 0; }
+.telemetry-workspace .topbar-tools .search input { height: 36px; }
+.telemetry-workspace .page { padding: 13px 18px 18px; }
+.telemetry-workspace .toolbar { margin-bottom: 12px; }
+.telemetry-workspace .alert-line { margin-bottom: 12px; padding: 8px 12px; }
+.telemetry-workspace .source-label { font-weight: 600; color: #334155; }
+
+.telemetry-layout {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+.telemetry-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.telemetry-layout .panel-heading { padding: 13px 14px 10px !important; }
+.telemetry-layout .panel-body { padding: 0 14px 13px !important; }
+.module-choices { display: grid; gap: 4px; margin: 0; padding: 0 7px 7px; list-style: none; max-height: min(55vh, 590px); overflow: auto; }
+.module-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 8px;
+  text-align: left;
+  font-size: 13px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+.module-choice strong, .module-choice small { display: block; overflow-wrap: anywhere; }
+.module-choice small { color: #526176; margin-top: 2px; }
+.module-choice[aria-pressed="true"] { background: #edf3ff; color: #245ada; border-color: #c4d5fb; }
+.module-choice:hover, .tag-choice:hover { background: #f4f6fb; }
+.module-choice:focus-visible, .tag-choice:focus-visible, .tag-table-scroll:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.module-history button { width: 100%; justify-content: space-between; }
+.tag-scope { margin-top: 3px; font-size: 11px; font-weight: 400; color: #526176; overflow-wrap: anywhere; }
+.tag-table { min-width: 345px; }
+.tag-table th, .tag-table td { padding: 7px 8px; }
+.tag-table th:first-child, .tag-table td:first-child { padding-left: 10px; }
+.tag-table tbody th { background: transparent; border-bottom: 1px solid #edf1f7; }
+.tag-table tr[data-selected="true"] { background: #edf3ff; }
+.tag-table tr[data-selected="true"] th { box-shadow: inset 3px 0 var(--primary); }
+.tag-choice { min-height: 36px; width: 100%; text-align: left; padding: 2px 4px; border-radius: 4px; }
+.tag-choice span { font-size: 13px; font-weight: 600; }
+.tag-table th:nth-child(2), .tag-table .tag-value { text-align: right; }
+.tag-value small { display: block; font-weight: 400; color: #526176; }
+.tag-table .tag-time { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 11px; color: #526176; }
+.tag-table .tag-state { background: #f4f6fb; color: #334155; }
+.tag-table .tag-current { background: #edf3ff; color: #244db7; }
+.telemetry-layout .signal-context { font-size: 13px; }
+
+@media (max-width: 1300px) { .telemetry-detail { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 840px) {
+  .telemetry-layout { grid-template-columns: minmax(0, 1fr); }
+  .module-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 176px; }
+  .telemetry-workspace .topbar { flex-direction: row; flex-wrap: wrap; align-items: center; padding: 8px 12px; }
+  .telemetry-workspace .topbar-tools { width: auto; flex: 1; justify-content: flex-end; }
+  .telemetry-workspace .page { padding: 10px 12px; }
+}
+@media (max-width: 460px) {
+  .telemetry-workspace .topbar-tools { flex-basis: 100%; }
+  .module-choices { grid-template-columns: minmax(0, 1fr); }
+}
+.archive-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem 1rem;
+  margin-bottom: .875rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: .875rem;
+}
+
+.dashboard-grid.archive-focus { grid-template-columns: minmax(0, 1fr); }
+.archive-focus .section-description { margin-bottom: .5rem; }
+.archive-focus article.evidence > div { width: 100%; min-width: 0; }
+.archive-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .5rem .75rem;
+  margin: .625rem 0;
+  align-items: end;
+}
+.archive-form label { min-width: 0; font-size: .8125rem; }
+.archive-form input { margin-top: .25rem; }
+@media (max-width: 740px) {
+  .archive-form { grid-template-columns: minmax(0, 1fr); }
+}

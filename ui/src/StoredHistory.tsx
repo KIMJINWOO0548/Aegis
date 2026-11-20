@@ -2,6 +2,7 @@ import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Card,CardHeader,CardTitle,CardContent} from '@/components/ui/card';
+import {signalLabels} from './data';
 
 type RecordRow={identity:{storeId:string;storeKind:string;nativeKey:unknown[];nativeKeyText?:string};deviceId:string;
  firstReceivedAtUtc:string;sourceMetadata:{observedAtUtc:string|null;timestampStatus:string;runId?:string|null};
@@ -18,15 +19,19 @@ const issues:Record<string,string>={
  DUPLICATE_SOURCE:'같은 저장소가 여러 번 설정됐습니다.',
 };
 
-export default function StoredHistory({deviceId}:{deviceId?:string}){
+export default function StoredHistory({deviceId,initialSignal,returnToSignal}:{
+ deviceId?:string;initialSignal?:string;returnToSignal?:()=>void;
+}){
  const [from,setFrom]=useState(new Date(Date.now()-3600000).toISOString());
  const [to,setTo]=useState(new Date().toISOString());
- const [signals,setSignals]=useState('');const [rows,setRows]=useState<RecordRow[]|null>(null);
+ const [signals,setSignals]=useState(initialSignal??'');const [rows,setRows]=useState<RecordRow[]|null>(null);
  const [status,setStatus]=useState('로컬 보관 소스가 설정된 경우 조회할 수 있습니다.');const [busy,setBusy]=useState(false);
  const [run,setRun]=useState<RunSelection|null>(null),[evidence,setEvidence]=useState<RunEvidence|null>(null);
  const request=useRef<AbortController|null>(null);
+ const title=useRef<HTMLHeadingElement|null>(null);
  const resultHeading=useRef<HTMLHeadingElement|null>(null);
  useEffect(()=>()=>{request.current?.abort();request.current=null;},[]);
+ useEffect(()=>{if(initialSignal)title.current?.focus();},[initialSignal]);
  useEffect(()=>{if(evidence)resultHeading.current?.focus();},[evidence]);
  function resetSelection(){setRun(null);setEvidence(null);setRows(null);setStatus('조건을 적용하려면 보관 이력을 조회하세요.');}
  async function query(selection:RunSelection|null){
@@ -61,16 +66,21 @@ export default function StoredHistory({deviceId}:{deviceId?:string}){
   finally{clearTimeout(timeout);if(request.current===controller){request.current=null;setBusy(false);}}
  }
  function submit(event:FormEvent){event.preventDefault();void query(run);}
- return <Card className="panel" role="region" aria-labelledby="stored-history-title"><CardHeader className="panel-heading"><CardTitle><h2 id="stored-history-title">로컬 보관 수신 이력</h2></CardTitle></CardHeader><CardContent className="panel-body">
+ return <Card className="panel" role="region" aria-labelledby="stored-history-title"><CardHeader className="panel-heading"><CardTitle><h2 id="stored-history-title" tabIndex={-1} ref={title}>로컬 보관 수신 이력</h2></CardTitle></CardHeader><CardContent className="panel-body">
+  {initialSignal&&<div className="archive-context">
+   <p>실시간에서 선택한 태그 <strong>{signalLabels[initialSignal]??initialSignal}</strong></p>
+   <Button type="button" size="sm" variant="outline" onClick={returnToSignal}>선택 태그로 돌아가기</Button>
+  </div>}
   <p className="section-description">원본 소스별 읽기 전용 이력입니다. 수신 시각 기준 최대 24시간 / 64개 기록. 현재 신호로 취급하지 않으며 원시 계약으로 변환하지 않습니다.</p>
   <p>장비 {run?.deviceId??deviceId??'전체'}</p>
-  <form onSubmit={submit} className="info-list" aria-busy={busy}>
+  <form onSubmit={submit} className={initialSignal?'archive-form':'info-list'} aria-busy={busy}>
    <label>수신 시작 (UTC)<Input value={from} onChange={e=>{setFrom(e.target.value);resetSelection();}} required disabled={busy}/></label>
    <label>수신 종료 (UTC, 미포함)<Input value={to} onChange={e=>{setTo(e.target.value);resetSelection();}} required disabled={busy}/></label>
    <label>신호 키 (쉼표 구분, 비우면 기록된 신호)<Input value={signals} onChange={e=>{setSignals(e.target.value);resetSelection();}} disabled={busy}/></label>
    <Button type="submit" disabled={busy}>{busy?'조회 중…':'보관 이력 조회'}</Button>
    {run&&<Button type="button" variant="outline" disabled={busy} onClick={()=>{void query(null);}}>실행 선택 해제</Button>}
   </form><p role="status" className="chart-note">{status}</p>
+  {rows&&<p className="chart-note">조회 범위: {run?.deviceId??deviceId??'모든 장비'} · {signals||'기록된 모든 신호'}<br/>수신 시각 {from} – {to} (종료 미포함)</p>}
   {evidence&&<section className="evidence">
    <h3 tabIndex={-1} ref={resultHeading}>실행 전체에 기록된 재생 한도 초과</h3>
    <p>{evidence.storeId} · {evidence.runId}</p>
@@ -87,7 +97,9 @@ export default function StoredHistory({deviceId}:{deviceId?:string}){
    <p>최초 수신 {row.firstReceivedAtUtc}<br/>원본 관측 {row.sourceMetadata.observedAtUtc??'미제공'} · {row.sourceMetadata.timestampStatus}<br/>원본 식별자 {row.identity.nativeKeyText??'확인 불가'}</p>
    {!run&&row.identity.storeKind==='RAW_V1'&&row.sourceMetadata.runId&&
     <Button type="button" variant="outline" onClick={()=>{void query({storeId:row.identity.storeId,deviceId:row.deviceId,runId:row.sourceMetadata.runId!});}}>이 실행의 공백 보기</Button>}
-   <table className="signal-table"><thead><tr><th>신호</th><th>보관값</th><th>단위</th><th>원본 품질 / 존재</th></tr></thead><tbody>{row.signals.map(signal=><tr key={signal.signalKey}><td>{signal.signalKey}</td><td>{!signal.present?'미포함':signal.reading?.valueText??'값 없음'}</td><td>{signal.reading?.unit??'—'}</td><td>{signal.present?signal.reading?.quality:'ABSENT'}</td></tr>)}</tbody></table>
+   <div className="table-scroll" role="region" aria-label="보관된 신호" tabIndex={0}>
+    <table className="signal-table"><thead><tr><th scope="col">신호</th><th scope="col">보관값</th><th scope="col">단위</th><th scope="col">원본 품질 / 존재</th></tr></thead><tbody>{row.signals.map(signal=><tr key={signal.signalKey}><td>{signal.signalKey}</td><td>{!signal.present?'미포함':signal.reading?.valueText??'값 없음'}</td><td>{signal.reading?.unit??'—'}</td><td>{signal.present?signal.reading?.quality:'ABSENT'}</td></tr>)}</tbody></table>
+   </div>
   </div></article>)}
  </CardContent></Card>;
 }
