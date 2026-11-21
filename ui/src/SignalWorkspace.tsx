@@ -1,4 +1,4 @@
-import {useState, type KeyboardEvent, type ReactNode} from 'react';
+import {useState, type KeyboardEvent, type ReactNode, type RefObject} from 'react';
 import {Box, Check, ChevronRight} from 'lucide-react';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
@@ -19,9 +19,9 @@ function moveFocus(event: KeyboardEvent<HTMLElement>) {
   buttons[positions[event.key as keyof typeof positions]].focus();
 }
 
-export default function SignalWorkspace({devices,device,snapshot,now,available,signal,selectDevice,selectSignal,openHistory,chart}:{
+export default function SignalWorkspace({devices,device,snapshot,now,available,signal,selectDevice,selectSignal,openHistory,historyButtonRef,chart}:{
   devices:Device[];device:Device|undefined;snapshot:Snapshot|null;now:number;available:boolean;signal:string;
-  selectDevice:(id:string)=>void;selectSignal:(key:string)=>void;openHistory:()=>void;chart:ReactNode;
+  selectDevice:(id:string)=>void;selectSignal:(key:string)=>void;openHistory:()=>void;historyButtonRef:RefObject<HTMLButtonElement|null>;chart:ReactNode;
 }) {
   const [filter,setFilter] = useState('all');
   const tags = Object.entries(signalLabels).map(([key,name])=>{
@@ -46,12 +46,12 @@ export default function SignalWorkspace({devices,device,snapshot,now,available,s
             aria-label={`${row.moduleId ?? row.deviceId} · ${row.deviceId} · ${label}`}
             aria-controls="tag-observations signal-chart-panel" className="module-choice" onClick={()=>selectDevice(row.deviceId)}>
             <Box size={17} aria-hidden="true"/>
-            <span><strong>{row.moduleId??row.deviceId}</strong><small>{row.equipmentId??row.deviceId}</small><small>{label}</small></span>
+            <span><strong>{row.moduleId??row.deviceId}</strong><small>{row.equipmentId??row.deviceId}</small><small>{label} · {row.deviceId}</small></span>
             {selected&&<Check size={15} aria-hidden="true"/>}
           </button></li>;
         })}
       </ul>:<CardContent className="panel-body"><p className="quiet-state">{snapshot?'조건에 맞는 모듈이 없습니다.':'모듈 수신 대기'}</p></CardContent>}
-      {device&&<CardContent className="panel-body module-history"><Button size="sm" variant="outline" onClick={openHistory}>
+      {device&&<CardContent className="panel-body module-history"><Button size="sm" variant="outline" ref={historyButtonRef} onClick={openHistory}>
         보관 이력 <ChevronRight size={15} aria-hidden="true"/>
       </Button></CardContent>}
     </Card>
@@ -74,7 +74,7 @@ export default function SignalWorkspace({devices,device,snapshot,now,available,s
                   <span>{name}</span><small>{key}</small>
                 </button></th>
                 <td className="tag-value">{formatValue(observation?.value)}{observation?.unit&&<small>{observation.unit}</small>}</td>
-                <td><Badge variant="secondary" className={state==='CURRENT'?'tag-current':'tag-state'}>{tagLabels[state]}</Badge></td>
+                <td><Badge variant="secondary" className={state==='CURRENT'?'tag-current':'tag-state'}>{tagLabels[state]}</Badge><small className="quality-label">{observation?.quality??'ABSENT'}</small></td>
                 <td className="tag-time">{observation?<time title={observation.observedAtUtc} dateTime={observation.observedAtUtc}>{time(observation.observedAtUtc)}</time>:'—'}</td>
               </tr>)}
               {(!device||!tags.length)&&<tr><td colSpan={4} className="empty-table">{device?'이 상태에 맞는 태그가 없습니다.':'모듈을 선택하면 태그가 표시됩니다.'}</td></tr>}

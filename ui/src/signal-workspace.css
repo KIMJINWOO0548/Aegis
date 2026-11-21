@@ -99,3 +99,65 @@
 @media (max-width: 740px) {
   .archive-form { grid-template-columns: minmax(0, 1fr); }
 }
+.worksheet-shell { min-height: 100vh; background: #f4f6fb; }
+.worksheet-brand { display:flex; align-items:center; gap:12px; color:#17233b; }
+.worksheet-brand > svg { color:#2563eb; }
+.worksheet-brand > strong { letter-spacing:2px; font-size:17px; }
+.worksheet-brand h1 { border-left:1px solid #d8e1ed; padding-left:16px; font-size:18px!important; }
+.worksheet-toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:14px; }
+.worksheet-toolbar > div { display:flex; align-items:center; gap:12px; }
+.worksheet-toolbar label { font-size:13px; white-space:nowrap; }
+.worksheet-toolbar input { width:280px; background:white; }
+.worksheet-toolbar p { font-size:12px; text-align:right; line-height:1.7; }
+.worksheet-toolbar p span { color:#526176; }
+.worksheet-shell .telemetry-layout { grid-template-columns:minmax(0,1fr); gap:16px; }
+.worksheet-shell .module-picker { display:grid; grid-template-columns:130px minmax(0,1fr) auto; align-items:center; }
+.worksheet-shell .module-choices { display:flex; padding:10px; margin:0; max-height:160px; gap:8px; }
+.worksheet-shell .module-choices li { flex:0 0 250px; }
+.worksheet-shell .module-choice { padding:10px; align-items:center; }
+.worksheet-shell .module-history { padding:10px 14px!important; }
+.worksheet-shell .telemetry-detail { grid-template-columns:minmax(0,1.03fr) minmax(0,1fr); gap:16px; }
+.worksheet-shell .tag-table { min-width:370px; }
+.worksheet-shell .tag-table td,.worksheet-shell .tag-table tbody th { padding-top:11px; padding-bottom:11px; }
+.worksheet-shell #signal-chart-panel { min-width:0; position:sticky; top:12px; }
+.quality-label { display:block; margin-top:4px; color:#526176; font-size:10px; }
+.inspector-reading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; }
+.inspector-reading p { font-size:14px; font-weight:600; }
+.inspector-reading strong { display:block; font-size:32px; font-variant-numeric:tabular-nums; }
+.inspector-reading strong small { font-size:14px; color:#526176; font-weight:400; }
+.inspector-reading > span { font-size:12px; text-align:right; line-height:1.8; color:#526176; }
+.worksheet-shell .chart { height:265px; }
+.worksheet-shell .archive-form { grid-template-columns:minmax(0,1fr); }
+.worksheet-shell .evidence > div { width:100%; min-width:0; }
+.worksheet-shell .archive-context { margin-bottom:10px; }
+.worksheet-shell .section-description { margin-bottom:10px; }
+.worksheet-shell .signal-table { overflow-wrap:anywhere; }
+@media(max-width:900px) {
+ .worksheet-shell .telemetry-detail { grid-template-columns:minmax(0,1fr); }
+ .worksheet-shell #signal-chart-panel { position:static; }
+ .worksheet-shell .module-picker { grid-template-columns:minmax(0,1fr) auto; }
+ .worksheet-shell .module-choices { grid-column:1/-1; grid-row:2; }
+ .worksheet-shell .module-choices li { flex-basis:240px; }
+}
+@media(max-width:540px) {
+ .worksheet-brand { gap:7px; }
+ .worksheet-brand h1 { font-size:16px!important; padding-left:8px; }
+ .worksheet-toolbar { align-items:stretch; flex-direction:column; gap:7px; }
+ .worksheet-toolbar > div { flex-wrap:wrap; gap:6px; }
+ .worksheet-toolbar input { width:100%; }
+ .worksheet-toolbar p { text-align:left; }
+ .worksheet-shell .topbar-tools { flex:0; }
+ .worksheet-shell .read-only { display:none; }
+ .worksheet-shell .footer { flex-direction:column; }
+}
+/* Keep the first archive result beside the selected row at desktop heights. */
+@media(min-width:1100px) {
+ .worksheet-shell .archive-form { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .worksheet-shell .archive-form label:nth-child(3) { grid-column:1/-1; }
+ .worksheet-shell .archive-form > button { grid-column:1/-1; }
+}
+.worksheet-shell .chart { height:190px; }
+.worksheet-shell .tag-table td,.worksheet-shell .tag-table tbody th { padding-top:8px; padding-bottom:8px; }
+.worksheet-shell .chart[hidden] { display:none; }
+.worksheet-shell .empty-chart { height:170px; padding:20px; text-align:center; line-height:1.8; background:#f8faff; border:1px dashed #cbd5e1; margin:12px 0; }
+.worksheet-shell .empty-chart small { max-width:40ch; }

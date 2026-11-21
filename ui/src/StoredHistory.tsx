@@ -31,7 +31,7 @@ export default function StoredHistory({deviceId,initialSignal,returnToSignal}:{
  const title=useRef<HTMLHeadingElement|null>(null);
  const resultHeading=useRef<HTMLHeadingElement|null>(null);
  useEffect(()=>()=>{request.current?.abort();request.current=null;},[]);
- useEffect(()=>{if(initialSignal)title.current?.focus();},[initialSignal]);
+ useEffect(()=>{if(returnToSignal)title.current?.focus();},[!!returnToSignal]);
  useEffect(()=>{if(evidence)resultHeading.current?.focus();},[evidence]);
  function resetSelection(){setRun(null);setEvidence(null);setRows(null);setStatus('조건을 적용하려면 보관 이력을 조회하세요.');}
  async function query(selection:RunSelection|null){
@@ -66,14 +66,14 @@ export default function StoredHistory({deviceId,initialSignal,returnToSignal}:{
   finally{clearTimeout(timeout);if(request.current===controller){request.current=null;setBusy(false);}}
  }
  function submit(event:FormEvent){event.preventDefault();void query(run);}
- return <Card className="panel" role="region" aria-labelledby="stored-history-title"><CardHeader className="panel-heading"><CardTitle><h2 id="stored-history-title" tabIndex={-1} ref={title}>로컬 보관 수신 이력</h2></CardTitle></CardHeader><CardContent className="panel-body">
-  {initialSignal&&<div className="archive-context">
-   <p>실시간에서 선택한 태그 <strong>{signalLabels[initialSignal]??initialSignal}</strong></p>
+ return <Card className="panel" role="region" aria-labelledby="stored-history-title" onKeyDown={event=>{if(event.key==='Escape'&&returnToSignal){event.preventDefault();returnToSignal();}}}><CardHeader className="panel-heading"><CardTitle><h2 id="stored-history-title" tabIndex={-1} ref={title}>로컬 보관 수신 이력</h2></CardTitle></CardHeader><CardContent className="panel-body">
+  {returnToSignal&&<div className="archive-context">
+   <p>실시간에서 선택한 태그 <strong>{initialSignal?(signalLabels[initialSignal]??initialSignal):'모듈 전체'}</strong></p>
    <Button type="button" size="sm" variant="outline" onClick={returnToSignal}>선택 태그로 돌아가기</Button>
   </div>}
   <p className="section-description">원본 소스별 읽기 전용 이력입니다. 수신 시각 기준 최대 24시간 / 64개 기록. 현재 신호로 취급하지 않으며 원시 계약으로 변환하지 않습니다.</p>
   <p>장비 {run?.deviceId??deviceId??'전체'}</p>
-  <form onSubmit={submit} className={initialSignal?'archive-form':'info-list'} aria-busy={busy}>
+  <form onSubmit={submit} className="archive-form" aria-busy={busy}>
    <label>수신 시작 (UTC)<Input value={from} onChange={e=>{setFrom(e.target.value);resetSelection();}} required disabled={busy}/></label>
    <label>수신 종료 (UTC, 미포함)<Input value={to} onChange={e=>{setTo(e.target.value);resetSelection();}} required disabled={busy}/></label>
    <label>신호 키 (쉼표 구분, 비우면 기록된 신호)<Input value={signals} onChange={e=>{setSignals(e.target.value);resetSelection();}} disabled={busy}/></label>
