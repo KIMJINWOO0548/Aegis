@@ -3,12 +3,15 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 using Microsoft.Web.WebView2.Core;
 
 namespace Aegis.Desktop;
 
 public partial class DashboardWindow : Window
 {
+    private const uint ImmersiveDarkMode = 20;
+    private const uint BorderColor = 34;
     private const uint CaptionColor = 35;
     private const uint TextColor = 36;
     private const uint SystemColor = uint.MaxValue;
@@ -20,10 +23,15 @@ public partial class DashboardWindow : Window
     private bool _initializing;
     private bool _closed;
     private readonly CompanionHost? _companion;
+    private readonly Dictionary<string, Brush> _instrumentBrushes = [];
 
     public DashboardWindow()
     {
         InitializeComponent();
+        foreach (var key in new[] { "InstrumentSurface", "InstrumentBar", "InstrumentRaised", "InstrumentRule",
+                                    "InstrumentInk", "InstrumentMuted", "InstrumentAccent" })
+            _instrumentBrushes.Add(key, (Brush)Resources[key]);
+        UpdateClientPalette();
         _companion = (Application.Current as App)?.Companion;
         if (_companion is not null)
         {
@@ -59,7 +67,20 @@ public partial class DashboardWindow : Window
 
     private void SystemParametersChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(SystemParameters.HighContrast)) UpdateCaptionPalette();
+        if (e.PropertyName != nameof(SystemParameters.HighContrast)) return;
+        UpdateClientPalette();
+        UpdateCaptionPalette();
+    }
+
+    private void UpdateClientPalette()
+    {
+        foreach (var (key, brush) in _instrumentBrushes)
+            Resources[key] = SystemParameters.HighContrast
+                ? key is "InstrumentSurface" or "InstrumentBar" or "InstrumentRaised"
+                    ? SystemColors.WindowBrush : SystemColors.WindowTextBrush
+                : brush;
+        var background = SystemParameters.HighContrast ? SystemColors.WindowColor : Color.FromRgb(0x10, 0x1B, 0x27);
+        Dashboard.DefaultBackgroundColor = System.Drawing.Color.FromArgb(background.R, background.G, background.B);
     }
 
     private void UpdateCaptionPalette()
@@ -67,15 +88,15 @@ public partial class DashboardWindow : Window
         if (_closed || !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000)) return;
         var handle = new WindowInteropHelper(this).Handle;
         if (handle == IntPtr.Zero) return;
-        // COLORREF uses BGR. DWM retains caption buttons, hit-testing and contrast colors.
-        var caption = 0x00FBF2ECu; // #ECF2FB
-        var text = 0x003B2317u; // #17233B
-        if (IsActive && !SystemParameters.HighContrast &&
-            DwmSetWindowAttribute(handle, CaptionColor, in caption, sizeof(uint)) >= 0 &&
-            DwmSetWindowAttribute(handle, TextColor, in text, sizeof(uint)) >= 0)
-            return;
-        DwmSetWindowAttribute(handle, CaptionColor, SystemColor, sizeof(uint));
-        DwmSetWindowAttribute(handle, TextColor, SystemColor, sizeof(uint));
+        // COLORREF uses BGR. Keep the native caption controls and let Windows supply high-contrast colors.
+        var highContrast = SystemParameters.HighContrast;
+        var caption = highContrast ? SystemColor : IsActive ? 0x001F150Du : 0x00241810u;
+        var text = highContrast ? SystemColor : IsActive ? 0x00F5EFE6u : 0x00D9CCB9u;
+        var border = highContrast ? SystemColor : IsActive ? 0x0051402Fu : 0x003B2D21u;
+        DwmSetWindowAttribute(handle, ImmersiveDarkMode, highContrast ? 0u : 1u, sizeof(uint));
+        DwmSetWindowAttribute(handle, CaptionColor, caption, sizeof(uint));
+        DwmSetWindowAttribute(handle, TextColor, text, sizeof(uint));
+        DwmSetWindowAttribute(handle, BorderColor, border, sizeof(uint));
     }
 
     [DllImport("dwmapi.dll", ExactSpelling = true)]

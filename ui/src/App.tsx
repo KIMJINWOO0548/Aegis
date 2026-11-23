@@ -1,13 +1,41 @@
 import {lazy,Suspense,useEffect,useRef,useState,type FormEvent} from 'react';
-import {Archive,ArrowRight,ChartNoAxesCombined,LockKeyhole,RefreshCw,ShieldCheck,Unplug} from 'lucide-react';
+import {Archive,ArrowRight,ChartNoAxesCombined,LockKeyhole,PanelLeftClose,PanelLeftOpen,RefreshCw,Search,ShieldCheck,Unplug} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Card,CardHeader,CardTitle,CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {useDashboard} from './use-dashboard';
-import {collectionEvidence,filterDevices,isCurrent,observationCurrent,signalLabels,formatValue,time} from './data';
+import {collectionEvidence,filterDevices,isCurrent,tagState,signalLabels,formatValue,type Snapshot} from './data';
 import StoredHistory from './StoredHistory';
 import SignalWorkspace from './SignalWorkspace';
+import './instrument-shell.css';
 const SignalChart=lazy(()=>import('./SignalChart'));
+const compactLists='(max-width: 850px)';
+const localClock=new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+const readingStates={CURRENT:'실시간',RESTORED:'복원 이력',HISTORY:'과거 관측',FIXTURE:'고정 자료',ABSENT:'미수신',MISSING:'값 없음',BAD:'품질 불량'};
+const collectorStates={CURRENT:'수집 중',STALE:'수신 지연',RESTORED:'복원 이력',NO_RECEIPT:'수신 대기',UNAVAILABLE:'확인 불가'};
+
+function Clock({stamp,fallback='미제공'}:{stamp:string|undefined|null;fallback?:string}) {
+ if(!stamp)return <span>{fallback}</span>;
+ return <time dateTime={stamp} title={stamp}>{localClock.format(new Date(stamp))}</time>;
+}
+
+function CollectorStrip({snapshot,now,available}:{snapshot:Snapshot|null;now:number;available:boolean}) {
+ const devices=snapshot?.devices??[];
+ return <section className="collector-strip" aria-label="수집기 상태">
+  <div className="collector-items">
+   {devices.map(device=>{
+    const evidence=collectionEvidence(snapshot,device,now,available);
+    const freshness=evidence?.freshness??(isCurrent(snapshot,device,now,available)?'CURRENT':'UNAVAILABLE');
+    return <div className="collector-item" data-freshness={freshness} key={device.deviceId}>
+     <i aria-hidden="true"/><strong title={device.deviceId}>{device.moduleId??device.deviceId}</strong><span>{collectorStates[freshness]}</span>
+     <Clock stamp={evidence?.lastReceivedAtUtc??device.connection?.lastReceivedAtUtc} fallback="수신 전"/>
+    </div>;
+   })}
+   {!devices.length&&<p className="collector-empty">수집기 상태 확인 중</p>}
+  </div>
+  <div className="collector-clock"><span>게이트웨이 갱신 · 로컬</span> <Clock stamp={snapshot?.generatedAtUtc} fallback="수신 전"/></div>
+ </section>;
+}
 function Unlock({unlock,recheckSession,sessionUnavailable,error,checking}:{unlock:(token:string)=>Promise<void>;recheckSession:()=>Promise<void>;sessionUnavailable:boolean;error:string|null;checking:boolean}){
  const [token,setToken]=useState('');const [failure,setFailure]=useState<string|null>(null);const [pending,setPending]=useState(false);
  async function submit(e:FormEvent){e.preventDefault();setPending(true);setFailure(null);try{await unlock(token);}catch{setFailure('접속하지 못했습니다. 게이트웨이와 로컬 토큰을 확인하세요.');}finally{setToken('');setPending(false);}}
@@ -29,10 +57,17 @@ export default function App(){
  const [signal,setSignal]=useState('actualFlowLpm');
  const [archive,setArchive]=useState(false);
  const [archiveTag,setArchiveTag]=useState<string>();
+ const [listsCollapsed,setListsCollapsed]=useState(()=>window.matchMedia(compactLists).matches);
  const focusLive=useRef(false);
  const archiveButton=useRef<HTMLButtonElement|null>(null);
  const moduleArchiveButton=useRef<HTMLButtonElement|null>(null);
  const [returnToTag,setReturnToTag]=useState(true);
+ useEffect(()=>{
+  const media=window.matchMedia(compactLists);
+  const sync=(event:MediaQueryListEvent)=>setListsCollapsed(event.matches);
+  media.addEventListener('change',sync);
+  return()=>media.removeEventListener('change',sync);
+ },[]);
  useEffect(()=>{document.title='Aegis · '+(dashboard.auth!=='ready'?'로컬 대시보드 접속':archive?'태그 보관 이력':'실시간 신호');},[dashboard.auth,archive]);
  useEffect(()=>{if(!archive&&focusLive.current){focusLive.current=false;(returnToTag?archiveButton:moduleArchiveButton).current?.focus();}},[archive,returnToTag]);
  if(dashboard.auth!=='ready')return <Unlock unlock={dashboard.unlock} recheckSession={dashboard.recheckSession} sessionUnavailable={dashboard.sessionUnavailable} error={dashboard.error} checking={dashboard.auth==='checking'}/>;
@@ -40,24 +75,52 @@ export default function App(){
  const device=devices.find(d=>d.deviceId===selected)??devices[0];
  const current=isCurrent(snapshot,device,now,available);
  const observation=device?.observations.find(o=>o.signalKey===signal);
- const historical=!observation||!observationCurrent(snapshot,device,observation,now,available);
+ const state=tagState(snapshot,device,observation,now,available);
+ const historical=state!=='CURRENT';
  const points=history[device?.deviceId??'']?.[signal]??[];
  const evidence=collectionEvidence(snapshot,device,now,available);
  function closeArchive(){focusLive.current=true;setArchive(false);}
  function openArchive(tag?:string){setArchiveTag(tag);setReturnToTag(!!tag);setArchive(true);}
- const chart=<Card className="panel signal-panel"><CardHeader className="panel-heading"><CardTitle><h2>신호 추이</h2></CardTitle><Button type="button" size="sm" variant="outline" aria-label="선택 태그 보관 이력" ref={archiveButton} disabled={!device} onClick={()=>openArchive(signal)}><Archive aria-hidden="true"/>선택 태그 이력</Button></CardHeader>
- <CardContent className="panel-body"><div className="inspector-reading"><div><p>{signalLabels[signal]??signal}</p><strong>{formatValue(observation?.value)} <small>{observation?.unit??''}</small></strong></div><span>{historical?'이력 / 수신 대기':'현재 관측'}<br/>요약 품질 {observation?.quality??'ABSENT'}</span></div>
- <p className="tag-scope">{device?.equipmentId??'장비 미선택'} / {device?.moduleId??device?.deviceId??'모듈 미선택'} / {signal}</p>
- <p className="chart-note">원본 관측 {observation?.observedAtUtc??'미제공'}</p>
+ const chart=<section className="instrument-inspector" aria-labelledby="instrument-signal-title">
+ <div className="inspector-heading">
+  <div className="inspector-identity"><p className="inspector-path">{device?.equipmentId??'장비 미선택'} / {device?.moduleId??device?.deviceId??'모듈 미선택'}</p>
+   <h2 id="instrument-signal-title">{signalLabels[signal]??signal}</h2><p className="inspector-signal-key">{signal}</p></div>
+  <div className="inspector-reading" data-state={state}><span>최근 관측값</span>
+   <strong>{formatValue(observation?.value)}{observation?.unit&&<small>{observation.unit}</small>}</strong></div>
+ </div>
+ <div className="inspector-evidence"><span className="inspector-state" data-state={state}>{readingStates[state]}</span>
+  <span className="inspector-quality" data-quality={observation?.quality}>{observation?'수신 품질 '+observation.quality:'관측 없음'}</span>
+  <span>원본 관측 <Clock stamp={observation?.observedAtUtc}/></span><span>수집기 수신 <Clock stamp={observation?.receivedAtUtc}/></span>
+  <Button className="inspector-archive" type="button" size="sm" variant="outline" aria-label="선택 태그 보관 이력" ref={archiveButton} disabled={!device} onClick={()=>openArchive(signal)}><Archive size={14} aria-hidden="true"/>선택 태그 이력</Button>
+ </div>
  {points.length?<Suspense fallback={<div className="empty-chart">차트 로딩 중</div>}><SignalChart key={`${snapshot?.sourceMode}/${device?.deviceId}/${signal}`} context={`${device?.deviceId??'장치 없음'} · ${snapshot?.sourceMode??'UNKNOWN'}`} points={points} label={signalLabels[signal]??signal} unit={observation?.unit??''} historical={historical}/></Suspense>:<div className="empty-chart"><ChartNoAxesCombined size={33}/><p>선택한 태그의 수신 요약이 없습니다.</p><small>연결된 소스의 실제 관측만 표시합니다</small></div>}
- <p className="chart-note">1Hz UI 요약 · 최근 최대 120개 · 원시 100Hz 파형이 아닙니다. 누락·유효하지 않은 품질과 긴 수신 간격은 선을 연결하지 않습니다.</p></CardContent></Card>;
- return <div className="worksheet-shell"><div className="workspace telemetry-workspace"><header className="topbar"><div className="worksheet-brand"><ShieldCheck aria-hidden="true"/><strong>AEGIS</strong><h1>태그 워크시트</h1></div><div className="topbar-tools"><span className="read-only"><LockKeyhole size={14}/>읽기 전용</span><Button variant="outline" size="icon" aria-label="데이터 및 실시간 연결 새로고침" onClick={dashboard.refresh}><RefreshCw/></Button></div></header>
- <main className="page"><div className="worksheet-toolbar"><div><label htmlFor="module-search">장비 · 모듈 검색</label><Input id="module-search" placeholder="장비, 모듈 또는 태그" value={query} onChange={e=>{setQuery(e.target.value);setArchive(false);}}/></div><p>{snapshot?.sourceMode==='EMULATORS'?'에뮬레이터 · 합성':snapshot?.sourceMode==='FIXTURES'?'고정 검증 자료':'소스 확인 중'}<br/><span>게이트웨이 갱신 {time(snapshot?.generatedAtUtc)}</span></p></div>
+ <p className="chart-note">1Hz UI 요약 · 최근 최대 120개 · 원시 기록은 보관 이력에서 확인</p></section>;
+ return <div className="worksheet-shell" lang="ko">
+ <header className="instrument-command">
+  <div className="instrument-command-lead">
+   <button className="instrument-command-button" type="button" aria-expanded={!listsCollapsed} aria-controls="instrument-lists" onClick={()=>setListsCollapsed(value=>!value)}>
+    {listsCollapsed?<PanelLeftOpen size={15} aria-hidden="true"/>:<PanelLeftClose size={15} aria-hidden="true"/>}{listsCollapsed?'목록 열기':'목록 접기'}
+   </button>
+   <h1>계측 작업대</h1>
+  </div>
+  <div className="instrument-module-search"><label className="sr-only" htmlFor="module-search">장비 · 모듈 검색</label>
+   <Search size={14} aria-hidden="true"/><Input id="module-search" placeholder="장비 · 모듈 검색" value={query} onFocus={()=>setListsCollapsed(false)} onChange={e=>{setQuery(e.target.value);setArchive(false);}}/>
+  </div>
+  <nav className="instrument-views" aria-label="작업대 보기">
+   <button type="button" aria-pressed={!archive} onClick={()=>{if(archive)closeArchive();}}>태그 검사</button>
+   <button type="button" aria-pressed={archive} disabled={!device} onClick={()=>openArchive(signal)}>보관 이력</button>
+  </nav>
+  <div className="instrument-command-end"><span className="instrument-source-mode">{snapshot?.sourceMode==='EMULATORS'?'합성 데이터':snapshot?.sourceMode==='FIXTURES'?'고정 검증 자료':'소스 확인 중'}</span>
+   <Button variant="outline" size="icon" aria-label="데이터 및 실시간 연결 새로고침" onClick={dashboard.refresh}><RefreshCw size={15} aria-hidden="true"/></Button></div>
+ </header>
+ <CollectorStrip snapshot={snapshot} now={now} available={available}/>
+ <main className="instrument-page">
  {(dashboard.error||snapshot?.upstreamState!=='CONNECTED')&&<div className="alert-line" role="status"><Unplug size={17}/><span>{dashboard.error??snapshot?.message??'게이트웨이 데이터 수신을 기다리고 있습니다.'}</span></div>}
- <SignalWorkspace devices={devices} device={device} snapshot={snapshot} now={now} available={available} signal={signal}
+ <SignalWorkspace devices={devices} device={device} snapshot={snapshot} now={now} available={available} signal={signal} listsCollapsed={listsCollapsed}
  selectDevice={id=>{setSelected(id);setArchive(false);}} selectSignal={key=>{setSignal(key);setArchive(false);}}
  openHistory={()=>openArchive()} historyButtonRef={moduleArchiveButton}
- chart={archive?<StoredHistory key={JSON.stringify([device?.deviceId,archiveTag])} deviceId={device?.deviceId} initialSignal={archiveTag} returnToSignal={closeArchive}/>:chart}/>
- <footer className="footer"><span>{current?'현재 수신':'수신 대기 / 이력'} · {device?.deviceId??'모듈 미선택'} · 원시 데이터 보존</span><span>마지막 수신 {time(evidence?.lastReceivedAtUtc)} · 보관 완료 {time(evidence?.lastCommittedAtUtc)}</span></footer>
- </main></div></div>;
+ chart={archive?<div className="instrument-history"><StoredHistory key={JSON.stringify([device?.deviceId,archiveTag])} deviceId={device?.deviceId} initialSignal={archiveTag} returnToSignal={closeArchive}/></div>:chart}/>
+ <footer className="instrument-footer"><span><LockKeyhole size={12} aria-hidden="true"/>읽기 전용 · {current?'현재 수신':'수신 대기 / 이력'} · {device?.deviceId??'모듈 미선택'}</span>
+  <span>마지막 수신 <Clock stamp={evidence?.lastReceivedAtUtc} fallback="수신 전"/> · 보관 완료 <Clock stamp={evidence?.lastCommittedAtUtc}/></span></footer>
+ </main></div>;
 }

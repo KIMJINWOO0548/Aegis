@@ -59,7 +59,7 @@ def main():
     try:
         with running_stack(args.count, evaluate=True, scenarios=[args.scenario, *(["NORMAL"] * (args.count - 1))],
             replay=True, signal_count=args.signal_count, interval_ms=args.interval_ms,
-            poll_ms=100, archive_path=archive, isolate=True) as stack:
+            poll_ms=100, archive_path=archive, isolate=True, bind_stored_history=True) as stack:
             environment = dict(stack.environment, AEGIS_API_URL=stack.api_url, AEGIS_GATEWAY_URL=origin,
                 AEGIS_ARCHIVE_DIRECTORY=str(archive), AEGIS_DASHBOARD_TOKEN=os.environ.get("AEGIS_DASHBOARD_TOKEN") or secrets.token_hex(32),
                 DOTNET_NOLOGO="1")

@@ -400,6 +400,8 @@ def main() -> None:
     parser.add_argument("--archive", type=Path, help="Replay raw archive; defaults to runtime/raw.sqlite3 for replay sources.")
     parser.add_argument("--isolate", action="store_true", help="Run each module's acquisition, archive and analysis in its own process.")
     parser.add_argument("--archive-directory", type=Path, help="Isolated per-module archives; default runtime/modules.")
+    parser.add_argument("--register-owned-history", action="store_true",
+                        help="Enable bounded stored history for the configured isolated replay archives.")
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
         parser.error("Choose a local port between 1 and 65535.")
@@ -411,6 +413,8 @@ def main() -> None:
         parser.error("--isolate requires emulator sources and uses --archive-directory instead of --archive.")
     if args.archive_directory and not args.isolate:
         parser.error("--archive-directory requires --isolate.")
+    if args.register_owned_history and not args.isolate:
+        parser.error("--register-owned-history requires --isolate.")
     try:
         log_path = Path("runtime/local_api.jsonl")
         sources = load_sources(args.emulators) if args.emulators else []
@@ -429,11 +433,20 @@ def main() -> None:
             parser.error("--archive requires at least one replay source.")
         if not args.isolate:
             collector = Collector(sources, log_path=log_path, evaluate=args.evaluate, archive=archive) if sources else None
-        encoded_sources = os.environ.get("AEGIS_STORED_SOURCES")
-        if encoded_sources is not None and len(encoded_sources.encode("utf-8")) > 65536:
-            raise ValueError("Stored source configuration is too large.")
+        stored_sources = None
+        if args.register_owned_history:
+            from aegis.stored_records import MAX_SOURCES
+            if 0 < len(raw_paths) <= MAX_SOURCES:
+                stored_sources = [{"storeId": device, "kind": "RAW_V1", "path": path}
+                                  for device, path in raw_paths.items()]
+        else:
+            encoded_sources = os.environ.get("AEGIS_STORED_SOURCES")
+            if encoded_sources is not None:
+                if len(encoded_sources.encode("utf-8")) > 65536:
+                    raise ValueError("Stored source configuration is too large.")
+                stored_sources = json.loads(encoded_sources)
         app = create_app(os.environ.get("AEGIS_API_TOKEN", ""), log_path, collector=collector, raw_archive_paths=raw_paths,
-                         stored_sources=json.loads(encoded_sources) if encoded_sources is not None else None)
+                         stored_sources=stored_sources)
     except (ValueError, OSError):
         raise SystemExit("Check local API/emulator token environment variables and emulator configuration.") from None
     # Windows IOCP accept can remain failed after WinError 64; bounded local TCP needs no subprocess loop support.

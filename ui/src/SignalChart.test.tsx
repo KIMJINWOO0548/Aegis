@@ -21,4 +21,12 @@ describe('chart unavailable state',()=>{
   expect(rendered).toContain('긴 관측 간격 1건');
   expect(rendered).toContain('값 사용 불가 · MISSING');
  });
+ it('shows the latest cursor evidence with an exact value and UTC receipt',()=>{
+  const rendered=renderToStaticMarkup(<SignalChart points={[{
+   t:Date.parse('2026-11-22T12:00:00Z'),v:0.00002,id:'latest',quality:'GOOD',receivedAtUtc:'2026-11-22T21:00:01+09:00',
+  }]} label="실측 유량" unit="L/min" historical={false} context="synthetic unit test"/>);
+  expect(rendered).toContain('0.00002 L/min');
+  expect(rendered).toContain('dateTime="2026-11-22T12:00:01.000Z">12:00:01</time>');
+  expect(rendered).toContain('표본별 품질');
+ });
 });

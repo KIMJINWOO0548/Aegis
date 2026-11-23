@@ -5,32 +5,78 @@
         xmlns:local="clr-namespace:Aegis.Desktop"
         Title="{x:Static local:DashboardEndpoint.DefaultCaption}" Icon="/Aegis.Desktop;component/Assets/Aegis.ico"
         Width="1440" Height="900" MinWidth="640" MinHeight="480"
-        Background="#F4F6FB" WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource InstrumentSurface}" WindowStartupLocation="CenterScreen"
+        FontFamily="{StaticResource AppFont}" UseLayoutRounding="True"
         Loaded="WindowLoaded" Closed="WindowClosed">
+    <Window.Resources>
+        <SolidColorBrush x:Key="InstrumentSurface" Color="#101B27" />
+        <SolidColorBrush x:Key="InstrumentBar" Color="#14212E" />
+        <SolidColorBrush x:Key="InstrumentRaised" Color="#1D3440" />
+        <SolidColorBrush x:Key="InstrumentRule" Color="#3B5465" />
+        <SolidColorBrush x:Key="InstrumentInk" Color="#E6EFF5" />
+        <SolidColorBrush x:Key="InstrumentMuted" Color="#B9CCD9" />
+        <SolidColorBrush x:Key="InstrumentAccent" Color="#71E8D4" />
+        <Style x:Key="InstrumentCommand" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource InstrumentRule}" />
+            <Setter Property="Foreground" Value="{DynamicResource InstrumentInk}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Frame" Background="{TemplateBinding Background}" CornerRadius="4"
+                                BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Frame" Property="Background" Value="{DynamicResource InstrumentRaised}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource InstrumentAccent}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource InstrumentAccent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Border x:Name="CompanionToolbar" Visibility="Collapsed" Background="#ECF2FB"
-                BorderBrush="#D7E2ED" BorderThickness="0,0,0,1" Padding="8,4">
-            <WrapPanel>
+        <Border x:Name="CompanionToolbar" Visibility="Collapsed" Background="{DynamicResource InstrumentBar}"
+                BorderBrush="{DynamicResource InstrumentRule}" BorderThickness="0,0,0,1" Padding="12,4">
+            <WrapPanel KeyboardNavigation.TabNavigation="Continue">
                 <Button x:Name="ToggleOverlayButton" AutomationProperties.AutomationId="ToggleCompanionOverlay"
-                        Content="오버레이 켜기" Click="ToggleOverlayClicked" Padding="8,4" Margin="0,0,6,0" />
+                        Style="{StaticResource InstrumentCommand}" Content="오버레이 켜기"
+                        Click="ToggleOverlayClicked" Margin="0,0,6,0" />
                 <Button AutomationProperties.AutomationId="OpenCompanionSettings"
-                        Content="고정 신호 설정" Click="CompanionSettingsClicked" Padding="8,4" Margin="0,0,6,0" />
+                        Style="{StaticResource InstrumentCommand}" Content="고정 신호 설정"
+                        Click="CompanionSettingsClicked" Margin="0,0,6,0" />
                 <Button AutomationProperties.AutomationId="HideWorkbench"
-                        Content="트레이로 보내기" Click="HideWorkbenchClicked" Padding="8,4" />
+                        Style="{StaticResource InstrumentCommand}" Content="트레이로 보내기" Click="HideWorkbenchClicked" />
             </WrapPanel>
         </Border>
-        <wv:WebView2 Grid.Row="1" x:Name="Dashboard" DefaultBackgroundColor="#F4F6FB" />
-        <Border Grid.Row="1" x:Name="ConnectionPanel" Background="#F4F6FB" Padding="48">
+        <wv:WebView2 Grid.Row="1" x:Name="Dashboard" DefaultBackgroundColor="#101B27" />
+        <Border Grid.Row="1" x:Name="ConnectionPanel" Background="{DynamicResource InstrumentSurface}" Padding="36">
             <StackPanel MaxWidth="520" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="AEGIS" Foreground="#2563EB" FontSize="18" FontWeight="Bold" />
-                <TextBlock Text="설비 관측 대시보드" Foreground="#17233B" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,16" />
-                <TextBlock x:Name="ConnectionMessage" Text="로컬 대시보드에 연결하고 있습니다." Foreground="#536079" TextWrapping="Wrap" FontSize="15" />
-                <Button Content="다시 연결" Click="RetryClicked" Margin="0,24,0,8" HorizontalAlignment="Left" Padding="20,10" />
-                <Button Content="기존 모니터 열기" Click="LegacyClicked" HorizontalAlignment="Left" Padding="20,10" />
+                <TextBlock Text="계측 작업대" Foreground="{DynamicResource InstrumentInk}"
+                           FontSize="21" FontWeight="SemiBold" Margin="0,0,0,12" />
+                <TextBlock x:Name="ConnectionMessage" Text="로컬 대시보드에 연결하고 있습니다."
+                           Foreground="{DynamicResource InstrumentMuted}" TextWrapping="Wrap" FontSize="14" />
+                <WrapPanel Margin="0,16,0,0">
+                    <Button Style="{StaticResource InstrumentCommand}" Content="다시 연결" Click="RetryClicked" Margin="0,0,8,0" />
+                    <Button Style="{StaticResource InstrumentCommand}" Content="기존 모니터 열기" Click="LegacyClicked" />
+                </WrapPanel>
             </StackPanel>
         </Border>
     </Grid>
