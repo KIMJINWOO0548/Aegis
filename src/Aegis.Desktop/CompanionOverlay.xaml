@@ -1,0 +1,180 @@
+<Window x:Class="Aegis.Desktop.CompanionOverlay" x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Aegis · 계측 오버레이" Width="366" SizeToContent="Height"
+        WindowStyle="None" ResizeMode="NoResize" WindowStartupLocation="Manual"
+        ShowActivated="False" ShowInTaskbar="False" Topmost="True" Focusable="False"
+        AllowsTransparency="True" Background="Transparent" Foreground="{DynamicResource OverlayInk}"
+        FontFamily="Segoe UI" UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <Window.Resources>
+        <SolidColorBrush x:Key="OverlayPanel" Color="#E80C1723"/>
+        <SolidColorBrush x:Key="OverlayBorder" Color="#9284A8BC"/>
+        <SolidColorBrush x:Key="OverlayInk" Color="#EBF3FA"/>
+        <SolidColorBrush x:Key="OverlaySecondary" Color="#B7CDDD"/>
+        <SolidColorBrush x:Key="OverlayRule" Color="#587D9CB0"/>
+        <SolidColorBrush x:Key="OverlaySubtleRule" Color="#344C6A7E"/>
+        <SolidColorBrush x:Key="OverlayLive" Color="#77E5D2"/>
+        <SolidColorBrush x:Key="OverlayArchived" Color="#BBCDFF"/>
+        <SolidColorBrush x:Key="OverlayWarning" Color="#F3C487"/>
+        <Style x:Key="OverlayState" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource OverlaySecondary}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Style.Triggers>
+                <Trigger Property="Text" Value="실시간">
+                    <Setter Property="Foreground" Value="{DynamicResource OverlayLive}"/>
+                </Trigger>
+                <Trigger Property="Text" Value="수집 중">
+                    <Setter Property="Foreground" Value="{DynamicResource OverlayLive}"/>
+                </Trigger>
+                <Trigger Property="Text" Value="복원 이력">
+                    <Setter Property="Foreground" Value="{DynamicResource OverlayArchived}"/>
+                </Trigger>
+                <Trigger Property="Text" Value="오래됨">
+                    <Setter Property="Foreground" Value="{DynamicResource OverlayWarning}"/>
+                </Trigger>
+                <Trigger Property="Text" Value="품질 불량">
+                    <Setter Property="Foreground" Value="{DynamicResource OverlayWarning}"/>
+                </Trigger>
+                <Trigger Property="Text" Value="연결 끊김">
+                    <Setter Property="Foreground" Value="{DynamicResource OverlayWarning}"/>
+                </Trigger>
+                <Trigger Property="Text" Value="재시작 중">
+                    <Setter Property="Foreground" Value="{DynamicResource OverlayWarning}"/>
+                </Trigger>
+                <Trigger Property="Text" Value="수집 실패">
+                    <Setter Property="Foreground" Value="{DynamicResource OverlayWarning}"/>
+                </Trigger>
+                <Trigger Property="Text" Value="수신 지연">
+                    <Setter Property="Foreground" Value="{DynamicResource OverlayWarning}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="OverlayMeta" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource OverlaySecondary}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="OverlayNumber" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+    <!-- A fully transparent layered-window pixel would pass clicks to the control software. -->
+    <Grid Background="#020D1925" ClipToBounds="True">
+        <Border CornerRadius="10" BorderThickness="1"
+                Background="{DynamicResource OverlayPanel}" BorderBrush="{DynamicResource OverlayBorder}"
+                Padding="13,10,13,10">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Aegis" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource OverlayLive}"/>
+                    <TextBlock Grid.Column="1" Text="계측 오버레이" Style="{StaticResource OverlayMeta}"
+                               FontSize="12" Margin="8,0,5,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="FrameStatus" AutomationProperties.AutomationId="FrameStatus"
+                               Grid.Column="2" Style="{StaticResource OverlayMeta}"
+                               VerticalAlignment="Center" TextAlignment="Right" MaxWidth="130"/>
+                </Grid>
+                <Grid x:Name="PrimarySignal" Margin="0,8,0,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="1.08*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,7,0">
+                        <TextBlock x:Name="PrimaryLabel" AutomationProperties.AutomationId="PrimaryLabel"
+                                   FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="PrimarySource" AutomationProperties.AutomationId="PrimarySource"
+                                   Style="{StaticResource OverlayMeta}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Style="{StaticResource OverlayNumber}" Foreground="{DynamicResource OverlayArchived}">
+                        <Run x:Name="PrimaryValue" FontSize="30" FontWeight="Bold"/>
+                        <Run x:Name="PrimaryUnit" FontSize="13"/>
+                    </TextBlock>
+                </Grid>
+                <Grid x:Name="PrimaryEvidence" Margin="0,0,0,9">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="1.45*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="PrimaryState" Style="{StaticResource OverlayState}" FontSize="12" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="PrimaryObserved" Grid.Column="1" Style="{StaticResource OverlayMeta}" TextAlignment="Right"/>
+                </Grid>
+                <TextBlock x:Name="EmptyNotice" Text="트레이 메뉴에서 신호를 고정하세요."
+                           Style="{StaticResource OverlayMeta}" Margin="0,0,0,9" Visibility="Collapsed"/>
+
+                <StackPanel x:Name="SignalTable" Visibility="Collapsed" Margin="0,0,0,7">
+                    <Border Background="{DynamicResource OverlayRule}" Height="1"/>
+                    <Grid Height="22">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.42*"/>
+                            <ColumnDefinition Width="1.15*"/>
+                            <ColumnDefinition Width=".75*"/>
+                            <ColumnDefinition Width=".86*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="신호" Style="{StaticResource OverlayMeta}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="값" Style="{StaticResource OverlayMeta}" VerticalAlignment="Center" TextAlignment="Right"/>
+                        <TextBlock Grid.Column="2" Text="상태" Style="{StaticResource OverlayMeta}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="관측 시각" Style="{StaticResource OverlayMeta}" VerticalAlignment="Center" TextAlignment="Right"/>
+                    </Grid>
+                    <ItemsControl x:Name="SecondarySignals" AutomationProperties.Name="추가 고정 신호">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource OverlaySubtleRule}" Height="30">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="1.42*"/>
+                                            <ColumnDefinition Width="1.15*"/>
+                                            <ColumnDefinition Width=".75*"/>
+                                            <ColumnDefinition Width=".86*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,3,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Label}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Pin.DeviceId}" Style="{StaticResource OverlayMeta}" FontSize="9"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Style="{StaticResource OverlayNumber}" FontSize="12">
+                                            <Run Text="{Binding Value, Mode=OneWay}"/><Run Text="&#160;"/><Run Text="{Binding Unit, Mode=OneWay}"/>
+                                        </TextBlock>
+                                        <TextBlock Grid.Column="2" Text="{Binding State}" Style="{StaticResource OverlayState}"
+                                                   FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding ObservedAt}" Style="{StaticResource OverlayNumber}"
+                                                   Foreground="{DynamicResource OverlaySecondary}" FontSize="10"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                <TextBlock x:Name="SignalOverflow" AutomationProperties.AutomationId="SignalOverflow"
+                           Style="{StaticResource OverlayMeta}" Margin="0,0,0,7" Visibility="Collapsed"/>
+
+                <StackPanel x:Name="CollectorSection" Visibility="Collapsed">
+                    <Border Background="{DynamicResource OverlayRule}" Height="1"/>
+                    <ItemsControl x:Name="Collectors" AutomationProperties.Name="수집기 상태" Margin="0,7,0,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="1"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,6,0">
+                                    <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" FontSize="11" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding State}" Style="{StaticResource OverlayState}" FontSize="12"/>
+                                    <TextBlock Text="{Binding ReceivedAt, StringFormat='마지막 수신 {0}'}" Style="{StaticResource OverlayMeta}" FontSize="10"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock x:Name="CollectorOverflow" Style="{StaticResource OverlayMeta}" Margin="0,3,0,0" Visibility="Collapsed"/>
+                </StackPanel>
+                <TextBlock Text="읽기 전용  ·  트레이에서 표시 범위 및 위치 변경" Style="{StaticResource OverlayMeta}" FontSize="10" Margin="0,7,0,0"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -164,12 +164,12 @@ for(const canvas of host.querySelectorAll('canvas')){
                 assert table.locator("tr").count() > 5
                 checks.append({"name": "immutable freeze with continuing synthetic collection + resume", "pass": True})
                 toggle.click()
-                page.get_by_role("combobox", name="차트 신호 선택").select_option("supplyPressureKpa")
+                page.get_by_role("button", name="공급 압력 차트 선택").click()
                 assert page.locator(".inspection-toggle").get_attribute("aria-pressed") == "false"
                 assert page.locator(".chart-window select").input_value() == "all"
                 checks.append({"name": "signal change resets snapshot and range", "pass": True})
                 page.locator(".inspection-toggle").click()
-                page.get_by_role("combobox", name="장비 선택").select_option("synthetic-2")
+                page.get_by_role("list", name="수집 모듈 목록").get_by_role("button", name="synthetic-2", exact=False).click()
                 assert page.locator(".inspection-toggle").get_attribute("aria-pressed") == "false"
                 assert "synthetic-2" in page.locator(".inspection-state").inner_text()
                 checks.append({"name": "device change resets snapshot context", "pass": True})

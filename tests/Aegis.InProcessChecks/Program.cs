@@ -4,7 +4,7 @@ using Aegis.SignalProcessing.Tests;
 
 // Only these Fact/InlineData cases run here; the full vstest suite remains mandatory in verify.ps1.
 var count = 0;
-foreach (var type in new[] { typeof(DashboardEndpointTests), typeof(WindowBoundsTests), typeof(SignalReviewEngineTests) })
+foreach (var type in new[] { typeof(DashboardEndpointTests), typeof(CompanionTelemetryTests), typeof(WindowBoundsTests), typeof(SignalReviewEngineTests) })
 foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
 {
     var attributes = method.GetCustomAttributesData();

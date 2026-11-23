@@ -2,6 +2,8 @@ namespace Aegis.Desktop;
 
 public sealed class DashboardEndpoint
 {
+    public const string DefaultCaption = "Aegis · 설비 신호 관측";
+
     public Uri Origin { get; }
     public string BootstrapToken { get; }
 
@@ -22,4 +24,12 @@ public sealed class DashboardEndpoint
         Uri.TryCreate(address, UriKind.Absolute, out var candidate) &&
         candidate.Scheme == Origin.Scheme && candidate.Host == Origin.Host &&
         candidate.Port == Origin.Port && candidate.UserInfo.Length == 0;
+
+    public string ResolveCaption(string address, string documentTitle) =>
+        address == Origin.AbsoluteUri && documentTitle is
+            ("Aegis · 로컬 대시보드 접속" or "Aegis · 산업 신호 모니터링" or "Aegis · 장비 · 모듈"
+            or "Aegis · 실시간 신호" or "Aegis · 근거 검토" or "Aegis · 태그 보관 이력" or "Aegis · 데이터 흐름"
+            or "Aegis · 이상 사건" or "Aegis · 분석 설정" or "Aegis · 로컬 진단")
+            ? documentTitle
+            : DefaultCaption;
 }

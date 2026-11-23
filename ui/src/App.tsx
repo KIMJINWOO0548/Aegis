@@ -1,25 +1,51 @@
-import {lazy,Suspense,useRef,useState,type ReactNode,type FormEvent} from 'react';
-import {Activity,Archive,ArrowRight,Box,ChartNoAxesCombined,ChevronRight,CircleHelp,Clock3,Database,FileSearch,GitBranch,LayoutDashboard,LockKeyhole,Radio,RefreshCw,Search,ShieldCheck,Unplug,TriangleAlert} from 'lucide-react';
+import {lazy,Suspense,useEffect,useRef,useState,type FormEvent} from 'react';
+import {Archive,ArrowRight,ChartNoAxesCombined,LockKeyhole,PanelLeftClose,PanelLeftOpen,RefreshCw,Search,ShieldCheck,Unplug} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Card,CardHeader,CardTitle,CardContent} from '@/components/ui/card';
-import {Badge} from '@/components/ui/badge';
 import {Input} from '@/components/ui/input';
-import {Tabs,TabsList,TabsTrigger} from '@/components/ui/tabs';
 import {useDashboard} from './use-dashboard';
-import {collectionEvidence,filterDevices,selectDevice,isCurrent,observationCurrent,signalLabels,formatValue,time,type Device,type Snapshot} from './data';
-import Asset from './Asset';
+import {collectionEvidence,filterDevices,isCurrent,tagState,signalLabels,formatValue,type Snapshot} from './data';
 import StoredHistory from './StoredHistory';
-const SignalChart=lazy(()=>import('./SignalChart'));const Workflow=lazy(()=>import('./Workflow'));
-const navigation=[{id:'overview',label:'운영 개요',icon:LayoutDashboard},{id:'assets',label:'장비 · 모듈',icon:Box},{id:'telemetry',label:'실시간 신호',icon:Activity},{id:'review',label:'근거 검토',icon:FileSearch},{id:'workflow',label:'데이터 흐름',icon:GitBranch}];
-const stateLabels:Record<string,string>={NORMAL:'EWMA 기준 범위 내',ANOMALOUS:'EWMA 편차',INSUFFICIENT_DATA:'평가 데이터 부족',CONNECTED:'연결됨',UNAVAILABLE:'사용 불가',CONFIGURATION_REQUIRED:'설정 필요',STALE:'수신 지연',DISCONNECTED:'연결 끊김',RUNNING:'읽기 검토 중',ARCHIVE_NOT_CONFIGURED:'보관 경로 미설정',DISABLED:'비활성',WARMING:'맥락 수집 중',TRACKING:'근거 추적 중',REVIEW_REQUIRED:'근거 검토 필요',NOT_REGISTERED:'모델 미등록',GOOD:'수집 품질 GOOD',BAD:'품질 불량',MISSING:'값 없음',UNRESOLVED:'원인 미확정',EMULATORS:'에뮬레이터',FIXTURES:'고정 검증 자료',UNKNOWN:'미확인'};
-const label=(value:string|null|undefined)=>value?stateLabels[value]??value:'미수신';
-function Panel({title,action,children,className=''}:{title:string;action?:ReactNode;children:ReactNode;className?:string}){return <Card className={`panel ${className}`}><CardHeader className="panel-heading"><CardTitle><h2>{title}</h2></CardTitle>{action}</CardHeader>{children}</Card>;}
-function Metric({title,value,foot,icon:Icon}:{title:string;value:ReactNode;foot:string;icon:typeof Box}){return <Card className="metric panel"><div className="metric-label">{title}<Icon/></div><div className="metric-value">{value}</div><p className="metric-foot">{foot}</p></Card>;}
+import SignalWorkspace from './SignalWorkspace';
+import Incidents,{type IncidentArchiveTarget} from './Incidents';
+import AnalysisProfile from './AnalysisProfile';
+import LocalDiagnostics from './LocalDiagnostics';
+import './instrument-shell.css';
+const SignalChart=lazy(()=>import('./SignalChart'));
+const compactLists='(max-width: 850px)';
+const localClock=new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+const readingStates={CURRENT:'실시간',RESTORED:'복원 이력',HISTORY:'과거 관측',FIXTURE:'고정 자료',ABSENT:'미수신',MISSING:'값 없음',BAD:'품질 불량'};
+const collectorStates={CURRENT:'수집 중',STALE:'수신 지연',RESTORED:'복원 이력',NO_RECEIPT:'수신 대기',UNAVAILABLE:'확인 불가'};
+const viewNames={signals:'실시간 신호',archive:'태그 보관 이력',incidents:'이상 사건',analysis:'분석 설정',diagnostics:'로컬 진단'};
+type View=keyof typeof viewNames;
+
+function Clock({stamp,fallback='미제공'}:{stamp:string|undefined|null;fallback?:string}) {
+ if(!stamp)return <span>{fallback}</span>;
+ return <time dateTime={stamp} title={stamp}>{localClock.format(new Date(stamp))}</time>;
+}
+
+function CollectorStrip({snapshot,now,available}:{snapshot:Snapshot|null;now:number;available:boolean}) {
+ const devices=snapshot?.devices??[];
+ return <section className="collector-strip" aria-label="수집기 상태">
+  <div className="collector-items">
+   {devices.map(device=>{
+    const evidence=collectionEvidence(snapshot,device,now,available);
+    const freshness=evidence?.freshness??(isCurrent(snapshot,device,now,available)?'CURRENT':'UNAVAILABLE');
+    return <div className="collector-item" data-freshness={freshness} key={device.deviceId}>
+     <i aria-hidden="true"/><strong title={device.deviceId}>{device.moduleId??device.deviceId}</strong><span>{collectorStates[freshness]}</span>
+     <Clock stamp={evidence?.lastReceivedAtUtc??device.connection?.lastReceivedAtUtc} fallback="수신 전"/>
+    </div>;
+   })}
+   {!devices.length&&<p className="collector-empty">수집기 상태 확인 중</p>}
+  </div>
+  <div className="collector-clock"><span>게이트웨이 갱신 · 로컬</span> <Clock stamp={snapshot?.generatedAtUtc} fallback="수신 전"/></div>
+ </section>;
+}
 function Unlock({unlock,recheckSession,sessionUnavailable,error,checking}:{unlock:(token:string)=>Promise<void>;recheckSession:()=>Promise<void>;sessionUnavailable:boolean;error:string|null;checking:boolean}){
  const [token,setToken]=useState('');const [failure,setFailure]=useState<string|null>(null);const [pending,setPending]=useState(false);
  async function submit(e:FormEvent){e.preventDefault();setPending(true);setFailure(null);try{await unlock(token);}catch{setFailure('접속하지 못했습니다. 게이트웨이와 로컬 토큰을 확인하세요.');}finally{setToken('');setPending(false);}}
  function retry(){setFailure(null);void recheckSession();}
- return <main className="unlock"><Card className="unlock-card"><div className="brand"><ShieldCheck size={31}/>AEGIS</div><div><h1 className="text-xl font-semibold">로컬 대시보드 접속</h1><p className="mt-3">수집 데이터와 검토 근거를 읽기 전용으로 확인합니다. 게이트웨이의 로컬 접속 토큰을 입력하세요.</p></div>
+ return <main className="unlock"><Card className="unlock-card"><div className="brand"><ShieldCheck size={31}/>AEGIS</div><div><h1 className="text-xl font-semibold">로컬 대시보드 접속</h1><p className="mt-3">설비 원본을 읽기 전용으로 확인합니다. 게이트웨이의 로컬 접속 토큰을 입력하세요.</p></div>
  <form onSubmit={submit} aria-busy={checking||pending}>
  <label htmlFor="local-token">로컬 접속 토큰</label><Input id="local-token" type="password" autoComplete="off" value={token} onChange={e=>setToken(e.target.value)} required disabled={checking||pending} aria-describedby="unlock-error"/>
  <Button type="submit" disabled={checking||pending||!token}>{checking?'게이트웨이 확인 중…':pending?'접속 확인 중…':'대시보드 열기'}<ArrowRight data-icon="inline-end"/></Button>
@@ -27,38 +53,102 @@ function Unlock({unlock,recheckSession,sessionUnavailable,error,checking}:{unloc
  {sessionUnavailable&&<Button type="button" variant="outline" onClick={retry} disabled={checking||pending}>{checking?'다시 확인 중…':'게이트웨이 다시 확인'}<RefreshCw data-icon="inline-end"/></Button>}
  </form><p><LockKeyhole size={12} className="inline mr-1"/>토큰은 URL 또는 브라우저 저장소에 보관하지 않습니다.</p></Card></main>;
 }
-function DeviceInfo({device,snapshot,current}:{device:Device|undefined;snapshot:Snapshot|null;current:boolean}){
- const restored = device?.connection?.acceptedBatches===0 && device.ingestion?.lastCommittedSequence!=null &&
-  device.observations.length>0;
- return <div className="info-list"><div className="info-row"><span>데이터 소스</span><b>{label(snapshot?.sourceMode)}</b></div><div className="info-row"><span>모듈 연결</span><Badge variant="secondary" className={!current?'badge-history':''}>{current?'현재 수신':device?(restored?'재시작 후 복원한 이력':'이력')+' · '+label(device.connection?.state):'수신 대기'}</Badge></div><div className="info-row"><span>원시 보관 커서</span><b>{device?.ingestion?.lastCommittedSequence!=null?'#'+formatValue(device.ingestion.lastCommittedSequence):'—'}</b></div><div className="info-row"><span>C# 검토 커서</span><b>{device?.nativeSequence!=null?'#'+formatValue(device.nativeSequence):'—'}</b></div><div className="info-row"><span>마지막 관측</span><b>{time(device?.ingestion?.lastObservedAtUtc??device?.observations[0]?.observedAtUtc)}</b></div></div>;
-}
-function CollectionRows({snapshot,now,available,open}:{snapshot:Snapshot|null;now:number;available:boolean;open:(id:string)=>void}){
- const labels={CURRENT:'현재 수신',STALE:'수신 지연',RESTORED:'복원 이력',NO_RECEIPT:'수신 대기',UNAVAILABLE:'확인 불가'};
- if(!snapshot?.devices.length)return <Panel title="모듈별 수집 근거"><CardContent className="panel-body"><p role="status" className="quiet-state">{!snapshot?'수집 근거 수신 대기':snapshot.upstreamState==='CONFIGURATION_REQUIRED'?'수집기 미설정':'표시할 모듈 없음'}</p></CardContent></Panel>;
- return <Panel title="모듈별 수집 근거"><div className="table-scroll"><table role="table" aria-label="모듈별 수집 근거" className="signal-table collection-table">
-  <thead><tr><th scope="col">모듈</th><th scope="col">수집 상태</th><th scope="col">마지막 수신</th><th scope="col">보관 완료</th><th scope="col">대기 배치</th><th scope="col">검토</th></tr></thead>
-  <tbody>{snapshot?.devices.map(device=>{
-   const status=collectionEvidence(snapshot,device,now,available);
-   return <tr key={device.deviceId}><th scope="row">{device.deviceId}</th>
-    <td><small aria-hidden="true" className="collection-label">수집 상태</small><span role="status">{status?labels[status.freshness]:'확인 불가'}</span>{status&&<small className="block">{status.collectorMode==='ISOLATED'?'격리':status.collectorMode==='SHARED'?'공유':'고정 자료'} · 합성 · {status.workerStatus}{status.workerReason==='ARCHIVE_IDENTITY_MISMATCH'?' · 보관 식별자 불일치':''}</small>}</td>
-    <td><small aria-hidden="true" className="collection-label">마지막 수신</small>{time(status?.lastReceivedAtUtc)}{status?.receiptProvenance==='RESTORED'&&<small className="block">보관 이력에서 복원</small>}{status?.receivedAgeMs!=null&&<small className="block">{Math.floor(status.receivedAgeMs/1000)}초 경과</small>}</td>
-    <td><small aria-hidden="true" className="collection-label">보관 완료</small>{device.ingestion?.archiveEnabled===false?'미지원':time(status?.lastCommittedAtUtc)}</td>
-    <td><small aria-hidden="true" className="collection-label">대기 배치</small>{status?.pendingBatches??'확인 불가'}</td><td><Button variant="link" size="sm" onClick={()=>open(device.deviceId)} aria-label={`${device.deviceId} 근거 검토`}>근거 보기</Button></td></tr>;
-  })}</tbody></table></div></Panel>;
-}
-export default function App(){const dashboard=useDashboard();const {snapshot,history,now}=dashboard;const available=dashboard.connected&&!dashboard.error;const [tab,setTab]=useState('overview');const [selected,setSelected]=useState('');const [query,setQuery]=useState('');const [filter,setFilter]=useState('all');const [source,setSource]=useState('all');const [signal,setSignal]=useState('actualFlowLpm');const [signalFilter,setSignalFilter]=useState('all');const focusReview=useRef(false);
+export default function App(){
+ const dashboard=useDashboard();
+ const {snapshot,history,now}=dashboard;
+ const available=dashboard.connected&&!dashboard.error;
+ const [selected,setSelected]=useState('');
+ const [query,setQuery]=useState('');
+ const [signal,setSignal]=useState('actualFlowLpm');
+ const [view,setView]=useState<View>('signals');
+ const [incidentArchive,setIncidentArchive]=useState<IncidentArchiveTarget>();
+ const [lastIncidentId,setLastIncidentId]=useState<string>();
+ const [archiveTag,setArchiveTag]=useState<string>();
+ const [listsCollapsed,setListsCollapsed]=useState(()=>window.matchMedia(compactLists).matches);
+ const focusLive=useRef(false);
+ const archiveButton=useRef<HTMLButtonElement|null>(null);
+ const moduleArchiveButton=useRef<HTMLButtonElement|null>(null);
+ const incidentButton=useRef<HTMLButtonElement|null>(null);
+ const analysisButton=useRef<HTMLButtonElement|null>(null);
+ const diagnosticsButton=useRef<HTMLButtonElement|null>(null);
+ const [returnToTag,setReturnToTag]=useState(true);
+ useEffect(()=>{
+  const media=window.matchMedia(compactLists);
+  const sync=(event:MediaQueryListEvent)=>setListsCollapsed(event.matches);
+  media.addEventListener('change',sync);
+  return()=>media.removeEventListener('change',sync);
+ },[]);
+ useEffect(()=>{document.title='Aegis · '+(dashboard.auth!=='ready'?'로컬 대시보드 접속':viewNames[view]);},[dashboard.auth,view]);
+ useEffect(()=>{if(view==='signals'&&focusLive.current){focusLive.current=false;(returnToTag?archiveButton:moduleArchiveButton).current?.focus();}},[view,returnToTag]);
  if(dashboard.auth!=='ready')return <Unlock unlock={dashboard.unlock} recheckSession={dashboard.recheckSession} sessionUnavailable={dashboard.sessionUnavailable} error={dashboard.error} checking={dashboard.auth==='checking'}/>;
- const allDevices=source==='all'||source===snapshot?.sourceMode?snapshot?.devices??[]:[];const visible=filterDevices(allDevices,filter,query);const device=selectDevice(allDevices,selected,filter,query);const current=isCurrent(snapshot,device,now,available);const liveDevices=(snapshot?.devices??[]).filter(d=>isCurrent(snapshot,d,now,available));const events=device?.review?.events??[];const reviewEvents=(snapshot?.devices??[]).reduce((n,d)=>n+(d.review?.events.length??0),0);const observations=device?.observations??[];const selectedObservation=observations.find(o=>o.signalKey===signal)??observations[0];const selectedSignal=selectedObservation?.signalKey??signal;const points=history[device?.deviceId??'']?.[selectedSignal]??[];const historical=!current||!selectedObservation||!observationCurrent(snapshot,device,selectedObservation,now,available);const filteredObservations=observations.filter(o=>(signalFilter==='all'||(signalFilter==='current'?observationCurrent(snapshot,device,o,now,available):!observationCurrent(snapshot,device,o,now,available)))&&`${o.signalKey} ${signalLabels[o.signalKey]??''}`.toLowerCase().includes(query.toLowerCase()));const show=(id:string)=>tab==='overview'||tab===id;const receivedSignals=liveDevices.reduce((n,d)=>n+d.observations.filter(o=>observationCurrent(snapshot,d,o,now,available)).length,0);const archived=(snapshot?.devices??[]).filter(d=>d.ingestion?.archiveEnabled).length;
- return <div className="shell"><aside className="sidebar"><div className="brand"><ShieldCheck size={32}/>AEGIS</div><nav className="nav" aria-label="주요 탐색">{navigation.map(({id,label:navLabel,icon:Icon})=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)} aria-current={tab===id?'page':undefined}><Icon size={18}/>{navLabel}</button>)}</nav><div className="sidebar-bottom"><div className="read-only"><LockKeyhole size={14}/>읽기 전용 워크스페이스</div><p>원시 데이터 보존<br/>신호 근거 중심 검토</p><div className="text-[10px] text-muted-foreground">AEGIS INSIGHT · LOCAL</div></div></aside><div className="workspace"><header className="topbar"><div><h1>{tab==='overview'?'산업 신호 모니터링':navigation.find(n=>n.id===tab)?.label}</h1><p>독립 모듈 수집부터 원시 신호와 검토 근거까지</p></div><div className="topbar-tools"><div className="search"><Search size={16}/><Input aria-label="장비 및 신호 검색" placeholder="장비, 모듈 또는 신호 검색" value={query} onChange={e=>setQuery(e.target.value)}/></div><span className="text-muted-foreground text-xs flex items-center gap-2"><ShieldCheck size={17}/>로컬 세션</span><Button variant="outline" size="icon" aria-label="데이터 및 실시간 연결 새로고침" onClick={dashboard.refresh}><RefreshCw/></Button></div></header><main className="page"><div className="toolbar"><div className="section-caption"><span className={`dot ${current?'current':''}`}/>{current?'현재 데이터':'수신 대기 / 이력'}<ChevronRight size={13}/><span>{device?.equipmentId??'전체 장비'}</span></div><div className="toolbar-right"><div className="source-options"><label htmlFor="source">소스</label><select id="source" value={source} onChange={e=>{setSource(e.target.value);setSelected('');}}><option value="all">전체 소스</option><option value="EMULATORS">에뮬레이터</option><option value="FIXTURES">고정 검증 자료</option></select></div><select aria-label="장비 선택" value={device?.deviceId??''} onChange={e=>setSelected(e.target.value)}><option value="" disabled>장비 선택</option>{visible.map(d=><option key={d.deviceId} value={d.deviceId}>{d.moduleId??d.deviceId}</option>)}</select></div></div>
- {(dashboard.error||snapshot?.upstreamState!=='CONNECTED'||(snapshot&&!current&&device))&&<div className="alert-line" role="status"><Unplug size={17}/><span>{dashboard.error??snapshot?.message??(!snapshot?'게이트웨이 데이터 수신을 기다리고 있습니다.':'현재 신호를 확인할 수 없습니다. 남아 있는 값과 근거는 수신 이력입니다.')}</span></div>}
- <section className="metrics" aria-label="수집 현황"><Metric title="등록 장비 · 모듈" value={snapshot?formatValue(snapshot.devices.length):'—'} foot="현재 소스에 등록된 모듈" icon={Box}/><Metric title="현재 수신 모듈" value={snapshot?formatValue(liveDevices.length):'—'} foot="연결 및 갱신 시각 기준" icon={Radio}/><Metric title="현재 품질 신호" value={snapshot?formatValue(receivedSignals):'—'} foot="GOOD 품질 · 장비 정상 판단 아님" icon={Activity}/><Metric title="원시 보관 모듈" value={snapshot?formatValue(archived):'—'} foot="SQLite 원시 기록 활성 설정" icon={Database}/><Metric title="보관된 검토 근거" value={snapshot?formatValue(reviewEvents):'—'} foot="C# · 표시 범위 · 원인 미확정" icon={FileSearch}/></section>
- <div className={`dashboard-grid ${tab==='overview'?'overview-grid':''}`}><div className="main-column">
- {show('assets')&&<section className="asset-row"><Panel title="장비 · 모듈 구성" action={<Badge variant="secondary">{device?.moduleId??'선택 대기'}</Badge>}><CardContent className="panel-body"><Asset active={current}/><div className="asset-footer"><span>{device?.deviceId??'등록 장비를 기다리는 중'}</span><Button variant="link" size="sm" onClick={()=>setTab('assets')}>모듈 상세<ArrowRight data-icon="inline-end"/></Button></div></CardContent></Panel><Panel title="수집 상태" action={<Archive size={16} className="muted"/>}><CardContent className="panel-body"><DeviceInfo device={device} snapshot={snapshot} current={current}/></CardContent></Panel></section>}
- {tab==='overview'&&<CollectionRows snapshot={snapshot} now={now} available={available} open={id=>{focusReview.current=true;setSelected(id);setQuery('');setFilter('all');setSource('all');setTab('review');}}/>}
- {tab==='assets'&&<Panel title="등록 모듈 목록" action={<select aria-label="모듈 상태 필터" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">전체 상태</option><option value="CONNECTED">연결됨</option><option value="STALE">수신 지연</option><option value="archive">원시 보관 설정</option></select>}><CardContent className="panel-body"><div className="info-list">{visible.map(d=><div className="info-row" key={d.deviceId}><span>{d.equipmentId??d.deviceId} / {d.moduleId??'모듈 ID 없음'}</span><Button variant={device?.deviceId===d.deviceId?'secondary':'outline'} size="sm" onClick={()=>setSelected(d.deviceId)}>{device?.deviceId===d.deviceId?'선택됨':'선택'}</Button></div>)}{!visible.length&&<p className="quiet-state">선택한 소스와 검색 조건에 맞는 모듈이 없습니다.</p>}</div></CardContent></Panel>}
- {show('telemetry')&&<><Panel className="signal-panel" title="신호 추이" action={<select aria-label="차트 신호 선택" value={selectedSignal} onChange={e=>setSignal(e.target.value)} disabled={!observations.length}>{observations.length?observations.map(o=><option key={o.signalKey} value={o.signalKey}>{signalLabels[o.signalKey]??o.signalKey} · {o.unit}</option>):<option value={signal}>신호 수신 대기</option>}</select>}><CardContent className="panel-body"><div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><span className={`dot ${!historical?'current':''}`}/>{signalLabels[selectedSignal]??selectedSignal}<span className="ml-auto">{historical?'이력 / 수신 대기':'현재 관측'}{selectedObservation?' · '+selectedObservation.unit:''}</span></div>{points.length?<Suspense fallback={<div className="empty-chart">차트 로딩 중</div>}><SignalChart key={`${snapshot?.sourceMode}/${device?.deviceId}/${selectedSignal}`} context={`${device?.deviceId??'장치 없음'} · ${snapshot?.sourceMode??'UNKNOWN'}`} points={points} label={signalLabels[selectedSignal]??selectedSignal} unit={selectedObservation?.unit??''} historical={historical}/></Suspense>:<div className="empty-chart"><ChartNoAxesCombined size={33}/><p>수신한 신호가 아직 없습니다</p><small>연결된 소스의 실제 관측만 표시합니다</small></div>}<p className="chart-note">1Hz UI 요약 · 신호별 최근 최대 120개 · 원시 100Hz 파형이 아닙니다. 수신 간격이 길거나 품질이 유효하지 않으면 선을 연결하지 않습니다.</p>{tab==='overview'&&<Button variant="link" size="sm" onClick={()=>setTab('telemetry')}>전체 신호 보기<ArrowRight data-icon="inline-end"/></Button>}</CardContent></Panel>{tab==='telemetry'&&<Panel title="신호 상세" action={<Tabs value={signalFilter} onValueChange={setSignalFilter}><TabsList><TabsTrigger value="all">전체</TabsTrigger><TabsTrigger value="current">현재</TabsTrigger><TabsTrigger value="history">이력</TabsTrigger></TabsList></Tabs>}><div className="table-scroll"><table className="signal-table"><thead><tr><th>신호</th><th>관측값</th><th>단위</th><th>수집 품질</th><th>관측 시각</th></tr></thead><tbody>{filteredObservations.map(o=><tr key={o.signalKey}><td><button className="signal-name text-left" onClick={()=>setSignal(o.signalKey)} aria-label={`${signalLabels[o.signalKey]??o.signalKey} 차트 선택`}><span>{signalLabels[o.signalKey]??o.signalKey}</span><small>{o.signalKey}</small></button></td><td>{formatValue(o.value)}</td><td className="muted">{o.unit}</td><td><Badge variant="secondary" className={observationCurrent(snapshot,device,o,now,available)?'':'badge-history'}>{observationCurrent(snapshot,device,o,now,available)?label(o.quality):'이력 · '+o.quality}</Badge></td><td className="muted">{time(o.observedAtUtc)}</td></tr>)}{!filteredObservations.length&&<tr><td colSpan={5} className="empty-table">조건에 맞는 수신 신호가 없습니다.</td></tr>}</tbody></table></div></Panel>}</>}
- {show('workflow')&&<Panel className="workflow-panel" title="수집 · 보관 · 검토 흐름" action={<span className="text-[11px] text-muted-foreground flex items-center gap-1"><LockKeyhole size={12}/>읽기 전용</span>}><Suspense fallback={<div className="workflow flex items-center justify-center text-xs text-muted-foreground">데이터 흐름 로딩 중</div>}><Workflow archive={device?.ingestion?.archiveEnabled??false} engine={current?device?.engineState??'UNAVAILABLE':'UNAVAILABLE'}/></Suspense><CardContent className="panel-body pt-3! text-[11px] text-muted-foreground">수집 및 원시 보관은 독립 프로세스에서 수행합니다. 브라우저는 요약을 표시하며 장비 제어를 실행하지 않습니다.</CardContent></Panel>}
- {tab==='review'&&<StoredHistory key={selected} deviceId={selected||undefined}/>}
- {tab==='review'&&<Panel title="C# 원시 신호 검토 근거"><CardContent className="panel-body"><p className="section-description" tabIndex={-1} ref={node=>{if(node&&focusReview.current){focusReview.current=false;node.focus();}}}>{device?.deviceId && `${device.deviceId} · `}관측된 편차에 관한 서술적 근거입니다. 이벤트의 원인과 조치 판정은 UNRESOLVED로 유지됩니다. {current?'':'표시된 근거는 수신 이력입니다.'}</p>{events.slice().reverse().map(e=><article className="evidence" key={e.eventId}><TriangleAlert size={17} className="evidence-icon"/><div><h3>유량 편차 #{e.eventId} · 원인 미확정</h3><p>최대 편차 {formatValue(e.peakDeviationLpm)} L/min · 원시 표본 {formatValue(e.sampleCount)}개<br/>시작 {time(e.startAtUtc)} / 마지막 {time(e.lastAtUtc)}<br/>종료 사유 {e.endReason??'진행 중'}<br/>연관 신호 {(e.relatedSignalKeys??[]).map(k=>signalLabels[k]??k).join(', ')||'기록 없음'}</p></div></article>)}{!events.length&&<p className="quiet-state">표시할 검토 이벤트가 없습니다. 이 상태는 장비 정상 판정이 아닙니다.</p>}</CardContent></Panel>}
- </div><aside className="right-column"><Panel title="신호 근거 검토" action={<FileSearch size={16} className="muted"/>}><CardContent className="panel-body"><div className="review-summary"><span className="review-number">{device?.review?formatValue(events.length):'—'}</span><div className="review-description">표시 중인 원시 근거<br/>{current?label(device?.review?.state):'이력 / 확인 불가'}</div></div><div className="engine"><b>C# · {current?label(device?.engineState):'이력 / 확인 불가'}</b>{device?.review?.algorithmVersion??'보관 경로와 검토 엔진을 확인하세요.'}</div>{events.slice(-3).reverse().map(e=><article className="evidence" key={e.eventId}><TriangleAlert size={16} className="evidence-icon"/><div><h3>유량 편차 #{e.eventId}</h3><p>최대 {formatValue(e.peakDeviationLpm)} L/min<br/>UNRESOLVED · 원인 미확정</p><time>{time(e.startAtUtc)} · {current?'수신 근거':'이력'}</time></div></article>)}{!events.length&&<p className="quiet-state">검토 근거 수신 대기<br/>추론이나 고장 예측을 생성하지 않습니다.</p>}{(device?.review?.omittedEventCount??0)>0&&<p className="chart-note">이전 {device!.review!.omittedEventCount}개 이벤트는 요약에서 제외되었습니다.</p>}<Button variant="link" size="sm" onClick={()=>setTab('review')}>검토 근거 보기<ArrowRight data-icon="inline-end"/></Button></CardContent></Panel><Panel title="수집 활동" action={<Clock3 size={16} className="muted"/>}><CardContent className="panel-body"><article className="evidence"><Radio size={16} className="text-primary mt-1"/><div><h3>{dashboard.transport}</h3><p>게이트웨이 갱신<br/>{time(snapshot?.generatedAtUtc)}</p></div></article><article className="evidence"><Database size={16} className="text-primary mt-1"/><div><h3>원시 보관</h3><p>{device?.ingestion?.archiveEnabled?'SQLite 원시 기록 활성 설정':'보관 설정 확인 필요'}<br/>대기 배치 {collectionEvidence(snapshot,device,now,available)?.pendingBatches??'확인 불가'}</p></div></article><article className="evidence"><Activity size={16} className="text-primary mt-1"/><div><h3>Python EWMA · 상위 advisory</h3><p>{device?.diagnostics?`${device.diagnostics.enabled?label(device.diagnostics.evaluation):'평가 비활성'} · ${device.diagnostics.issues.length}개 품질 항목 · 경고 ${device.warnings.length}개`:'수신된 진단 없음'}<br/>C# 원시 근거 검토와 별도 경로</p></div></article></CardContent></Panel><Panel title="추론 모델" action={<CircleHelp size={16} className="muted"/>}><CardContent className="panel-body"><Badge variant="secondary">NOT_REGISTERED</Badge><p className="quiet-state">검증된 추론 모델이 등록되지 않았습니다. 예측값 및 신뢰도는 제공하지 않습니다.</p></CardContent></Panel></aside></div><footer className="footer"><span>AEGIS INSIGHT · 원시 보존 / 근거 검토 / 읽기 전용</span><span>{label(snapshot?.sourceMode)} · 요약 갱신 1Hz · {new Date(now).toLocaleDateString('ko-KR')}</span></footer></main></div></div>;
+ const devices=filterDevices(snapshot?.devices??[],'all',query);
+ const device=devices.find(d=>d.deviceId===selected)??devices[0];
+ const current=isCurrent(snapshot,device,now,available);
+ const observation=device?.observations.find(o=>o.signalKey===signal);
+ const state=tagState(snapshot,device,observation,now,available);
+ const historical=state!=='CURRENT';
+ const points=history[device?.deviceId??'']?.[signal]??[];
+ const evidence=collectionEvidence(snapshot,device,now,available);
+ function closeArchive(){
+  if(incidentArchive){setIncidentArchive(undefined);setView('incidents');return;}
+  focusLive.current=true;setView('signals');
+ }
+ function openArchive(tag?:string){setIncidentArchive(undefined);setArchiveTag(tag);setReturnToTag(!!tag);setView('archive');}
+ function openIncidentArchive(target:IncidentArchiveTarget){
+  setLastIncidentId(target.incidentId);setArchiveTag(target.signalKey);setIncidentArchive(target);setView('archive');
+ }
+ function closeProductView(button:HTMLButtonElement|null){setView('signals');button?.focus();}
+ const chart=<section className="instrument-inspector" aria-labelledby="instrument-signal-title">
+ <div className="inspector-heading">
+  <div className="inspector-identity"><p className="inspector-path">{device?.equipmentId??'장비 미선택'} / {device?.moduleId??device?.deviceId??'모듈 미선택'}</p>
+   <h2 id="instrument-signal-title">{signalLabels[signal]??signal}</h2><p className="inspector-signal-key">{signal}</p></div>
+  <div className="inspector-reading" data-state={state}><span>최근 관측값</span>
+   <strong>{formatValue(observation?.value)}{observation?.unit&&<small>{observation.unit}</small>}</strong></div>
+ </div>
+ <div className="inspector-evidence"><span className="inspector-state" data-state={state}>{readingStates[state]}</span>
+  <span className="inspector-quality" data-quality={observation?.quality}>{observation?'수신 품질 '+observation.quality:'관측 없음'}</span>
+  <span>원본 관측 <Clock stamp={observation?.observedAtUtc}/></span><span>수집기 수신 <Clock stamp={observation?.receivedAtUtc}/></span>
+  <Button className="inspector-archive" type="button" size="sm" variant="outline" aria-label="선택 태그 보관 이력" ref={archiveButton} disabled={!device} onClick={()=>openArchive(signal)}><Archive size={14} aria-hidden="true"/>선택 태그 이력</Button>
+ </div>
+ {points.length?<Suspense fallback={<div className="empty-chart">차트 로딩 중</div>}><SignalChart key={`${snapshot?.sourceMode}/${device?.deviceId}/${signal}`} context={`${device?.deviceId??'장치 없음'} · ${snapshot?.sourceMode??'UNKNOWN'}`} points={points} label={signalLabels[signal]??signal} unit={observation?.unit??''} historical={historical}/></Suspense>:<div className="empty-chart"><ChartNoAxesCombined size={33}/><p>선택한 태그의 수신 요약이 없습니다.</p><small>연결된 소스의 실제 관측만 표시합니다</small></div>}
+ <p className="chart-note">1Hz UI 요약 · 최근 최대 120개 · 원시 기록은 보관 이력에서 확인</p></section>;
+ return <div className="worksheet-shell" lang="ko">
+ <header className="instrument-command">
+  <div className="instrument-command-lead">
+   <button className="instrument-command-button" type="button" aria-expanded={!listsCollapsed} aria-controls="instrument-lists" onClick={()=>setListsCollapsed(value=>!value)}>
+    {listsCollapsed?<PanelLeftOpen size={15} aria-hidden="true"/>:<PanelLeftClose size={15} aria-hidden="true"/>}{listsCollapsed?'목록 열기':'목록 접기'}
+   </button>
+   <h1>계측 작업대</h1>
+  </div>
+  <div className="instrument-module-search"><label className="sr-only" htmlFor="module-search">장비 · 모듈 검색</label>
+   <Search size={14} aria-hidden="true"/><Input id="module-search" placeholder="장비 · 모듈 검색" value={query} onFocus={()=>setListsCollapsed(false)} onChange={e=>{setQuery(e.target.value);setView('signals');}}/>
+  </div>
+  <nav className="instrument-views" aria-label="작업대 보기">
+   <button type="button" aria-pressed={view==='signals'} onClick={()=>{if(view==='archive'&&!incidentArchive)closeArchive();else setView('signals');}}>태그 검사</button>
+   <button type="button" aria-pressed={view==='archive'} onClick={()=>openArchive(device?signal:undefined)}>보관 이력</button>
+   <button type="button" ref={incidentButton} aria-pressed={view==='incidents'} onClick={()=>setView('incidents')}>이상 사건</button>
+   <button type="button" ref={analysisButton} aria-pressed={view==='analysis'} disabled={!device} onClick={()=>setView('analysis')}>분석 설정</button>
+   <button type="button" ref={diagnosticsButton} aria-pressed={view==='diagnostics'} aria-controls="signal-chart-panel" onClick={()=>setView('diagnostics')}>진단</button>
+  </nav>
+  <div className="instrument-command-end"><span className="instrument-source-mode">{snapshot?.sourceMode==='EMULATORS'?'합성 데이터':snapshot?.sourceMode==='FIXTURES'?'고정 검증 자료':'소스 확인 중'}</span>
+   <Button variant="outline" size="icon" aria-label="데이터 및 실시간 연결 새로고침" onClick={dashboard.refresh}><RefreshCw size={15} aria-hidden="true"/></Button></div>
+ </header>
+ <CollectorStrip snapshot={snapshot} now={now} available={available}/>
+ <main className="instrument-page">
+ {(dashboard.error||snapshot?.upstreamState!=='CONNECTED')&&<div className="alert-line" role="status"><Unplug size={17}/><span>{dashboard.error??snapshot?.message??'게이트웨이 데이터 수신을 기다리고 있습니다.'}</span></div>}
+ <SignalWorkspace devices={devices} device={device} snapshot={snapshot} now={now} available={available} signal={signal} listsCollapsed={listsCollapsed}
+ selectDevice={id=>{setSelected(id);if(view==='archive')setView('signals');}} selectSignal={key=>{setSignal(key);setView('signals');}}
+ openHistory={()=>openArchive()} historyButtonRef={moduleArchiveButton}
+ chart={view==='archive'?<div className="instrument-history"><StoredHistory
+  key={JSON.stringify([incidentArchive?.incidentId,incidentArchive?.sessionId,incidentArchive?.deviceId??device?.deviceId,archiveTag])}
+  deviceId={incidentArchive?.deviceId??device?.deviceId} initialSignal={archiveTag} initialSessionId={incidentArchive?.sessionId}
+  fromIncident={!!incidentArchive} returnToSignal={closeArchive}/></div>
+  :view==='incidents'?<div className="instrument-history"><Incidents deviceId={device?.deviceId} initialIncidentId={lastIncidentId}
+   openArchive={openIncidentArchive} close={()=>closeProductView(incidentButton.current)}/></div>
+  :view==='analysis'&&device?<div className="instrument-history"><AnalysisProfile key={device.deviceId} deviceId={device.deviceId}
+   close={()=>closeProductView(analysisButton.current)}/></div>
+  :view==='diagnostics'?<div className="instrument-history"><LocalDiagnostics close={()=>closeProductView(diagnosticsButton.current)}/></div>:chart}/>
+ <footer className="instrument-footer"><span><LockKeyhole size={12} aria-hidden="true"/>원본 읽기 전용 · {current?'현재 수신':'수신 대기 / 이력'} · {device?.deviceId??'모듈 미선택'}</span>
+  <span>마지막 수신 <Clock stamp={evidence?.lastReceivedAtUtc} fallback="수신 전"/> · 보관 완료 <Clock stamp={evidence?.lastCommittedAtUtc}/></span></footer>
+ </main></div>;
 }

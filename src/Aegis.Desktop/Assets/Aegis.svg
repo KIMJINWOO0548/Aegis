@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Aegis signal observation and waveform">
+  <path fill="#123A3A" stroke="#62CFBC" stroke-width="2.5" stroke-linejoin="round" d="M15 5h34l10 10v34L49 59H15L5 49V15z"/>
+  <path stroke="#52786F" stroke-width="2" d="M15 21h34M15 43h34M21 15v34m22-34v34" opacity=".85"/>
+  <path fill="none" stroke="#B6FBCA" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M12 36h11l5-13 8 20 5-10h11"/>
+  <circle cx="51" cy="33" r="4" fill="#F8D47D" stroke="#123A3A" stroke-width="1.5"/>
+</svg>

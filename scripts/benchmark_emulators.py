@@ -104,7 +104,8 @@ def wait_pid_exit(pid, seconds=10):
 
 @contextmanager
 def running_stack(count, *, evaluate=False, scenarios=None, replay=False, signal_count=8,
-                  interval_ms=1000, poll_ms=100, archive_path=None, isolate=False):
+                  interval_ms=1000, poll_ms=100, archive_path=None, isolate=False, bind_stored_history=False,
+                  archive_sessions_root=None):
     validate_run(count, 1)
     scenarios = scenarios or ["NORMAL"] * count
     if len(scenarios) != count or any(value not in {"NORMAL", "DEG-02", "DATA-QUALITY", "TRANSIENT", "NOISY-FLOW"} for value in scenarios):
@@ -113,6 +114,10 @@ def running_stack(count, *, evaluate=False, scenarios=None, replay=False, signal
         raise ValueError("Use 8..512 numeric signals, 1..60000ms sampling and 50..60000ms polling.")
     if not replay and (signal_count != 8 or interval_ms != 1000 or archive_path is not None):
         raise ValueError("Custom sampling/signals/archive require replay ingestion.")
+    if bind_stored_history and not (replay and isolate):
+        raise ValueError("Stored history in this launcher requires isolated replay archives.")
+    if archive_sessions_root is not None and not (bind_stored_history and archive_path is not None):
+        raise ValueError("Past sessions require an active isolated, bound history folder.")
     children, outputs = [], []
     with tempfile.TemporaryDirectory(prefix="aegis-emulator-") as directory:
         workspace = Path(directory)
@@ -154,6 +159,8 @@ def running_stack(count, *, evaluate=False, scenarios=None, replay=False, signal
             def __getattr__(self, name):
                 if name == "active_processes":
                     return [p for p in children if p.poll() is None]
+                if name == "emulator_processes":
+                    return tuple(emulators)
                 return getattr(stack, name)
         view = StackView()
         try:
@@ -173,6 +180,10 @@ def running_stack(count, *, evaluate=False, scenarios=None, replay=False, signal
                 api_arguments.extend(["--archive-directory" if isolate else "--archive", str(stack.archive_path)])
             if isolate:
                 api_arguments.append("--isolate")
+            if bind_stored_history:
+                api_arguments.append("--register-owned-history")
+            if archive_sessions_root is not None:
+                api_arguments.extend(["--archive-sessions-root", str(Path(archive_sessions_root).absolute())])
             if evaluate:
                 api_arguments.append("--evaluate")
             stack.api = None

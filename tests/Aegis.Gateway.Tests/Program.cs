@@ -91,6 +91,7 @@ finally { Directory.Delete(temporary, true); }
 void CheckThrows(Action action, string name) { try { action(); } catch (InvalidDataException) { Check(true, name); return; } throw new InvalidOperationException(name); }
 await RawAndCacheChecks.Run(Check, app.Services.GetRequiredService<Microsoft.AspNetCore.SignalR.IHubContext<DashboardHub>>());
 await WarningAggregationChecks.Run(Check, app.Services.GetRequiredService<Microsoft.AspNetCore.SignalR.IHubContext<DashboardHub>>());
+await ProductChecks.Run(Check, token);
 Console.WriteLine($"PASS {checks} in-process gateway checks (no network listeners).");
 await app.StopAsync();
 

@@ -98,7 +98,8 @@ def _source_context(collector: Collector | None) -> dict:
 
 
 def create_app(token: str, log_path: Path | None = None, *, collector: Collector | None = None,
-               raw_archive_paths: dict[str, Path] | None = None, stored_sources: list[dict] | None = None) -> FastAPI:
+               raw_archive_paths: dict[str, Path] | None = None, stored_sources: list[dict] | None = None,
+               archive_sessions_root: Path | None = None, active_archive: Path | None = None) -> FastAPI:
     if not isinstance(token, str) or len(token.strip()) < 32 or "\r" in token or "\n" in token:
         raise ValueError("AEGIS_API_TOKEN must contain at least 32 characters.")
     expected_token = token.encode("utf-8")
@@ -108,9 +109,18 @@ def create_app(token: str, log_path: Path | None = None, *, collector: Collector
         raise ValueError("Raw archive paths must belong to configured replay devices.")
     raw_paths = {device: Path(path).resolve() for device, path in (raw_archive_paths or {}).items()}
     from aegis.stored_records import MAX_OUTPUT_BYTES, _sources, query_stored_records, QueryError
+    from threading import Lock
+    from aegis.archive_sessions import ArchiveSessions, DEVICE_ID as PORTABLE_DEVICE_ID, SessionNotFound, recent_receipt_window
+    from aegis.flow_analysis import analyze_archived_flow
     if stored_sources is not None:
         _sources(stored_sources)  # Trusted startup configuration only; never accept browser paths.
         stored_sources = [dict(source) for source in stored_sources]
+    sessions = None
+    flow_analysis_lock = Lock()
+    if archive_sessions_root is not None:
+        if active_archive is None:
+            raise ValueError("Portable archive history requires its current archive directory.")
+        sessions = ArchiveSessions(archive_sessions_root, active_archive)
     @asynccontextmanager
     async def lifespan(_app):
         if collector is not None:
@@ -201,6 +211,35 @@ def create_app(token: str, log_path: Path | None = None, *, collector: Collector
             return [{"deviceId": source.deviceId, "readOnly": True, "source": "SIMULATOR"} for source in collector.sources]
         return [{"deviceId": DEVICE_ID, "readOnly": True, "source": "SIMULATOR"}]
 
+    def _history_query_parameters(request: Request, keys: set[str]):
+        if set(request.query_params) - keys or any(
+                len(request.query_params.getlist(key)) != 1 for key in request.query_params):
+            raise HTTPException(422)
+
+    def _history_error(request: Request, code: str):
+        return _error(request, 422 if code == "INVALID_QUERY" else 413 if code == "QUERY_LIMIT" else 503,
+                      code, "Stored history could not be read; narrow the window or check local configuration.")
+
+    def _history_records(sources, received_from, received_to, signals, device_id, store_id, run_id, *,
+                         portable_window=False):
+        result = query_stored_records(sources, received_from, received_to, signals=signals,
+                                      device_id=device_id, store_id=store_id, run_id=run_id,
+                                      portable_window=portable_window)
+        # Browser numbers cannot preserve every stored integer; keep an exact display representation.
+        for row in result["records"]:
+            identity = row["identity"]
+            identity["nativeKeyText"] = json.dumps(identity["nativeKey"], ensure_ascii=False, separators=(",", ":"))
+            for signal in row["signals"]:
+                reading = signal["reading"]
+                if reading is not None:
+                    reading["valueText"] = None if reading["value"] is None else str(reading["value"])
+        response = JSONResponse(result)
+        if len(response.body) > MAX_OUTPUT_BYTES:
+            raise QueryError("QUERY_LIMIT")
+        return response
+
+    history_keys = {"receivedFromUtc", "receivedToUtc", "signals", "deviceId", "storeId", "runId"}
+
     @app.get("/v1/stored-records")
     def stored_records(request: Request, receivedFromUtc: str = Query(max_length=64),
                        receivedToUtc: str = Query(max_length=64), signals: str | None = Query(default=None, max_length=2063),
@@ -209,28 +248,69 @@ def create_app(token: str, log_path: Path | None = None, *, collector: Collector
                        runId: str | None = Query(default=None, max_length=36)):
         if stored_sources is None:
             raise HTTPException(404)
-        if set(request.query_params) - {"receivedFromUtc", "receivedToUtc", "signals", "deviceId", "storeId", "runId"} or any(
-                len(request.query_params.getlist(key)) != 1 for key in request.query_params):
+        _history_query_parameters(request, history_keys)
+        try:
+            return _history_records(stored_sources, receivedFromUtc, receivedToUtc, signals, deviceId, storeId, runId,
+                                    portable_window=sessions is not None)
+        except QueryError as exc:
+            return _history_error(request, exc.code)
+
+    @app.get("/v1/archive-sessions")
+    def archive_sessions(request: Request):
+        if sessions is None:
+            raise HTTPException(404)
+        _history_query_parameters(request, set())
+        try:
+            return sessions.catalog()
+        except (OSError, QueryError):
+            return _history_error(request, "SOURCE_UNAVAILABLE")
+
+    @app.get("/v1/archive-sessions/{session_id}/records")
+    def previous_records(request: Request, session_id: str,
+                         receivedFromUtc: str | None = Query(default=None, max_length=64),
+                         receivedToUtc: str | None = Query(default=None, max_length=64),
+                         signals: str | None = Query(default=None, max_length=2063),
+                         deviceId: str | None = Query(default=None, max_length=128),
+                         storeId: str | None = Query(default=None, max_length=64),
+                         runId: str | None = Query(default=None, max_length=36)):
+        if sessions is None:
+            raise HTTPException(404)
+        _history_query_parameters(request, history_keys)
+        if (receivedFromUtc is None) != (receivedToUtc is None):
             raise HTTPException(422)
         try:
-            result = query_stored_records(stored_sources, receivedFromUtc, receivedToUtc, signals=signals,
-                                          device_id=deviceId, store_id=storeId, run_id=runId)
-            # Browser numbers cannot preserve every stored integer; keep an exact display representation.
-            for row in result['records']:
-                identity = row['identity']
-                # Keep adjacent int64 sequences distinct in browsers with IEEE-754 numbers.
-                identity['nativeKeyText'] = json.dumps(identity['nativeKey'], ensure_ascii=False, separators=(',', ':'))
-                for signal in row['signals']:
-                    reading = signal['reading']
-                    if reading is not None:
-                        reading['valueText'] = None if reading['value'] is None else str(reading['value'])
-            response = JSONResponse(result)
-            if len(response.body) > MAX_OUTPUT_BYTES:
-                raise QueryError('QUERY_LIMIT')
-            return response
+            with sessions.snapshots(session_id, deviceId) as sources:
+                if receivedFromUtc is None:
+                    receivedFromUtc, receivedToUtc = recent_receipt_window(sources, deviceId)
+                return _history_records(sources, receivedFromUtc, receivedToUtc, signals, deviceId, storeId, runId,
+                                        portable_window=True)
+        except SessionNotFound:
+            raise HTTPException(404) from None
         except QueryError as exc:
-            return _error(request, 422 if exc.code == "INVALID_QUERY" else 413 if exc.code == "QUERY_LIMIT" else 503,
-                          exc.code, "Stored history could not be read; narrow the window or check local configuration.")
+            return _history_error(request, exc.code)
+        except OSError:
+            return _history_error(request, "SOURCE_UNAVAILABLE")
+
+    @app.get("/v1/archive-sessions/{session_id}/flow-analysis")
+    def archived_flow_analysis(request: Request, session_id: str, deviceId: str = Query(max_length=12)):
+        if sessions is None:
+            raise HTTPException(404)
+        _history_query_parameters(request, {"deviceId"})
+        if not PORTABLE_DEVICE_ID.fullmatch(deviceId):
+            raise HTTPException(422)
+        if not flow_analysis_lock.acquire(blocking=False):
+            return _error(request, 409, "FLOW_ANALYSIS_BUSY", "An archived flow analysis is already running.")
+        try:
+            with sessions.snapshots(session_id, deviceId, require_device=True) as sources:
+                return analyze_archived_flow(session_id, deviceId, sources[0])
+        except SessionNotFound:
+            raise HTTPException(404) from None
+        except QueryError as exc:
+            return _history_error(request, exc.code)
+        except OSError:
+            return _history_error(request, "SOURCE_UNAVAILABLE")
+        finally:
+            flow_analysis_lock.release()
 
     @app.get("/v1/connections")
     async def connections():
@@ -400,6 +480,10 @@ def main() -> None:
     parser.add_argument("--archive", type=Path, help="Replay raw archive; defaults to runtime/raw.sqlite3 for replay sources.")
     parser.add_argument("--isolate", action="store_true", help="Run each module's acquisition, archive and analysis in its own process.")
     parser.add_argument("--archive-directory", type=Path, help="Isolated per-module archives; default runtime/modules.")
+    parser.add_argument("--register-owned-history", action="store_true",
+                        help="Enable bounded stored history for the configured isolated replay archives.")
+    parser.add_argument("--archive-sessions-root", type=Path,
+                        help="Enable read-only past sessions from the portable launcher's owned runs directory.")
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
         parser.error("Choose a local port between 1 and 65535.")
@@ -411,6 +495,10 @@ def main() -> None:
         parser.error("--isolate requires emulator sources and uses --archive-directory instead of --archive.")
     if args.archive_directory and not args.isolate:
         parser.error("--archive-directory requires --isolate.")
+    if args.register_owned_history and not args.isolate:
+        parser.error("--register-owned-history requires --isolate.")
+    if args.archive_sessions_root and not (args.archive_directory and args.register_owned_history):
+        parser.error("--archive-sessions-root requires the active isolated archive and --register-owned-history.")
     try:
         log_path = Path("runtime/local_api.jsonl")
         sources = load_sources(args.emulators) if args.emulators else []
@@ -429,11 +517,21 @@ def main() -> None:
             parser.error("--archive requires at least one replay source.")
         if not args.isolate:
             collector = Collector(sources, log_path=log_path, evaluate=args.evaluate, archive=archive) if sources else None
-        encoded_sources = os.environ.get("AEGIS_STORED_SOURCES")
-        if encoded_sources is not None and len(encoded_sources.encode("utf-8")) > 65536:
-            raise ValueError("Stored source configuration is too large.")
+        stored_sources = None
+        if args.register_owned_history:
+            from aegis.stored_records import MAX_SOURCES
+            if 0 < len(raw_paths) <= MAX_SOURCES:
+                stored_sources = [{"storeId": device, "kind": "RAW_V1", "path": path}
+                                  for device, path in raw_paths.items()]
+        else:
+            encoded_sources = os.environ.get("AEGIS_STORED_SOURCES")
+            if encoded_sources is not None:
+                if len(encoded_sources.encode("utf-8")) > 65536:
+                    raise ValueError("Stored source configuration is too large.")
+                stored_sources = json.loads(encoded_sources)
         app = create_app(os.environ.get("AEGIS_API_TOKEN", ""), log_path, collector=collector, raw_archive_paths=raw_paths,
-                         stored_sources=json.loads(encoded_sources) if encoded_sources is not None else None)
+                         stored_sources=stored_sources, archive_sessions_root=args.archive_sessions_root,
+                         active_archive=args.archive_directory)
     except (ValueError, OSError):
         raise SystemExit("Check local API/emulator token environment variables and emulator configuration.") from None
     # Windows IOCP accept can remain failed after WinError 64; bounded local TCP needs no subprocess loop support.

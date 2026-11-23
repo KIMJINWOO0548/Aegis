@@ -1,5 +1,25 @@
 # Aegis Insight
 
+**Windows에서 장비 신호의 수신·품질·추세를 보고, 이상이 발생한 시점의 원본까지 확인하는 읽기 전용 계측 작업대입니다.** 여러 모듈의 상태를 한 화면에 모아 보고, 다른 업무 중에는 필요한 신호만 오버레이에 고정할 수 있습니다.
+
+[Windows 실행과 설치](scripts/windows_release/README.ko.md) · [시연 흐름과 검증 범위](docs/PORTFOLIO_WINDOWS.md) · [동반 모드](docs/WINDOWS_COMPANION.md)
+
+![Aegis Windows 메인 작업대. 왼쪽에서 장비 모듈과 태그를 선택하면 오른쪽에서 합성 유량과 추세를 본다.](docs/images/windows-workbench/aegis-main.png)
+
+*최대화한 Windows 작업대, OS 배율 125%. 두 개의 로컬 합성 수집기가 보내는 신호입니다.*
+
+### 읽기 전용 오버레이
+
+![Aegis 오버레이의 합성 유량과 고정한 압력, 전류, 온도, 밸브 피드백](docs/images/windows-workbench/aegis-overlay.png)
+
+장비를 조작하는 화면을 사용하는 동안에도 Aegis에서 고정한 신호의 값과 시각을 확인할 수 있습니다. 오버레이를 켰을 때 작업대가 전경을 유지하는 동작을 Windows에서 확인했습니다. [작업대와 오버레이를 함께 연 화면](docs/images/windows-workbench/aegis-workbench-with-overlay.png)
+
+### 주요 작업
+
+- **수집 상태 확인.** 모듈별로 실제 값 0, 누락, 오래된 값, 다시 불러온 이력을 구분합니다. 선택 태그의 시각과 추세를 확인하고 원본 이력을 엽니다.
+- **사건 조사.** 경고의 근거 신호를 확인하고 운영자 확인을 남깁니다. 앱을 다시 열어 같은 사건과 이전 세션의 원본을 찾아볼 수 있습니다.
+- **이력 분석과 진단.** 합성 보관 기록에서 유량 예측 방식의 오차를 비교하고, 상태와 건수만 담은 진단 JSON을 로컬에 저장합니다. 현장 고장 탐지와 학습 모델의 실시간 적용은 별도로 검증할 범위입니다.
+
 ## Platform preflight
 
 Before using the opt-in adapter/archive tools, run `python -m aegis.platform_support`.
@@ -74,9 +94,9 @@ Freeze a contextual investigation, inspect exact UTC/null rows with native keybo
 
 **범위:** 합성 에뮬레이터를 이용한 개발용 프로토타입입니다. 실장비 연결, 고객 데이터, 현장 성능 검증, 판매 실적은 포함하지 않습니다. 개발용 EWMA는 점검 참고이며 학습된 고장 예측 모델이 아닙니다.
 
-![밝은 대시보드의 UI 검증 화면](docs/images/dashboard-fixtures.png)
+[이전 하이브리드 UI 검증 화면](docs/images/dashboard-fixtures.png)
 
-위 화면은 **UI 검증용 고정 자료(FIXTURES)** 입니다. 실제 연결·현장 성능의 증거가 아닙니다. 좁은 창에서는 재배치하고, 전체 신호 목록은 상세 화면에서 확인합니다.
+이전 하이브리드 화면은 **UI 검증용 고정 자료(FIXTURES)** 입니다. 실제 연결·현장 성능의 증거가 아닙니다. 좁은 창에서는 재배치하고, 전체 신호 목록은 상세 화면에서 확인합니다.
 
 ## 최신 실행과 검증
 

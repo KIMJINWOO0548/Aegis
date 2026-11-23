@@ -13,7 +13,7 @@ public sealed record DashboardDevice(string DeviceId, string? EquipmentId, strin
     Aegis.SignalProcessing.FlowReviewSnapshot? Review, string EngineState, long? NativeSequence);
 
 public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory clients, ArchiveReview archive,
-    IHubContext<DashboardHub> hub) : BackgroundService
+    IHubContext<DashboardHub> hub, ProductWorkspace? workspace = null) : BackgroundService
 {
     private const int MaxWarningsPerDevice = 32;
     private static readonly object Inference = new { state = "NOT_REGISTERED", message = "No validated ONNX model is registered." };
@@ -69,7 +69,7 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
             var connections = Index(await GetAsync("v1/connections", deadline.Token), ids);
             var ingestions = Index(await GetAsync("v1/ingestion", deadline.Token), ids);
             var warnings = WireValidation.Array(await GetAsync("v1/warnings", deadline.Token), MaxWarningsPerDevice * ids.Count);
-            ContractJson.Deserialize<Warning[]>(warnings.ToJsonString());
+            var typedWarnings = ContractJson.Deserialize<Warning[]>(warnings.ToJsonString());
             var warningCounts = ids.ToDictionary(id => id, _ => 0, StringComparer.Ordinal);
             foreach (var warning in warnings)
             {
@@ -129,7 +129,21 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
                 result.Add(new(id, equipment, module, connection, ingestion, observations, diagnostics,
                     new JsonArray(warnings.Where(warning => WireValidation.String(warning!, "deviceId") == id).Select(warning => warning!.DeepClone()).ToArray()), native.Review, native.EngineState, native.NativeSequence));
             }
+            workspace?.CaptureSafely(typedWarnings);
             Volatile.Write(ref _latest, new("dashboard-1", DateTimeOffset.UtcNow, "CONNECTED", mode, null, result, Inference));
+            if (workspace?.PendingEvidence(typedWarnings) is { } pendingWarning)
+            {
+                try
+                {
+                    var evidence = await GetAsync($"v1/warnings/{Uri.EscapeDataString(pendingWarning.Id)}/timeline", deadline.Token);
+                    workspace.RecordEvidence(pendingWarning, ContractJson.Deserialize<WarningTimeline>(evidence.ToJsonString()));
+                }
+                catch (Exception error) when (error is HttpRequestException or OperationCanceledException or JsonException
+                    or InvalidOperationException or IOException or UnauthorizedAccessException or Microsoft.Data.Sqlite.SqliteException)
+                {
+                    // Missing evidence is represented independently from the live dashboard.
+                }
+            }
         }
         catch (Exception error) when (error is HttpRequestException or OperationCanceledException or JsonException or InvalidDataException or InvalidOperationException or FormatException or KeyNotFoundException or ArgumentException or OverflowException or NullReferenceException)
         {
