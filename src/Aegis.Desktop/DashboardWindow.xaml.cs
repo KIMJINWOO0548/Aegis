@@ -1,20 +1,15 @@
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Windows;
-using System.Windows.Interop;
-using System.Windows.Media;
+using System.Windows.Controls;
 using Microsoft.Web.WebView2.Core;
 
 namespace Aegis.Desktop;
 
 public partial class DashboardWindow : Window
 {
-    private const uint ImmersiveDarkMode = 20;
-    private const uint BorderColor = 34;
-    private const uint CaptionColor = 35;
-    private const uint TextColor = 36;
-    private const uint SystemColor = uint.MaxValue;
     private const string ConnectingCaption = "Aegis · 로컬 연결 중";
     private const string UnavailableCaption = "Aegis · 로컬 연결 확인";
     private const string ConnectingMessage = "로컬 대시보드에 연결하고 있습니다.";
@@ -23,21 +18,24 @@ public partial class DashboardWindow : Window
     private bool _initializing;
     private bool _closed;
     private readonly CompanionHost? _companion;
-    private readonly Dictionary<string, Brush> _instrumentBrushes = [];
+    private readonly SemaphoreSlim _themeUpdates = new(1);
+    private string? _themeScriptId;
+    private string? _registeredTheme;
+    private bool _updatingThemeSelection;
+    private InstrumentTheme Theme => _companion?.Theme ?? InstrumentTheme.Dark;
 
     public DashboardWindow()
     {
         InitializeComponent();
-        foreach (var key in new[] { "InstrumentSurface", "InstrumentBar", "InstrumentRaised", "InstrumentRule",
-                                    "InstrumentInk", "InstrumentMuted", "InstrumentAccent" })
-            _instrumentBrushes.Add(key, (Brush)Resources[key]);
-        UpdateClientPalette();
         _companion = (Application.Current as App)?.Companion;
+        UpdateClientPalette();
         if (_companion is not null)
         {
             CompanionToolbar.Visibility = Visibility.Visible;
             _companion.OverlayVisibilityChanged += UpdateCompanionButton;
+            _companion.ThemeChanged += OnThemeChanged;
             UpdateCompanionButton();
+            UpdateThemeSelection();
         }
         var bounds = WindowBounds.Fit(Width, Height, SystemParameters.WorkArea.Width, SystemParameters.WorkArea.Height);
         MinWidth = Math.Min(MinWidth, bounds.Width);
@@ -74,33 +72,101 @@ public partial class DashboardWindow : Window
 
     private void UpdateClientPalette()
     {
-        foreach (var (key, brush) in _instrumentBrushes)
-            Resources[key] = SystemParameters.HighContrast
-                ? key is "InstrumentSurface" or "InstrumentBar" or "InstrumentRaised"
-                    ? SystemColors.WindowBrush : SystemColors.WindowTextBrush
-                : brush;
-        var background = SystemParameters.HighContrast ? SystemColors.WindowColor : Color.FromRgb(0x10, 0x1B, 0x27);
+        var palette = InstrumentPalette.For(Theme);
+        var highContrast = SystemParameters.HighContrast;
+        Resources["InstrumentSurface"] = highContrast ? SystemColors.WindowBrush : InstrumentPalette.BrushOf(palette.Surface);
+        Resources["InstrumentBar"] = highContrast ? SystemColors.WindowBrush : InstrumentPalette.BrushOf(palette.Bar);
+        Resources["InstrumentRaised"] = highContrast ? SystemColors.WindowBrush : InstrumentPalette.BrushOf(palette.Raised);
+        Resources["InstrumentRule"] = highContrast ? SystemColors.WindowTextBrush : InstrumentPalette.BrushOf(palette.Rule);
+        Resources["InstrumentInk"] = highContrast ? SystemColors.WindowTextBrush : InstrumentPalette.BrushOf(palette.Ink);
+        Resources["InstrumentMuted"] = highContrast ? SystemColors.WindowTextBrush : InstrumentPalette.BrushOf(palette.Muted);
+        Resources["InstrumentAccent"] = highContrast ? SystemColors.HighlightBrush : InstrumentPalette.BrushOf(palette.Accent);
+        Resources["InstrumentSelection"] = highContrast ? SystemColors.WindowBrush : InstrumentPalette.BrushOf(palette.Selection);
+        var background = highContrast ? SystemColors.WindowColor : InstrumentPalette.ColorOf(palette.Surface);
         Dashboard.DefaultBackgroundColor = System.Drawing.Color.FromArgb(background.R, background.G, background.B);
     }
 
     private void UpdateCaptionPalette()
     {
-        if (_closed || !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000)) return;
-        var handle = new WindowInteropHelper(this).Handle;
-        if (handle == IntPtr.Zero) return;
-        // COLORREF uses BGR. Keep the native caption controls and let Windows supply high-contrast colors.
-        var highContrast = SystemParameters.HighContrast;
-        var caption = highContrast ? SystemColor : IsActive ? 0x001F150Du : 0x00241810u;
-        var text = highContrast ? SystemColor : IsActive ? 0x00F5EFE6u : 0x00D9CCB9u;
-        var border = highContrast ? SystemColor : IsActive ? 0x0051402Fu : 0x003B2D21u;
-        DwmSetWindowAttribute(handle, ImmersiveDarkMode, highContrast ? 0u : 1u, sizeof(uint));
-        DwmSetWindowAttribute(handle, CaptionColor, caption, sizeof(uint));
-        DwmSetWindowAttribute(handle, TextColor, text, sizeof(uint));
-        DwmSetWindowAttribute(handle, BorderColor, border, sizeof(uint));
+        if (!_closed) InstrumentPalette.For(Theme).ApplyCaption(this);
     }
 
-    [DllImport("dwmapi.dll", ExactSpelling = true)]
-    private static extern int DwmSetWindowAttribute(IntPtr handle, uint attribute, in uint value, uint size);
+    private void UpdateThemeSelection()
+    {
+        _updatingThemeSelection = true;
+        try
+        {
+            DarkThemeButton.IsChecked = Theme == InstrumentTheme.Dark;
+            LightThemeButton.IsChecked = Theme == InstrumentTheme.Light;
+            WarmThemeButton.IsChecked = Theme == InstrumentTheme.Warm;
+        }
+        finally { _updatingThemeSelection = false; }
+    }
+
+    private void ThemeChecked(object sender, RoutedEventArgs e)
+    {
+        if (_updatingThemeSelection) return;
+        if (sender is RadioButton { Tag: string key } && Enum.TryParse<InstrumentTheme>(key, out var theme))
+            _companion?.SetTheme(theme);
+        UpdateThemeSelection();
+    }
+
+    private async void OnThemeChanged()
+    {
+        UpdateThemeSelection();
+        UpdateClientPalette();
+        UpdateCaptionPalette();
+        if (Dashboard.CoreWebView2 is { } core) await ApplyVisibleThemeAsync(core);
+    }
+
+    private async Task ApplyVisibleThemeAsync(CoreWebView2 core)
+    {
+        try
+        {
+            await SynchronizeDocumentThemeAsync(core, applyToCurrent: true);
+            if (!_closed) ThemeSyncNotice.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception error) when (error is COMException or InvalidOperationException)
+        {
+            if (!_closed) ThemeSyncNotice.Visibility = Visibility.Visible;
+        }
+    }
+
+    private async Task SynchronizeDocumentThemeAsync(CoreWebView2 core, bool applyToCurrent)
+    {
+        await _themeUpdates.WaitAsync();
+        try
+        {
+            if (_closed || _endpoint is not { } endpoint) return;
+            var key = InstrumentPalette.For(Theme).Key;
+            var origin = endpoint.Origin.GetLeftPart(UriPartial.Authority);
+            // A fixed palette key is the only state sent to the local top-level document.
+            var script = $$"""
+                (() => {
+                    if (window !== window.top || location.origin !== {{JsonSerializer.Serialize(origin)}}) return;
+                    const apply = () => {
+                        if (!document.documentElement) return false;
+                        document.documentElement.dataset.aegisTheme = "{{key}}";
+                        return true;
+                    };
+                    if (!apply()) {
+                        const root = new MutationObserver(() => { if (apply()) root.disconnect(); });
+                        root.observe(document, {childList: true});
+                    }
+                })();
+                """;
+            if (_registeredTheme != key)
+            {
+                var id = await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
+                if (_closed) return;
+                if (_themeScriptId is not null) core.RemoveScriptToExecuteOnDocumentCreated(_themeScriptId);
+                _themeScriptId = id;
+                _registeredTheme = key;
+            }
+            if (applyToCurrent && endpoint.AllowsNavigation(core.Source)) await core.ExecuteScriptAsync(script);
+        }
+        finally { _themeUpdates.Release(); }
+    }
 
     private void ShowConnection(string caption, string message)
     {
@@ -166,15 +232,18 @@ public partial class DashboardWindow : Window
                 core.NewWindowRequested += (_, args) => args.Handled = true;
                 core.DownloadStarting += (_, args) => args.Cancel = true;
                 core.PermissionRequested += (_, args) => args.State = CoreWebView2PermissionState.Deny;
-                core.NavigationCompleted += (_, args) =>
+                core.NavigationCompleted += async (_, args) =>
                 {
                     if (_closed || args.NavigationId != _navigationId) return;
-                    _navigationId = null;
                     if (!args.IsSuccess)
                     {
+                        _navigationId = null;
                         ShowConnection(UnavailableCaption, "로컬 서버에 연결할 수 없습니다. 하이브리드 데모 실행 상태를 확인하세요.");
                         return;
                     }
+                    await ApplyVisibleThemeAsync(core);
+                    if (_closed || args.NavigationId != _navigationId) return;
+                    _navigationId = null;
                     ConnectionPanel.Visibility = Visibility.Collapsed;
                     Dashboard.Visibility = Visibility.Visible;
                     UpdateDocumentCaption(core);
@@ -188,6 +257,8 @@ public partial class DashboardWindow : Window
             }
             // Only this first same-origin document carries the bootstrap secret; fetch and SignalR use an HttpOnly cookie.
             var initialized = Dashboard.CoreWebView2 ?? throw new InvalidOperationException("WebView2 initialization did not complete.");
+            await SynchronizeDocumentThemeAsync(initialized, applyToCurrent: false);
+            if (_closed) return;
             var request = initialized.Environment.CreateWebResourceRequest(
                 endpoint.Origin.AbsoluteUri, "GET", null,
                 "X-Aegis-Dashboard-Token: " + endpoint.BootstrapToken + "\r\n");
@@ -212,7 +283,11 @@ public partial class DashboardWindow : Window
     private void WindowClosed(object? sender, EventArgs e)
     {
         _closed = true;
-        if (_companion is not null) _companion.OverlayVisibilityChanged -= UpdateCompanionButton;
+        if (_companion is not null)
+        {
+            _companion.OverlayVisibilityChanged -= UpdateCompanionButton;
+            _companion.ThemeChanged -= OnThemeChanged;
+        }
         SystemParameters.StaticPropertyChanged -= SystemParametersChanged;
         Dashboard.Dispose();
     }

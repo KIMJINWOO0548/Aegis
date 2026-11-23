@@ -1,4 +1,4 @@
-import {memo, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent} from 'react';
+import {memo, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent} from 'react';
 import {init, use, type ECharts} from 'echarts/core';
 import {LineChart, ScatterChart} from 'echarts/charts';
 import {GridComponent, MarkAreaComponent, MarkLineComponent, TooltipComponent} from 'echarts/components';
@@ -10,24 +10,18 @@ import './instrument-trend.css';
 use([LineChart, ScatterChart, GridComponent, MarkAreaComponent, MarkLineComponent, TooltipComponent, CanvasRenderer]);
 
 const cursorKeys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
-const palette = {
-  face: '#0d1925',
-  grid: '#233546',
-  axis: '#547187',
-  ink: '#abc4d6',
-  live: '#70e5cb',
-  past: '#a9bfff',
-  gap: '#e0ad76',
-  interrupt: '#ffb3a9',
-  cursor: '#bddaff',
-};
-const markerStyles = {
-  transport: {color: palette.interrupt, type: 'dashed' as const},
-  gap: {color: palette.gap, type: 'dotted' as const},
-};
 const axisFont = 'Cascadia Mono, Consolas, monospace';
 const timestamp = (t: number) => new Date(t).toISOString();
 const clock = (value: string) => value.slice(11, 19);
+
+const defaultTheme = () => 'dark';
+const readTheme = () => document.documentElement.dataset.aegisTheme ?? defaultTheme();
+
+function watchTheme(notify: () => void) {
+  const observer = new MutationObserver(notify);
+  observer.observe(document.documentElement, {attributes: true, attributeFilter: ['data-aegis-theme']});
+  return () => observer.disconnect();
+}
 
 function gapBands(points: readonly Point[]) {
   const bands: [{xAxis: number}, {xAxis: number}][] = [];
@@ -51,7 +45,6 @@ function qualityMarks(points: readonly Point[]) {
   return points.filter(point => !point.marker).map(point => ({
     value: [point.t, .5],
     symbol: point.v === null ? 'diamond' : 'rect',
-    itemStyle: {color: point.v === null ? palette.gap : palette.live},
   }));
 }
 
@@ -74,6 +67,7 @@ function SignalChart({points, label, unit, historical, context}: {
   const [range, setRange] = useState<HistoryRange>('all');
   const [frozen, setFrozen] = useState<FrozenHistory | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
+  const theme = useSyncExternalStore(watchTheme, readTheme, defaultTheme);
   const rangeId = useId();
   const cursorHintId = useId();
   const inspectionPoints = frozen?.points ?? points;
@@ -111,16 +105,28 @@ function SignalChart({points, label, unit, historical, context}: {
   }, [hasPoints]);
 
   useEffect(() => {
-    if (summary.start === null || summary.end === null) return;
+    if (!host.current || summary.start === null || summary.end === null) return;
+    // Read the same tokens as the legend and controls so an existing canvas follows the selected theme.
+    const styles = getComputedStyle(host.current);
+    const color = (name: string) => styles.getPropertyValue('--trend-' + name).trim();
+    const axis = color('axis');
+    const axisInk = color('axis-ink');
+    const grid = color('grid');
+    const gap = color('gap');
+    const cursorColor = color('cursor');
+    const markerStyles = {
+      transport: {color: color('interrupt'), type: 'dashed' as const},
+      gap: {color: gap, type: 'dotted' as const},
+    };
     const min = summary.start === summary.end ? summary.start - 1000 : summary.start;
     const max = summary.start === summary.end ? summary.end + 1000 : summary.end;
-    const baseTimeAxis = {type: 'time', min, max, axisLine: {lineStyle: {color: palette.axis}}, axisTick: {show: false}};
+    const baseTimeAxis = {type: 'time', min, max, axisLine: {lineStyle: {color: axis}}, axisTick: {show: false}};
     const marks = markers.flatMap(point => point.marker ? [{xAxis: point.t, lineStyle: markerStyles[point.marker]}] : []);
-    if (selected) marks.push({xAxis: selected.t, lineStyle: {color: palette.cursor, type: 'dashed'}});
-    const traceColor = muted ? palette.past : palette.live;
+    if (selected) marks.push({xAxis: selected.t, lineStyle: {color: cursorColor, type: 'dashed'}});
+    const traceColor = color(muted ? 'past' : 'live');
     chart.current?.setOption({
       animation: false,
-      backgroundColor: palette.face,
+      backgroundColor: color('plot'),
       useUTC: true,
       textStyle: {fontFamily: axisFont},
       grid: [
@@ -130,33 +136,35 @@ function SignalChart({points, label, unit, historical, context}: {
       tooltip: {
         trigger: 'axis',
         renderMode: 'richText',
-        backgroundColor: '#162737',
-        borderColor: '#3d586b',
-        textStyle: {color: '#e6eff5'},
+        backgroundColor: color('control'),
+        borderColor: color('control-border'),
+        textStyle: {color: color('ink')},
+        axisPointer: {lineStyle: {color: cursorColor}},
       },
       xAxis: [
-        {...baseTimeAxis, axisLabel: {show: false}, splitLine: {show: true, lineStyle: {color: palette.grid}}},
+        {...baseTimeAxis, axisLabel: {show: false}, splitLine: {show: true, lineStyle: {color: grid}}},
         {...baseTimeAxis, gridIndex: 1, name: '품질', nameLocation: 'start', nameGap: 6,
-          nameTextStyle: {color: palette.ink, fontSize: 10, fontFamily: 'Segoe UI, Malgun Gothic, sans-serif'},
-          axisLabel: {color: palette.ink, fontSize: 10, hideOverlap: true, margin: 8,
+          nameTextStyle: {color: axisInk, fontSize: 10, fontFamily: 'Segoe UI, Malgun Gothic, sans-serif'},
+          axisLabel: {color: axisInk, fontSize: 10, hideOverlap: true, margin: 8,
             formatter: (value: number) => clock(timestamp(value))}},
       ],
       yAxis: [
-        {type: 'value', scale: true, show: hasValues, axisLabel: {color: palette.ink, fontSize: 10},
-          splitLine: {lineStyle: {color: palette.grid}}},
+        {type: 'value', scale: true, show: hasValues, axisLabel: {color: axisInk, fontSize: 10},
+          splitLine: {lineStyle: {color: grid}}},
         {type: 'value', gridIndex: 1, min: 0, max: 1, show: false},
       ],
       series: [
         {...chartSeries, name: unit ? label + ' (' + unit + ')' : label, lineStyle: {width: 2, color: traceColor},
           itemStyle: {color: traceColor},
           markLine: {silent: true, symbol: 'none', label: {show: false}, data: marks},
-          markArea: {silent: true, itemStyle: {color: '#583b2ac9'}, label: {show: false}, data: bands}},
+          markArea: {silent: true, itemStyle: {color: color('gap-area')}, label: {show: false}, data: bands}},
         {type: 'scatter', silent: true, xAxisIndex: 1, yAxisIndex: 1, symbolSize: 7,
-          tooltip: {show: false}, data: quality.map(point => point.symbol === 'rect'
-            ? {...point, itemStyle: {color: traceColor}} : point)},
+          tooltip: {show: false}, data: quality.map(point => ({
+            ...point, itemStyle: {color: point.symbol === 'rect' ? traceColor : gap},
+          }))},
       ],
     }, true);
-  }, [bands, chartSeries, hasValues, label, markers, muted, quality, selected, summary.start, summary.end, unit]);
+  }, [bands, chartSeries, hasValues, label, markers, muted, quality, selected, summary.start, summary.end, theme, unit]);
 
   const timeLabel = selected?.marker === 'transport' ? '중단 감지 시각' : '원본 관측 시각';
   const selectedTime = !selected || selected.marker === 'gap' ? undefined : timestamp(selected.detectedAt ?? selected.t);

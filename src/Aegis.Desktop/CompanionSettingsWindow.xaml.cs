@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -14,10 +15,12 @@ internal partial class CompanionSettingsWindow : Window
     private Item[] _pinned = [];
     private string _feedback = "";
     private string _connectionStatus = "";
+    private InstrumentTheme _theme;
 
     public CompanionSettingsWindow()
     {
         InitializeComponent();
+        RefreshPalette();
         Loaded += (_, _) => Search.Focus();
         PreviewKeyDown += (_, e) =>
         {
@@ -29,6 +32,61 @@ internal partial class CompanionSettingsWindow : Window
     }
 
     public event Action<CompanionPin[]>? PinsChanged;
+
+    internal void ApplyTheme(InstrumentTheme theme)
+    {
+        if (_theme == theme) return;
+        _theme = theme;
+        RefreshPalette();
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        SystemParameters.StaticPropertyChanged += SystemParametersChanged;
+        InstrumentPalette.For(_theme).ApplyCaption(this);
+    }
+
+    protected override void OnActivated(EventArgs e)
+    {
+        base.OnActivated(e);
+        InstrumentPalette.For(_theme).ApplyCaption(this);
+    }
+
+    protected override void OnDeactivated(EventArgs e)
+    {
+        base.OnDeactivated(e);
+        InstrumentPalette.For(_theme).ApplyCaption(this);
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        SystemParameters.StaticPropertyChanged -= SystemParametersChanged;
+        base.OnClosed(e);
+    }
+
+    private void SystemParametersChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SystemParameters.HighContrast)) RefreshPalette();
+    }
+
+    private void RefreshPalette()
+    {
+        var palette = InstrumentPalette.For(_theme);
+        var highContrast = SystemParameters.HighContrast;
+        Resources["PinSurface"] = highContrast ? SystemColors.WindowBrush : InstrumentPalette.BrushOf(palette.Surface);
+        Resources["PinBar"] = highContrast ? SystemColors.WindowBrush : InstrumentPalette.BrushOf(palette.Bar);
+        Resources["PinInk"] = highContrast ? SystemColors.WindowTextBrush : InstrumentPalette.BrushOf(palette.Ink);
+        Resources["PinMuted"] = highContrast ? SystemColors.WindowTextBrush : InstrumentPalette.BrushOf(palette.Muted);
+        Resources["PinRule"] = highContrast ? SystemColors.WindowTextBrush : InstrumentPalette.BrushOf(palette.Rule);
+        Resources["PinAccent"] = highContrast ? SystemColors.HotTrackBrush : InstrumentPalette.BrushOf(palette.Accent);
+        Resources["PinRaised"] = highContrast ? SystemColors.HighlightBrush : InstrumentPalette.BrushOf(palette.Raised);
+        Resources["PinRaisedInk"] = highContrast ? SystemColors.HighlightTextBrush : InstrumentPalette.BrushOf(palette.Ink);
+        Resources["PinSelection"] = highContrast ? SystemColors.HighlightBrush : InstrumentPalette.BrushOf(palette.Selection);
+        Resources["PinSelectionInk"] = highContrast ? SystemColors.HighlightTextBrush : InstrumentPalette.BrushOf(palette.Ink);
+        Resources["PinDisabledInk"] = highContrast ? SystemColors.GrayTextBrush : InstrumentPalette.BrushOf(palette.Muted);
+        palette.ApplyCaption(this);
+    }
 
     public void UpdateSource(CompanionSnapshot snapshot, CompanionPin[] pins, string connectionStatus)
     {

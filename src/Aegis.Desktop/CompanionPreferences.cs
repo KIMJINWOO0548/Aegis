@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Aegis.Desktop;
 
-internal sealed record CompanionPreferences(CompanionPin[] Pins, CompanionCorner Corner)
+internal sealed record CompanionPreferences(CompanionPin[] Pins, CompanionCorner Corner, InstrumentTheme Theme = InstrumentTheme.Dark)
 {
     public const int PinLimit = 32;
     public static CompanionPreferences Default { get; } = new([], CompanionCorner.TopRight);
@@ -24,7 +24,7 @@ internal sealed class CompanionPreferencesStore(string path)
                 settings.Pins.Any(pin => pin is null || !ValidKey(pin.DeviceId) || !ValidKey(pin.SignalKey)) ||
                 settings.Pins.Distinct().Count() != settings.Pins.Length || !Enum.IsDefined(settings.Corner))
                 throw new JsonException("Invalid companion settings.");
-            return settings;
+            return Enum.IsDefined(settings.Theme) ? settings : settings with { Theme = InstrumentTheme.Dark };
         }
         catch (FileNotFoundException) { return CompanionPreferences.Default; }
         catch (DirectoryNotFoundException) { return CompanionPreferences.Default; }

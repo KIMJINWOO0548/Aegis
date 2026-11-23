@@ -63,13 +63,21 @@ internal sealed class CompanionHost : IDisposable
     }
 
     public bool IsOverlayVisible => _overlay?.IsVisible == true;
+    public InstrumentTheme Theme => _preferences.Theme;
     public event Action? OverlayVisibilityChanged;
+    public event Action? ThemeChanged;
+
+    public void SetTheme(InstrumentTheme theme)
+    {
+        if (theme != Theme) UpdatePreferences(_preferences with { Theme = theme });
+    }
 
     public void ShowOverlay()
     {
         if (IsOverlayVisible) return;
         _overlay ??= new CompanionOverlay();
         _overlay.Corner = _preferences.Corner;
+        _overlay.ApplyTheme(Theme);
         Paint();
         _overlay.ShowPassive();
         UpdateVisibilityLabel();
@@ -95,6 +103,7 @@ internal sealed class CompanionHost : IDisposable
             return;
         }
         var editor = new CompanionSettingsWindow();
+        editor.ApplyTheme(Theme);
         _settings = editor;
         if (owner?.IsVisible == true) editor.Owner = owner;
         editor.PinsChanged += pins => UpdatePreferences(_preferences with { Pins = pins });
@@ -153,11 +162,18 @@ internal sealed class CompanionHost : IDisposable
     {
         try
         {
+            var themeChanged = updated.Theme != Theme;
             _preferencesStore.Save(updated);
             _preferences = updated;
             if (_overlay is not null) _overlay.Corner = updated.Corner;
             foreach (var (corner, item) in _corners) item.Checked = corner == updated.Corner;
             _feedback = "설정을 저장했습니다.";
+            if (themeChanged)
+            {
+                _overlay?.ApplyTheme(Theme);
+                _settings?.ApplyTheme(Theme);
+                ThemeChanged?.Invoke();
+            }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {

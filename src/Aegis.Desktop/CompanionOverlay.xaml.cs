@@ -11,6 +11,19 @@ internal enum CompanionCorner { TopRight, BottomRight, TopLeft, BottomLeft }
 
 internal partial class CompanionOverlay : Window
 {
+    private static readonly (string Key, string Light, string Warm)[] OverlayColors =
+    [
+        ("OverlayPanel", "#E8F4F7FA", "#E8F5EEE1"),
+        ("OverlayBorder", "#B0637E91", "#B08B7256"),
+        ("OverlayInk", "#172936", "#36291F"),
+        ("OverlaySecondary", "#42576A", "#584739"),
+        ("OverlayRule", "#80647E91", "#807E664B"),
+        ("OverlaySubtleRule", "#50647E91", "#507E664B"),
+        ("OverlayLive", "#105F54", "#275946"),
+        ("OverlayArchived", "#264982", "#59446E"),
+        ("OverlayWarning", "#774013", "#783D17")
+    ];
+
     private const double StandardWidth = 366;
     private const double EdgeMargin = 14;
     private const double CaptionClearance = 56;
@@ -30,6 +43,7 @@ internal partial class CompanionOverlay : Window
     private const int MaNoActivateAndEat = 4;
 
     private readonly Dictionary<string, Brush> _normalPalette = [];
+    private InstrumentTheme _theme;
     private CompanionFrame _frame = new([], [], "수집 대기");
     private CompanionCorner _corner = CompanionCorner.TopRight;
     private HwndSource? _source;
@@ -38,8 +52,7 @@ internal partial class CompanionOverlay : Window
     public CompanionOverlay()
     {
         InitializeComponent();
-        foreach (var key in new[] { "OverlayPanel", "OverlayBorder", "OverlayInk", "OverlaySecondary", "OverlayRule",
-                                    "OverlaySubtleRule", "OverlayLive", "OverlayArchived", "OverlayWarning" })
+        foreach (var (key, _, _) in OverlayColors)
             _normalPalette.Add(key, (Brush)Resources[key]);
         ApplyPalette();
         SizeChanged += (_, _) => QueuePosition();
@@ -61,6 +74,13 @@ internal partial class CompanionOverlay : Window
     {
         _frame = frame;
         RenderFrame();
+    }
+
+    internal void ApplyTheme(InstrumentTheme theme)
+    {
+        if (_theme == theme) return;
+        _theme = theme;
+        ApplyPalette();
     }
 
     internal void ShowPassive()
@@ -129,11 +149,27 @@ internal partial class CompanionOverlay : Window
 
     private void ApplyPalette()
     {
-        foreach (var (key, normalBrush) in _normalPalette)
+        foreach (var (key, light, warm) in OverlayColors)
         {
-            var contrastBrush = key == "OverlayPanel" ? SystemColors.WindowBrush : SystemColors.WindowTextBrush;
-            Resources[key] = SystemParameters.HighContrast ? contrastBrush : normalBrush;
+            if (SystemParameters.HighContrast)
+            {
+                Resources[key] = key == "OverlayPanel" ? SystemColors.WindowBrush : SystemColors.WindowTextBrush;
+                continue;
+            }
+            Resources[key] = _theme switch
+            {
+                InstrumentTheme.Light => CreateBrush(light),
+                InstrumentTheme.Warm => CreateBrush(warm),
+                _ => _normalPalette[key]
+            };
         }
+    }
+
+    private static Brush CreateBrush(string value)
+    {
+        var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(value));
+        brush.Freeze();
+        return brush;
     }
 
     private void RenderFrame()

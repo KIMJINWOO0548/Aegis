@@ -1,31 +1,132 @@
-.worksheet-shell, .unlock {
+:root {
   color-scheme: dark;
   --instrument-canvas: #101b27;
   --instrument-rail: #111e2b;
+  --instrument-tag-panel: #131f2c;
   --instrument-bar: #14212e;
   --instrument-field: #101e2b;
+  --instrument-recess: #0d1925;
+  --instrument-table-head: #182937;
   --instrument-border: #2b4051;
+  --instrument-field-border: #547187;
+  --instrument-pressed-border: #4b777a;
   --instrument-ink: #e6eff5;
   --instrument-subtle: #b9ccd9;
   --instrument-accent: #71e8d4;
+  --instrument-live: #71e8d4;
   --instrument-selected: #18343c;
+  --instrument-selected-hover: #20414a;
+  --instrument-hover: #1c303d;
+  --instrument-button: #162936;
+  --instrument-button-hover: #223d49;
   --instrument-past: #b8ccff;
+  --instrument-past-surface: #273650;
   --instrument-warn: #ffd091;
+  --instrument-warn-surface: #3e2e22;
+  --instrument-warn-line: #66523f;
+  --instrument-alert-surface: #2d261f;
   --instrument-focus: #a3c9ff;
+  --instrument-good: #a0f1d5;
+  --instrument-good-surface: #1b3c36;
+  --instrument-error: #ffb3a9;
+  --instrument-badge: #233745;
+  --instrument-value: #d9faf4;
+  --instrument-module-icon: #a4c5f8;
+  --instrument-module-icon-surface: #172e3b;
   --instrument-mono: 'Cascadia Mono', Consolas, 'Malgun Gothic', monospace;
+}
+
+:root[data-aegis-theme='light'] {
+  color-scheme: light;
+  --instrument-canvas: #f4f7fa;
+  --instrument-rail: #eaf0f6;
+  --instrument-tag-panel: #eff4f8;
+  --instrument-bar: #e7eef6;
+  --instrument-field: #ffffff;
+  --instrument-recess: #e7edf4;
+  --instrument-table-head: #e0e9f2;
+  --instrument-border: #c2cfdd;
+  --instrument-field-border: #748b9d;
+  --instrument-pressed-border: #54838d;
+  --instrument-ink: #182a3b;
+  --instrument-subtle: #42576b;
+  --instrument-accent: #075d71;
+  --instrument-live: #075e54;
+  --instrument-selected: #d8edf2;
+  --instrument-selected-hover: #cbe5ed;
+  --instrument-hover: #e0eaf4;
+  --instrument-button: #f9fbfd;
+  --instrument-button-hover: #dfeaf4;
+  --instrument-past: #394f88;
+  --instrument-past-surface: #e0e8fb;
+  --instrument-warn: #75480b;
+  --instrument-warn-surface: #f9ebd0;
+  --instrument-warn-line: #b2925e;
+  --instrument-alert-surface: #fbf0dd;
+  --instrument-focus: #125e99;
+  --instrument-good: #175c48;
+  --instrument-good-surface: #dceee5;
+  --instrument-error: #942735;
+  --instrument-badge: #e4ebf3;
+  --instrument-value: #173c48;
+  --instrument-module-icon: #365e90;
+  --instrument-module-icon-surface: #e1ebf7;
+}
+
+:root[data-aegis-theme='warm'] {
+  color-scheme: light;
+  --instrument-canvas: #f5eee1;
+  --instrument-rail: #ede1ce;
+  --instrument-tag-panel: #f2e8d8;
+  --instrument-bar: #eee2cf;
+  --instrument-field: #fcf7ee;
+  --instrument-recess: #e9dbc5;
+  --instrument-table-head: #e8dac5;
+  --instrument-border: #cbb89c;
+  --instrument-field-border: #8f765d;
+  --instrument-pressed-border: #a47747;
+  --instrument-ink: #32261d;
+  --instrument-subtle: #624e3b;
+  --instrument-accent: #81511c;
+  --instrument-live: #285b49;
+  --instrument-selected: #ead4b5;
+  --instrument-selected-hover: #e5cba8;
+  --instrument-hover: #eee0cc;
+  --instrument-button: #f9f0e2;
+  --instrument-button-hover: #ebdbc2;
+  --instrument-past: #654d72;
+  --instrument-past-surface: #ebe1ec;
+  --instrument-warn: #75400c;
+  --instrument-warn-surface: #f4dfb8;
+  --instrument-warn-line: #a77f4a;
+  --instrument-alert-surface: #f3e3cb;
+  --instrument-focus: #875019;
+  --instrument-good: #285b49;
+  --instrument-good-surface: #e0e9d8;
+  --instrument-error: #952d31;
+  --instrument-badge: #eaddc9;
+  --instrument-value: #523a28;
+  --instrument-module-icon: #735236;
+  --instrument-module-icon-surface: #edddc6;
+}
+
+:root :is(.worksheet-shell, .unlock) {
   --background: var(--instrument-canvas);
   --foreground: var(--instrument-ink);
   --primary: var(--instrument-focus);
   --card: var(--instrument-field);
   --color-border: var(--instrument-border);
-  --color-input: #435d70;
-  --color-secondary: #203445;
-  --color-secondary-foreground: #c6d9e5;
+  --color-input: var(--instrument-field-border);
+  --color-secondary: var(--instrument-badge);
+  --color-secondary-foreground: var(--instrument-ink);
+  --color-accent: var(--instrument-hover);
+  --color-accent-foreground: var(--instrument-ink);
+  --color-ring: var(--instrument-focus);
   background: var(--instrument-canvas);
   color: var(--instrument-ink);
 }
 
-html:has(.worksheet-shell, .unlock) { color-scheme: dark; background: #101b27; }
+html { background: var(--instrument-canvas); }
 .worksheet-shell { display: flex; min-height: 100vh; flex-direction: column; font-size: 13px; }
 .instrument-page { display: flex; flex: 1; flex-direction: column; min-width: 0; }
 .instrument-command {
@@ -40,7 +141,7 @@ html:has(.worksheet-shell, .unlock) { color-scheme: dark; background: #101b27; }
 .instrument-command-lead, .instrument-command-end, .instrument-views,
 .instrument-module-search { display: flex; align-items: center; gap: 8px; }
 .instrument-command-lead h1 {
-  border-left: 1px solid #3b5163;
+  border-left: 1px solid var(--instrument-border);
   padding-inline-start: 12px;
   font-size: 14px;
   font-weight: 700;
@@ -53,7 +154,7 @@ html:has(.worksheet-shell, .unlock) { color-scheme: dark; background: #101b27; }
   min-width: 125px;
   background: var(--instrument-field);
   color: var(--instrument-subtle);
-  border: 1px solid #435d70;
+  border: 1px solid var(--instrument-field-border);
   border-radius: 4px;
   padding-inline-start: 8px;
 }
@@ -66,7 +167,7 @@ html:has(.worksheet-shell, .unlock) { color-scheme: dark; background: #101b27; }
   background: transparent;
   box-shadow: none;
 }
-.instrument-views { gap: 2px; padding: 2px; border: 1px solid #395367; border-radius: 5px; }
+.instrument-views { gap: 2px; padding: 2px; border: 1px solid var(--instrument-field-border); border-radius: 5px; }
 .instrument-command-button, .instrument-views button {
   display: inline-flex;
   align-items: center;
@@ -79,11 +180,11 @@ html:has(.worksheet-shell, .unlock) { color-scheme: dark; background: #101b27; }
   background: transparent;
   white-space: nowrap;
 }
-.instrument-command-button:hover, .instrument-views button:enabled:hover { background: #213747; }
+.instrument-command-button:hover, .instrument-views button:enabled:hover { background: var(--instrument-hover); }
 .instrument-views button[aria-pressed="true"] {
-  border-color: #4b777a;
+  border-color: var(--instrument-pressed-border);
   color: var(--instrument-accent);
-  background: #1b363e;
+  background: var(--instrument-selected);
 }
 .instrument-views button:disabled { opacity: .6; }
 
@@ -95,7 +196,7 @@ html:has(.worksheet-shell, .unlock) { color-scheme: dark; background: #101b27; }
   min-height: 40px;
   padding: 0 14px;
   border-bottom: 1px solid var(--instrument-border);
-  background: #0d1925;
+  background: var(--instrument-recess);
 }
 .collector-items { display: flex; align-items: stretch; overflow: auto; min-width: 0; }
 .collector-item {
@@ -111,7 +212,7 @@ html:has(.worksheet-shell, .unlock) { color-scheme: dark; background: #101b27; }
 .collector-item i { width: 7px; height: 7px; margin-right: 2px; border-radius: 50%; background: currentColor; }
 .collector-item time, .collector-clock time, .instrument-footer time { font-family: var(--instrument-mono); }
 .collector-item time, .collector-clock, .collector-empty { color: var(--instrument-subtle); }
-.collector-item[data-freshness="CURRENT"] { color: var(--instrument-accent); }
+.collector-item[data-freshness="CURRENT"] { color: var(--instrument-live); }
 .collector-item[data-freshness="RESTORED"] { color: var(--instrument-past); }
 .collector-item[data-freshness="STALE"], .collector-item[data-freshness="UNAVAILABLE"] { color: var(--instrument-warn); }
 .collector-clock { text-align: right; font-size: 11px; white-space: nowrap; }
@@ -135,7 +236,7 @@ html:has(.worksheet-shell, .unlock) { color-scheme: dark; background: #101b27; }
 .inspector-reading > span { display: block; color: var(--instrument-subtle); font-size: 11px; }
 .inspector-reading strong {
   display: block;
-  color: #d9faf4;
+  color: var(--instrument-value);
   font: 700 clamp(28px, 3.9vw, 46px)/1.12 var(--instrument-mono);
   font-variant-numeric: tabular-nums;
 }
@@ -159,30 +260,31 @@ html:has(.worksheet-shell, .unlock) { color-scheme: dark; background: #101b27; }
   font-size: 11px;
 }
 .inspector-evidence time { color: var(--instrument-ink); font-family: var(--instrument-mono); }
-.inspector-state, .inspector-quality { border-radius: 4px; padding: 2px 5px; background: #233745; }
-.inspector-state[data-state="CURRENT"], .inspector-quality[data-quality="GOOD"] { background: #1b3c36; color: #a0f1d5; }
-.inspector-state[data-state="RESTORED"], .inspector-state[data-state="HISTORY"] { background: #273650; color: var(--instrument-past); }
+.inspector-state, .inspector-quality { border-radius: 4px; padding: 2px 5px; background: var(--instrument-badge); }
+.inspector-state[data-state="CURRENT"], .inspector-quality[data-quality="GOOD"] { background: var(--instrument-good-surface); color: var(--instrument-good); }
+.inspector-state[data-state="RESTORED"], .inspector-state[data-state="HISTORY"] { background: var(--instrument-past-surface); color: var(--instrument-past); }
 .inspector-state[data-state="BAD"], .inspector-state[data-state="MISSING"],
-.inspector-quality[data-quality="STALE"], .inspector-quality[data-quality="BAD"] { background: #3e2e22; color: var(--instrument-warn); }
+.inspector-quality[data-quality="STALE"], .inspector-quality[data-quality="BAD"] { background: var(--instrument-warn-surface); color: var(--instrument-warn); }
 .inspector-archive { margin-inline-start: auto; }
 .worksheet-shell :is(.chart-note, .section-description, .quiet-state, .evidence p) { color: var(--instrument-subtle); }
 .worksheet-shell .alert-line {
   margin: 0;
   padding: 5px 14px;
   border: 0;
-  border-bottom: 1px solid #66523f;
+  border-bottom: 1px solid var(--instrument-warn-line);
   border-radius: 0;
   color: var(--instrument-warn);
-  background: #2d261f;
+  background: var(--instrument-alert-surface);
 }
 .worksheet-shell .instrument-inspector > .empty-chart {
   margin-top: 8px;
   height: clamp(138px, 28vh, 260px);
-  border: 1px solid #385266;
+  border: 1px solid var(--instrument-border);
   border-radius: 4px;
   color: var(--instrument-subtle);
-  background: #0d1925;
+  background: var(--instrument-recess);
 }
+.worksheet-shell .instrument-inspector > .empty-chart svg { color: var(--instrument-subtle); }
 .instrument-footer {
   display: flex;
   min-height: 26px;
@@ -193,34 +295,37 @@ html:has(.worksheet-shell, .unlock) { color-scheme: dark; background: #101b27; }
   padding: 4px 14px;
   border-top: 1px solid var(--instrument-border);
   color: var(--instrument-subtle);
-  background: #0d1925;
+  background: var(--instrument-recess);
   font-size: 11px;
 }
 .instrument-footer span { display: flex; gap: 5px; align-items: center; }
 
 .worksheet-shell [data-slot="button"], .unlock [data-slot="button"] {
+  transition-property: box-shadow, transform;
   height: 28px;
-  border: 1px solid #435d70;
+  border: 1px solid var(--instrument-field-border);
   border-radius: 4px;
-  background: #162936;
+  background: var(--instrument-button);
   color: var(--instrument-ink);
 }
-.worksheet-shell [data-slot="button"]:enabled:hover, .unlock [data-slot="button"]:enabled:hover { background: #223d49; }
-.worksheet-shell :is(button, select, input, summary):focus-visible {
+.worksheet-shell [data-slot="button"]:enabled:hover, .unlock [data-slot="button"]:enabled:hover { background: var(--instrument-button-hover); }
+:is(.worksheet-shell, .unlock) :is(button, select, input, summary):focus-visible {
   outline: 2px solid var(--instrument-focus);
   outline-offset: 2px;
 }
-.worksheet-shell [data-slot="input"], .unlock [data-slot="input"] { color: var(--instrument-ink); }
-.worksheet-shell [data-slot="input"]::placeholder { color: var(--instrument-subtle); }
+:is(.worksheet-shell, .unlock) [data-slot="input"] { color: var(--instrument-ink); }
+:is(.instrument-history, .unlock) [data-slot="input"] { background: var(--instrument-field); }
+:is(.worksheet-shell, .unlock) [data-slot="input"]::placeholder { color: var(--instrument-subtle); }
+:is(.worksheet-shell, .unlock) ::selection { color: var(--instrument-ink); background: var(--instrument-selected); }
 .instrument-history > .panel { background: var(--instrument-field); }
 .instrument-history .signal-table { min-width: 330px; }
-.instrument-history .signal-table th { color: var(--instrument-subtle); background: #182937; }
+.instrument-history .signal-table th { color: var(--instrument-subtle); background: var(--instrument-table-head); }
 .instrument-history .signal-table td, .instrument-history .evidence { border-color: var(--instrument-border); }
 .instrument-history .signal-table :is(th, td) { overflow-wrap: anywhere; }
 .instrument-history .evidence [data-slot="button"] { margin-block: 7px; }
 .unlock .brand, .unlock .brand svg { color: var(--instrument-accent); }
 .unlock .unlock-card p { color: var(--instrument-subtle); }
-.unlock p.error-text { color: #ffb3a9 !important; }
+.unlock p.error-text { color: var(--instrument-error) !important; }
 
 @media (max-width: 850px) {
   .instrument-command { gap: 5px 9px; padding-inline: 9px; }

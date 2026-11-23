@@ -16,6 +16,7 @@
         <SolidColorBrush x:Key="InstrumentInk" Color="#E6EFF5" />
         <SolidColorBrush x:Key="InstrumentMuted" Color="#B9CCD9" />
         <SolidColorBrush x:Key="InstrumentAccent" Color="#71E8D4" />
+        <SolidColorBrush x:Key="InstrumentSelection" Color="#18343C" />
         <Style x:Key="InstrumentCommand" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="{DynamicResource InstrumentRule}" />
@@ -47,6 +48,35 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="InstrumentThemeChoice" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource InstrumentInk}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="9,4" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Choice" CornerRadius="4" BorderThickness="1"
+                                BorderBrush="Transparent" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Choice" Property="Background" Value="{DynamicResource InstrumentRaised}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Choice" Property="Background" Value="{DynamicResource InstrumentSelection}" />
+                                <Setter TargetName="Choice" Property="BorderBrush" Value="{DynamicResource InstrumentAccent}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Choice" Property="BorderBrush" Value="{DynamicResource InstrumentAccent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -55,7 +85,23 @@
         </Grid.RowDefinitions>
         <Border x:Name="CompanionToolbar" Visibility="Collapsed" Background="{DynamicResource InstrumentBar}"
                 BorderBrush="{DynamicResource InstrumentRule}" BorderThickness="0,0,0,1" Padding="12,4">
-            <WrapPanel KeyboardNavigation.TabNavigation="Continue">
+            <StackPanel>
+            <DockPanel KeyboardNavigation.TabNavigation="Continue">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0"
+                            AutomationProperties.Name="표시 테마">
+                    <TextBlock Text="테마" Foreground="{DynamicResource InstrumentMuted}"
+                               FontSize="12" Margin="0,0,4,0" VerticalAlignment="Center" />
+                    <RadioButton x:Name="DarkThemeButton" Style="{StaticResource InstrumentThemeChoice}"
+                                 GroupName="WorkbenchTheme" Content="다크" Tag="Dark"
+                                 AutomationProperties.AutomationId="ThemeDark" Checked="ThemeChecked" />
+                    <RadioButton x:Name="LightThemeButton" Style="{StaticResource InstrumentThemeChoice}"
+                                 GroupName="WorkbenchTheme" Content="라이트" Tag="Light"
+                                 AutomationProperties.AutomationId="ThemeLight" Checked="ThemeChecked" />
+                    <RadioButton x:Name="WarmThemeButton" Style="{StaticResource InstrumentThemeChoice}"
+                                 GroupName="WorkbenchTheme" Content="따뜻한 톤" Tag="Warm"
+                                 AutomationProperties.AutomationId="ThemeWarm" Checked="ThemeChecked" />
+                </StackPanel>
+                <WrapPanel>
                 <Button x:Name="ToggleOverlayButton" AutomationProperties.AutomationId="ToggleCompanionOverlay"
                         Style="{StaticResource InstrumentCommand}" Content="오버레이 켜기"
                         Click="ToggleOverlayClicked" Margin="0,0,6,0" />
@@ -64,7 +110,12 @@
                         Click="CompanionSettingsClicked" Margin="0,0,6,0" />
                 <Button AutomationProperties.AutomationId="HideWorkbench"
                         Style="{StaticResource InstrumentCommand}" Content="트레이로 보내기" Click="HideWorkbenchClicked" />
-            </WrapPanel>
+                </WrapPanel>
+            </DockPanel>
+            <TextBlock x:Name="ThemeSyncNotice" Visibility="Collapsed" Text="테마를 적용하려면 Aegis를 종료하고 다시 열어 주세요."
+                       Foreground="{DynamicResource InstrumentAccent}" AutomationProperties.LiveSetting="Polite"
+                       FontSize="12" TextWrapping="Wrap" Margin="0,3,0,2" />
+            </StackPanel>
         </Border>
         <wv:WebView2 Grid.Row="1" x:Name="Dashboard" DefaultBackgroundColor="#101B27" />
         <Border Grid.Row="1" x:Name="ConnectionPanel" Background="{DynamicResource InstrumentSurface}" Padding="36">

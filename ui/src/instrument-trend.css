@@ -1,15 +1,99 @@
 .worksheet-shell .instrument-trend {
   --trend-plot: #0d1925;
   --trend-panel: #142533;
+  --trend-detail: #122332;
+  --trend-empty: #102130;
   --trend-line: #2c475b;
   --trend-ink: #e6eff5;
   --trend-muted: #a9c0cf;
+  --trend-legend-ink: #c6d8e3;
   --trend-live: #70e5cb;
   --trend-past: #a9bfff;
   --trend-warn: #ffd091;
   --trend-focus: #a3c9ff;
+  --trend-grid: #233546;
+  --trend-axis: #547187;
+  --trend-axis-ink: #abc4d6;
+  --trend-gap: #e0ad76;
+  --trend-gap-fill: #583b2a;
+  --trend-gap-area: #583b2ac9;
+  --trend-interrupt: #ffb3a9;
+  --trend-cursor: #bddaff;
+  --trend-quality: #7ad6c9;
+  --trend-control: #162a38;
+  --trend-control-border: #456175;
+  --trend-control-hover: #233f50;
+  --trend-pinned: #273650;
+  --trend-pinned-border: #6383b0;
+  --trend-selected: #18343c;
+  --trend-selection: #375e74;
+  --trend-selection-ink: #f0f8fa;
   --trend-mono: 'Cascadia Mono', Consolas, 'Malgun Gothic', monospace;
   min-width: 0;
+}
+
+:root[data-aegis-theme="light"] .worksheet-shell .instrument-trend {
+  --trend-plot: #fcfdff;
+  --trend-panel: #edf3f8;
+  --trend-detail: #f3f6fa;
+  --trend-empty: #edf3f8;
+  --trend-line: #c4d2df;
+  --trend-ink: #152d3d;
+  --trend-muted: #516778;
+  --trend-legend-ink: #314b5f;
+  --trend-live: #08796e;
+  --trend-past: #395ba2;
+  --trend-warn: #83501b;
+  --trend-focus: #275991;
+  --trend-grid: #e0e8ef;
+  --trend-axis: #8197a9;
+  --trend-axis-ink: #455e72;
+  --trend-gap: #9a5411;
+  --trend-gap-fill: #f5e6d5;
+  --trend-gap-area: #e9ac613b;
+  --trend-interrupt: #ad4539;
+  --trend-cursor: #4268ae;
+  --trend-quality: #08796e;
+  --trend-control: #f8fbfe;
+  --trend-control-border: #a3b7c8;
+  --trend-control-hover: #e6eef7;
+  --trend-pinned: #e7eefb;
+  --trend-pinned-border: #849ac6;
+  --trend-selected: #dceeea;
+  --trend-selection: #c6def0;
+  --trend-selection-ink: #19354a;
+}
+
+:root[data-aegis-theme="warm"] .worksheet-shell .instrument-trend {
+  --trend-plot: #fbf5e9;
+  --trend-panel: #eee1cc;
+  --trend-detail: #f5ead8;
+  --trend-empty: #f4e8d4;
+  --trend-line: #ccbaa1;
+  --trend-ink: #3a2d25;
+  --trend-muted: #6d5948;
+  --trend-legend-ink: #523c2d;
+  --trend-live: #176857;
+  --trend-past: #625081;
+  --trend-warn: #84501f;
+  --trend-focus: #815023;
+  --trend-grid: #e9dcc7;
+  --trend-axis: #9a826a;
+  --trend-axis-ink: #634c39;
+  --trend-gap: #8c4a15;
+  --trend-gap-fill: #eed7b7;
+  --trend-gap-area: #bd813744;
+  --trend-interrupt: #a04433;
+  --trend-cursor: #7b542f;
+  --trend-quality: #176857;
+  --trend-control: #fbf1df;
+  --trend-control-border: #bda589;
+  --trend-control-hover: #efdfc7;
+  --trend-pinned: #eee5f4;
+  --trend-pinned-border: #a18ab3;
+  --trend-selected: #e9e8d6;
+  --trend-selection: #ead3ad;
+  --trend-selection-ink: #3d2b1f;
 }
 
 .worksheet-shell .instrument-trend .trend-controls {
@@ -39,20 +123,20 @@
 .worksheet-shell .instrument-trend button,
 .worksheet-shell .instrument-trend select {
   min-height: 29px;
-  border: 1px solid #456175;
+  border: 1px solid var(--trend-control-border);
   border-radius: 4px;
   color: var(--trend-ink);
-  background: #162a38;
+  background: var(--trend-control);
   font-size: 11px;
 }
 
 .worksheet-shell .instrument-trend select { padding: 4px 21px 4px 8px; }
 .worksheet-shell .instrument-trend .inspection-toggle { width: auto; padding: 4px 8px; }
-.worksheet-shell .instrument-trend button:enabled:hover { background: #233f50; }
+.worksheet-shell .instrument-trend button:enabled:hover { background: var(--trend-control-hover); }
 .worksheet-shell .instrument-trend button[aria-pressed="true"] {
-  border-color: #6383b0;
+  border-color: var(--trend-pinned-border);
   color: var(--trend-past);
-  background: #273650;
+  background: var(--trend-pinned);
 }
 
 .worksheet-shell .instrument-trend :is(button, select, summary, .chart-cursor, .inspection-table-scroll):focus-visible {
@@ -82,10 +166,10 @@
 }
 
 .worksheet-shell .instrument-trend .trend-unit {
-  border: 1px solid #3d566a;
+  border: 1px solid var(--trend-control-border);
   border-radius: 3px;
   padding: 1px 4px;
-  color: #c1d7e7;
+  color: var(--trend-legend-ink);
   font: 10px/1.35 var(--trend-mono);
 }
 
@@ -108,7 +192,7 @@
   border: 0;
   padding: 8px 12px;
   color: var(--trend-muted);
-  background: #102130;
+  background: var(--trend-empty);
 }
 .worksheet-shell .instrument-trend .chart:not([hidden]) + .trend-empty {
   position: absolute;
@@ -125,8 +209,8 @@
   min-height: 29px;
   padding: 5px 9px;
   border-top: 1px solid var(--trend-line);
-  background: #122332;
-  color: #c6d8e3;
+  background: var(--trend-detail);
+  color: var(--trend-legend-ink);
   font-size: 10px;
 }
 .worksheet-shell .instrument-trend .trend-legend span::before {
@@ -140,16 +224,16 @@
 .worksheet-shell .instrument-trend .quality-key::before {
   width: 12px;
   height: 7px;
-  background: repeating-linear-gradient(90deg, #7ad6c9 0 2px, transparent 2px 4px);
+  background: repeating-linear-gradient(90deg, var(--trend-quality) 0 2px, transparent 2px 4px);
 }
 .worksheet-shell .instrument-trend .unavailable-key::before {
   width: 6px;
   height: 6px;
-  background: #e0ad76;
+  background: var(--trend-gap);
   transform: rotate(45deg);
 }
-.worksheet-shell .instrument-trend .interrupt-key::before { width: 12px; border-top: 2px dashed #ffb3a9; }
-.worksheet-shell .instrument-trend .gap-key::before { width: 12px; height: 7px; background: #583b2a; border: 1px dotted #e0ad76; }
+.worksheet-shell .instrument-trend .interrupt-key::before { width: 12px; border-top: 2px dashed var(--trend-interrupt); }
+.worksheet-shell .instrument-trend .gap-key::before { width: 12px; height: 7px; background: var(--trend-gap-fill); border: 1px dotted var(--trend-gap); }
 .worksheet-shell .instrument-trend .trend-count { margin-left: auto; font-family: var(--trend-mono); }
 
 .worksheet-shell .instrument-trend .chart-cursor-detail { margin-top: 7px; }
@@ -159,7 +243,7 @@
   margin: 0;
   border: 1px solid var(--trend-line);
   border-radius: 4px;
-  background: #122332;
+  background: var(--trend-detail);
   min-width: 0;
 }
 .worksheet-shell .instrument-trend .chart-cursor-result > div {
@@ -216,8 +300,8 @@
 .worksheet-shell .instrument-trend .inspection-table-scroll { border-color: var(--trend-line); }
 .worksheet-shell .instrument-trend .inspection-table thead th { color: var(--trend-ink); background: var(--trend-panel); }
 .worksheet-shell .instrument-trend .inspection-table :is(th, td) { border-bottom-color: var(--trend-line); }
-.worksheet-shell .instrument-trend .inspection-table tr[data-selected="true"] { background: #18343c; }
-.worksheet-shell .instrument-trend ::selection { background: #375e74; color: #f0f8fa; }
+.worksheet-shell .instrument-trend .inspection-table tr[data-selected="true"] { background: var(--trend-selected); }
+.worksheet-shell .instrument-trend ::selection { background: var(--trend-selection); color: var(--trend-selection-ink); }
 
 @media (max-width: 610px) {
   .worksheet-shell .instrument-trend .chart { height: clamp(142px, 26vh, 203px); }
