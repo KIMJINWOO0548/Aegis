@@ -65,6 +65,20 @@ internal static class ProductChecks
                 return (response.Response.StatusCode, await reader.ReadToEndAsync());
             }
 
+            check((await Request("/api/local-diagnostics", authorize: false)).Status == 401,
+                "local support report requires an authenticated dashboard");
+            check((await Request("/api/local-diagnostics", query: "?includeRaw=1")).Status == 400,
+                "diagnostics cannot opt into extra fields");
+            var diagnostic = await Request("/api/local-diagnostics");
+            using var diagnosticJson = JsonDocument.Parse(diagnostic.Body);
+            check(diagnostic.Status == 200 && LocalDiagnosticsReport.Parse(diagnosticJson.RootElement) is not null
+                && !diagnostic.Body.Contains(token) && !diagnostic.Body.Contains("device-1"),
+                "local support report is allowlisted and has no token or source identity");
+            using var unsupported = JsonDocument.Parse(diagnostic.Body.Insert(1, "\"rawPayload\":\"proprietary\","));
+            check(LocalDiagnosticsReport.Parse(unsupported.RootElement) is null, "native export rejects unreviewed fields");
+            using var duplicated = JsonDocument.Parse(diagnostic.Body.Insert(1, "\"schemaVersion\":\"internal\","));
+            check(LocalDiagnosticsReport.Parse(duplicated.RootElement) is null, "native export rejects duplicate fields");
+
             check((await Request("/api/incidents", authorize: false)).Status == 401, "incident list requires authenticated local session");
             var incidentList = await Request("/api/incidents", query: "?deviceId=device-1");
             using var incidents = JsonDocument.Parse(incidentList.Body);

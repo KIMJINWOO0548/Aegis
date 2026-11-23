@@ -9,13 +9,14 @@ import StoredHistory from './StoredHistory';
 import SignalWorkspace from './SignalWorkspace';
 import Incidents,{type IncidentArchiveTarget} from './Incidents';
 import AnalysisProfile from './AnalysisProfile';
+import LocalDiagnostics from './LocalDiagnostics';
 import './instrument-shell.css';
 const SignalChart=lazy(()=>import('./SignalChart'));
 const compactLists='(max-width: 850px)';
 const localClock=new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
 const readingStates={CURRENT:'실시간',RESTORED:'복원 이력',HISTORY:'과거 관측',FIXTURE:'고정 자료',ABSENT:'미수신',MISSING:'값 없음',BAD:'품질 불량'};
 const collectorStates={CURRENT:'수집 중',STALE:'수신 지연',RESTORED:'복원 이력',NO_RECEIPT:'수신 대기',UNAVAILABLE:'확인 불가'};
-const viewNames={signals:'실시간 신호',archive:'태그 보관 이력',incidents:'이상 사건',analysis:'분석 설정'};
+const viewNames={signals:'실시간 신호',archive:'태그 보관 이력',incidents:'이상 사건',analysis:'분석 설정',diagnostics:'로컬 진단'};
 type View=keyof typeof viewNames;
 
 function Clock({stamp,fallback='미제공'}:{stamp:string|undefined|null;fallback?:string}) {
@@ -69,6 +70,7 @@ export default function App(){
  const moduleArchiveButton=useRef<HTMLButtonElement|null>(null);
  const incidentButton=useRef<HTMLButtonElement|null>(null);
  const analysisButton=useRef<HTMLButtonElement|null>(null);
+ const diagnosticsButton=useRef<HTMLButtonElement|null>(null);
  const [returnToTag,setReturnToTag]=useState(true);
  useEffect(()=>{
   const media=window.matchMedia(compactLists);
@@ -126,6 +128,7 @@ export default function App(){
    <button type="button" aria-pressed={view==='archive'} onClick={()=>openArchive(device?signal:undefined)}>보관 이력</button>
    <button type="button" ref={incidentButton} aria-pressed={view==='incidents'} onClick={()=>setView('incidents')}>이상 사건</button>
    <button type="button" ref={analysisButton} aria-pressed={view==='analysis'} disabled={!device} onClick={()=>setView('analysis')}>분석 설정</button>
+   <button type="button" ref={diagnosticsButton} aria-pressed={view==='diagnostics'} aria-controls="signal-chart-panel" onClick={()=>setView('diagnostics')}>진단</button>
   </nav>
   <div className="instrument-command-end"><span className="instrument-source-mode">{snapshot?.sourceMode==='EMULATORS'?'합성 데이터':snapshot?.sourceMode==='FIXTURES'?'고정 검증 자료':'소스 확인 중'}</span>
    <Button variant="outline" size="icon" aria-label="데이터 및 실시간 연결 새로고침" onClick={dashboard.refresh}><RefreshCw size={15} aria-hidden="true"/></Button></div>
@@ -143,7 +146,8 @@ export default function App(){
   :view==='incidents'?<div className="instrument-history"><Incidents deviceId={device?.deviceId} initialIncidentId={lastIncidentId}
    openArchive={openIncidentArchive} close={()=>closeProductView(incidentButton.current)}/></div>
   :view==='analysis'&&device?<div className="instrument-history"><AnalysisProfile key={device.deviceId} deviceId={device.deviceId}
-   close={()=>closeProductView(analysisButton.current)}/></div>:chart}/>
+   close={()=>closeProductView(analysisButton.current)}/></div>
+  :view==='diagnostics'?<div className="instrument-history"><LocalDiagnostics close={()=>closeProductView(diagnosticsButton.current)}/></div>:chart}/>
  <footer className="instrument-footer"><span><LockKeyhole size={12} aria-hidden="true"/>원본 읽기 전용 · {current?'현재 수신':'수신 대기 / 이력'} · {device?.deviceId??'모듈 미선택'}</span>
   <span>마지막 수신 <Clock stamp={evidence?.lastReceivedAtUtc} fallback="수신 전"/> · 보관 완료 <Clock stamp={evidence?.lastCommittedAtUtc}/></span></footer>
  </main></div>;

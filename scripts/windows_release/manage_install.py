@@ -1,4 +1,4 @@
-"""Install, update, or remove Aegis application files in a per-user directory."""
+"""Install, update, roll back, or remove Aegis in a per-user directory."""
 
 import argparse
 from contextlib import contextmanager
@@ -125,27 +125,36 @@ def remove_owned_release(path, files):
     path.rmdir()
 
 
-def release_command(version):
-    return f'@echo off\r\ncall "%~dp0releases\\{version}\\Aegis.cmd" %*\r\nexit /b %ERRORLEVEL%\r\n'.encode("ascii")
+def release_command(version, previous=None):
+    history = f"rem AEGIS_PREVIOUS {previous}\r\n" if previous else ""
+    return (
+        f'@echo off\r\n{history}call "%~dp0releases\\{version}\\Aegis.cmd" %*\r\n'
+        'exit /b %ERRORLEVEL%\r\n'
+    ).encode("ascii")
 
 
-def active_release(root):
+def active_selection(root):
     launcher = root / LAUNCHER
     if not exists(launcher):
-        return None
+        return None, None
     plain_path(launcher, directory=False)
     content = launcher.read_bytes()
-    match = re.search(rb"releases\\([0-9a-f]{64})\\Aegis\.cmd", content)
-    if not match or content != release_command(match[1].decode("ascii")):
+    selected_match = re.search(rb"releases\\([0-9a-f]{64})\\Aegis\.cmd", content)
+    previous_match = re.search(rb"rem AEGIS_PREVIOUS ([0-9a-f]{64})\r\n", content)
+    selected = selected_match[1].decode("ascii") if selected_match else None
+    previous = previous_match[1].decode("ascii") if previous_match else None
+    if not selected or selected == previous or content != release_command(selected, previous):
         raise InstallError(f"기존 실행 파일은 이 설치가 만든 형식이 아닙니다. {launcher}")
-    return match[1].decode("ascii")
+    return selected, previous
 
 
-def publish_launcher(root, version):
+def publish_launcher(root, version, previous=None):
     handle, name = tempfile.mkstemp(prefix=".aegis-launch-", dir=root)
     try:
         with os.fdopen(handle, "wb") as stream:
-            stream.write(release_command(version))
+            stream.write(release_command(version, previous))
+            stream.flush()
+            os.fsync(stream.fileno())
         Path(name).replace(root / LAUNCHER)
     finally:
         Path(name).unlink(missing_ok=True)
@@ -202,7 +211,7 @@ def stage_version(source, releases, version, files):
             temp.rmdir()
 
 
-def manage(source, root, command):
+def manage(source, root, command, *, target=None):
     source = source.resolve(strict=True)
     root = root.absolute()
     check_ancestors(root)
@@ -217,7 +226,12 @@ def manage(source, root, command):
         if root.is_relative_to(data) or data.is_relative_to(root):
             raise InstallError("진행 중인 수집과 사용자 데이터는 설치 위치에서 분리합니다.")
 
-    if command != "uninstall":
+    if target is not None:
+        target = target.lower()
+        if command != "rollback" or not RELEASE_PATTERN.fullmatch(target):
+            raise InstallError("--to-release는 rollback 명령에서 전체 SHA-256을 지정할 때 사용합니다.")
+
+    if command in {"install", "update"}:
         version, files = package(source)
         longest_root = root / ".aegis-retired" / version
         if any(len(str(longest_root / item)) >= 260 or len(str((longest_root / item).parent)) >= 248
@@ -237,7 +251,7 @@ def manage(source, root, command):
 
     with lock_install(root):
         releases = root / "releases"
-        active = active_release(root)
+        active, previous = active_selection(root)
         generations = [] if not exists(releases) else list(checked_releases(releases))
         retired = root / ".aegis-retired"
         if exists(retired):
@@ -245,7 +259,8 @@ def manage(source, root, command):
                 raise InstallError("완료되지 않은 제거 작업이 있습니다. 기존 배포 파일에서 uninstall을 다시 실행하세요.")
             finish_uninstall(root, retired)
             return None
-        if active and active not in {path.name for path in generations}:
+        available = {path.name: path for path in generations}
+        if active and active not in available:
             raise InstallError("현재 실행 파일의 설치 버전을 찾을 수 없습니다.")
 
         if command == "uninstall":
@@ -259,13 +274,28 @@ def manage(source, root, command):
                 (root / LAUNCHER).unlink(missing_ok=True)
             return None
 
+        if command == "rollback":
+            if not active:
+                raise InstallError("활성화된 Aegis 설치가 없습니다. 먼저 install을 실행하세요.")
+            selected = target or previous
+            if selected == active or selected not in available:
+                fingerprints = ", ".join(sorted(name for name in available if name != active)) or "없음"
+                raise InstallError(
+                    "이전 설치 버전을 확인할 수 없습니다. 보관된 버전의 전체 SHA-256을 "
+                    f"--to-release에 지정하세요. 후보: {fingerprints}"
+                )
+            owned_release(available[selected])
+            # Current and previous share one atomic file update so a failed switch leaves both intact.
+            publish_launcher(root, selected, active)
+            return root / LAUNCHER
+
         if command == "update" and not active:
             raise InstallError("활성화된 Aegis 설치가 없습니다. 먼저 install을 실행하세요.")
         if command == "install" and active and active != version:
             raise InstallError("기존 설치가 있습니다. 새 버전은 update로 적용하세요.")
         releases.mkdir(exist_ok=True)
         stage_version(source, releases, version, files)
-        publish_launcher(root, version)
+        publish_launcher(root, version, previous if active == version else active)
         return root / LAUNCHER
 
 
@@ -303,16 +333,23 @@ def checked_releases(root):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("operation", choices=("install", "update", "uninstall"))
+    parser.add_argument("operation", choices=("install", "update", "rollback", "uninstall"))
     parser.add_argument("--install-directory", type=Path)
+    parser.add_argument("--to-release", help="Full manifest SHA-256 for an explicitly selected installed release.")
     args = parser.parse_args()
     try:
         local = os.environ.get("LOCALAPPDATA")
         if args.install_directory is None and not local:
             raise InstallError("LOCALAPPDATA 또는 --install-directory가 필요합니다.")
         root = args.install_directory or Path(local) / "Programs" / "Aegis"
-        launcher = manage(Path(__file__).resolve().parents[1], root, args.operation)
-        print(f"실행 파일: {launcher}" if launcher else "프로그램 파일을 제거했습니다. 사용자 데이터는 보존했습니다.")
+        launcher = manage(Path(__file__).resolve().parents[1], root, args.operation, target=args.to_release)
+        if launcher:
+            active, previous = active_selection(launcher.parent)
+            print(f"실행 파일: {launcher}\n현재 설치 SHA-256: {active}")
+            if previous:
+                print(f"이전 설치 SHA-256: {previous}")
+        else:
+            print("프로그램 파일을 제거했습니다. 사용자 데이터는 보존했습니다.")
     except (InstallError, OSError, ValueError, TypeError, KeyError) as error:
         print(str(error), file=sys.stderr)
         return 1

@@ -210,7 +210,8 @@ public partial class DashboardWindow : Window
                 if (_closed) return;
                 var core = Dashboard.CoreWebView2 ?? throw new InvalidOperationException("WebView2 initialization did not complete.");
                 core.Settings.AreHostObjectsAllowed = false;
-                core.Settings.IsWebMessageEnabled = false;
+                core.Settings.IsWebMessageEnabled = true;
+                core.WebMessageReceived += (_, args) => ReceiveDiagnosticsMessage(core, args);
                 core.Settings.AreDefaultScriptDialogsEnabled = false;
                 core.Settings.AreDefaultContextMenusEnabled = false;
                 core.Settings.AreDevToolsEnabled = false;

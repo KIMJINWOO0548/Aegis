@@ -156,7 +156,7 @@ export default function AnalysisProfile({deviceId,close}:{deviceId:string;close:
      </select>
     </label>
     <p id="analysis-session-status" className="chart-note">{sessionStatus}</p>
-    <p className="chart-note">설명과 참조 이력을 프로필에 보존합니다. 과거 기록으로 학습하거나 보정한 모델은 아직 등록되지 않았습니다.</p>
+    <p className="chart-note">설명과 참조 이력을 프로필에 보존합니다. 보관 기록 평가 결과는 실시간 경보에 적용되지 않습니다.</p>
     <div className="product-panel-actions"><Button type="submit" size="sm" variant="outline" disabled={saving||loading||conflict||unchanged}>{saving?'저장 중…':'설정 저장'}</Button></div>
    </form>}
    <p role="status" className="chart-note">{status||(!unchanged&&draft?'저장하지 않은 변경이 있습니다.':'')}</p>

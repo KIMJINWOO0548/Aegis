@@ -7,6 +7,9 @@ internal static class ProductEndpoints
 {
     public static void Map(WebApplication app, GatewaySettings settings)
     {
+        app.MapGet("/api/local-diagnostics", (HttpContext context, DashboardCache cache, ProductWorkspace workspace) =>
+            context.Request.Query.Count == 0 ? Results.Json(LocalDiagnostics.Project(cache.Latest, workspace))
+                : Results.BadRequest());
         app.MapGet("/api/incidents", (HttpContext context, ProductWorkspace workspace) =>
         {
             var query = context.Request.Query;

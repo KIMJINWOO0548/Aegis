@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {isArchiveSessionId} from './archive-sessions';
+import LearnedFlowForecast from './LearnedFlowForecast';
 
 type ModeSummary={modeId:string;samples:number;validPairs:number;medianResidualLpm:number|null;medianAbsoluteDeviationLpm:number|null};
 type ForecastSummary={modeId:string;trainRows:number;testRows:number;setpointMaeLpm:number;biasAdjustedMaeLpm:number};
@@ -11,6 +12,7 @@ type FlowAnalysis={
  firstReceivedAtUtc:string|null;lastReceivedAtUtc:string|null;labelEvidence:'NOT_PROVIDED';
  modeSummaries:ModeSummary[];candidates:ModelSummary[];recommendation:Omit<ModelSummary,'modelId'>&{modelId:string|null};
  forecastComparison:ForecastSummary[];
+ learnedForecastReport?:unknown;
 };
 
 const modelLabels:Record<string,string>={'rule-ewma-flow':'유량 EWMA','research-cusum-flow':'연구용 유량 CUSUM'};
@@ -105,6 +107,7 @@ export default function HistoricalFlowAnalysis({sessionId,deviceId}:{sessionId:s
      </tr>)}</tbody>
     </table>
    </div>}
+   {data.learnedForecastReport!==undefined&&<LearnedFlowForecast data={data.learnedForecastReport}/>}
   </>}
  </section>;
 }

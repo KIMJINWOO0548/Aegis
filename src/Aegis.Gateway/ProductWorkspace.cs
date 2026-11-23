@@ -42,6 +42,8 @@ public sealed partial class ProductWorkspace
 
     public string? CurrentSessionId { get; }
     public bool Enabled => _connectionString is not null;
+    internal string StatusForDiagnostics => !Enabled ? "NOT_CONFIGURED" :
+        Volatile.Read(ref _captureStatus) == "READY" ? "READY" : "UNAVAILABLE";
 
     [GeneratedRegex(@"\Arun-[a-z0-9_]{8}\z", RegexOptions.CultureInvariant)]
     private static partial Regex SessionPattern();
@@ -267,10 +269,12 @@ public sealed partial class ProductWorkspace
         command.CommandText = "SELECT mode,model,description,historical_session,version FROM analysis_profiles WHERE device=$device";
         command.Parameters.AddWithValue("$device", deviceId);
         using var reader = command.ExecuteReader();
-        return reader.Read() ? new(deviceId, reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1),
+        return reader.Read() ? new(deviceId, reader.GetString(0), reader.IsDBNull(1) ? null : NormalizeModelId(reader.GetString(1)),
             reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), reader.GetInt32(4))
             : new(deviceId, "AUTO", null, "", null, 0);
     }
+
+    private static string NormalizeModelId(string modelId) => modelId == "ewma-demo-1" ? ExistingRule : modelId;
 
     public bool Save(AnalysisProfile profile)
     {
