@@ -8,8 +8,23 @@
         Background="#F4F6FB" WindowStartupLocation="CenterScreen"
         Loaded="WindowLoaded" Closed="WindowClosed">
     <Grid>
-        <wv:WebView2 x:Name="Dashboard" DefaultBackgroundColor="#F4F6FB" />
-        <Border x:Name="ConnectionPanel" Background="#F4F6FB" Padding="48">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Border x:Name="CompanionToolbar" Visibility="Collapsed" Background="#ECF2FB"
+                BorderBrush="#D7E2ED" BorderThickness="0,0,0,1" Padding="8,4">
+            <WrapPanel>
+                <Button x:Name="ToggleOverlayButton" AutomationProperties.AutomationId="ToggleCompanionOverlay"
+                        Content="오버레이 켜기" Click="ToggleOverlayClicked" Padding="8,4" Margin="0,0,6,0" />
+                <Button AutomationProperties.AutomationId="OpenCompanionSettings"
+                        Content="고정 신호 설정" Click="CompanionSettingsClicked" Padding="8,4" Margin="0,0,6,0" />
+                <Button AutomationProperties.AutomationId="HideWorkbench"
+                        Content="트레이로 보내기" Click="HideWorkbenchClicked" Padding="8,4" />
+            </WrapPanel>
+        </Border>
+        <wv:WebView2 Grid.Row="1" x:Name="Dashboard" DefaultBackgroundColor="#F4F6FB" />
+        <Border Grid.Row="1" x:Name="ConnectionPanel" Background="#F4F6FB" Padding="48">
             <StackPanel MaxWidth="520" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock Text="AEGIS" Foreground="#2563EB" FontSize="18" FontWeight="Bold" />
                 <TextBlock Text="설비 관측 대시보드" Foreground="#17233B" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,16" />

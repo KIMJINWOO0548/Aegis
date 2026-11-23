@@ -1,0 +1,45 @@
+<Window x:Class="Aegis.Desktop.CompanionSettingsWindow" x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Aegis.Desktop"
+        Title="Aegis · 고정 신호 설정" Width="700" Height="430" MinWidth="520" MinHeight="330"
+        Icon="/Aegis.Desktop;component/Assets/Aegis.ico" WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+        Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="첫 번째 고정 신호를 오버레이에 크게 표시합니다. 변경은 즉시 저장됩니다."
+                   TextWrapping="Wrap" Margin="0,0,0,12" />
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" /><ColumnDefinition Width="14" /><ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <DockPanel LastChildFill="True">
+                <Label x:Name="SearchLabel" DockPanel.Dock="Top" Target="{Binding ElementName=Search}" Content="_S 신호 검색" Padding="0,0,0,4"/>
+                <TextBox x:Name="Search" DockPanel.Dock="Top" TextChanged="SearchChanged"
+                         AutomationProperties.AutomationId="CompanionTagSearch" Margin="0,0,0,8" Padding="5"/>
+                <Button x:Name="AddPin" DockPanel.Dock="Bottom" Click="AddClicked" Padding="8,4" Margin="0,8,0,0"
+                        Content="고정" AutomationProperties.AutomationId="CompanionAddPin" />
+                <ListBox x:Name="Available" DisplayMemberPath="Caption" SelectionChanged="SelectionChanged"
+                         AutomationProperties.Name="고정 가능한 신호" AutomationProperties.AutomationId="CompanionAvailableSignals" />
+            </DockPanel>
+            <DockPanel Grid.Column="2" LastChildFill="True">
+                <Label DockPanel.Dock="Top" Content="고정된 신호" Target="{Binding ElementName=Pinned}" Padding="0,0,0,4"/>
+                <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                    <Button x:Name="RemovePin" Click="RemoveClicked" Content="고정 해제" Padding="8,4" Margin="0,0,5,0"
+                            AutomationProperties.AutomationId="CompanionRemovePin" />
+                    <Button x:Name="MoveUp" Click="UpClicked" Content="위로" Padding="8,4" Margin="0,0,5,0"
+                            AutomationProperties.AutomationId="CompanionMovePinUp" />
+                    <Button x:Name="MoveDown" Click="DownClicked" Content="아래로" Padding="8,4"
+                            AutomationProperties.AutomationId="CompanionMovePinDown" />
+                </WrapPanel>
+                <ListBox x:Name="Pinned" DisplayMemberPath="Caption" SelectionChanged="SelectionChanged"
+                         AutomationProperties.Name="고정된 신호" AutomationProperties.AutomationId="CompanionPinnedSignals" />
+            </DockPanel>
+        </Grid>
+        <TextBlock Grid.Row="2" x:Name="Status" AutomationProperties.LiveSetting="Polite"
+                   Margin="0,12,0,0" TextWrapping="Wrap" />
+    </Grid>
+</Window>

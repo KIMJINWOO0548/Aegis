@@ -19,10 +19,18 @@ public partial class DashboardWindow : Window
     private ulong? _navigationId;
     private bool _initializing;
     private bool _closed;
+    private readonly CompanionHost? _companion;
 
     public DashboardWindow()
     {
         InitializeComponent();
+        _companion = (Application.Current as App)?.Companion;
+        if (_companion is not null)
+        {
+            CompanionToolbar.Visibility = Visibility.Visible;
+            _companion.OverlayVisibilityChanged += UpdateCompanionButton;
+            UpdateCompanionButton();
+        }
         var bounds = WindowBounds.Fit(Width, Height, SystemParameters.WorkArea.Width, SystemParameters.WorkArea.Height);
         MinWidth = Math.Min(MinWidth, bounds.Width);
         MinHeight = Math.Min(MinHeight, bounds.Height);
@@ -89,6 +97,11 @@ public partial class DashboardWindow : Window
 
     private async void WindowLoaded(object sender, RoutedEventArgs e) => await ConnectAsync();
     private async void RetryClicked(object sender, RoutedEventArgs e) => await ConnectAsync();
+    private void ToggleOverlayClicked(object sender, RoutedEventArgs e) => _companion?.ToggleOverlay();
+    private void CompanionSettingsClicked(object sender, RoutedEventArgs e) => _companion?.OpenSettings(this);
+    private void HideWorkbenchClicked(object sender, RoutedEventArgs e) => Hide();
+    private void UpdateCompanionButton() => ToggleOverlayButton.Content =
+        _companion?.IsOverlayVisible == true ? "오버레이 끄기" : "오버레이 켜기";
 
     private async Task ConnectAsync()
     {
@@ -102,7 +115,8 @@ public partial class DashboardWindow : Window
             _endpoint = endpoint;
             if (Dashboard.CoreWebView2 is null)
             {
-                var profile = Path.Combine(AppContext.BaseDirectory, "WebView2Profile");
+                var profile = Environment.GetEnvironmentVariable("AEGIS_DESKTOP_PROFILE_DIR") ??
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Aegis", "WebView2Profile");
                 var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: profile);
                 if (_closed) return;
                 await Dashboard.EnsureCoreWebView2Async(environment);
@@ -171,15 +185,13 @@ public partial class DashboardWindow : Window
 
     private void LegacyClicked(object sender, RoutedEventArgs e)
     {
-        var legacy = new MainWindow();
-        Application.Current.MainWindow = legacy;
-        legacy.Show();
-        Close();
+        ((App)Application.Current).OpenLegacyMonitor(this);
     }
 
     private void WindowClosed(object? sender, EventArgs e)
     {
         _closed = true;
+        if (_companion is not null) _companion.OverlayVisibilityChanged -= UpdateCompanionButton;
         SystemParameters.StaticPropertyChanged -= SystemParametersChanged;
         Dashboard.Dispose();
     }

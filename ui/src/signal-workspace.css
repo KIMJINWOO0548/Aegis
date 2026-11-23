@@ -161,3 +161,17 @@
 .worksheet-shell .chart[hidden] { display:none; }
 .worksheet-shell .empty-chart { height:170px; padding:20px; text-align:center; line-height:1.8; background:#f8faff; border:1px dashed #cbd5e1; margin:12px 0; }
 .worksheet-shell .empty-chart small { max-width:40ch; }
+
+.chart-cursor:focus-visible,.chart-cursor-actions button:focus-visible { outline:2px solid #245ada; outline-offset:3px; }
+.chart-cursor-hint,.chart-markers { color:#53677e; font-size:11px; }
+.chart-markers { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:5px; }
+.chart-markers span::before { content:""; display:inline-block; width:11px; margin-right:5px; vertical-align:middle; }
+.chart-markers [data-marker="transport"]::before { border-top:2px dashed #a03e21; }
+.chart-markers [data-marker="gap"]::before { border-top:2px dotted #765526; }
+.chart-cursor-detail { display:flex; flex-wrap:wrap; gap:7px 10px; margin-top:7px; align-items:flex-start; }
+.chart-cursor-actions { display:flex; gap:5px; }
+.chart-cursor-actions button { min-height:30px; border:1px solid #acb9ca; border-radius:4px; padding:3px 8px; color:#2a4562; background:#fff; font-size:12px; }
+.chart-cursor-actions button:enabled:hover { background:#edf3ff; }
+.chart-cursor-actions button:disabled { opacity:.55; }
+.chart-cursor-result { display:grid; flex:1; min-width:min(100%,150px); gap:2px; color:#34475e; font-size:11px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.inspection-table tr[data-selected="true"] { background:#edf3ff; }

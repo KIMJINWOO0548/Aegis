@@ -1,5 +1,10 @@
 # Aegis Insight
 
+## Windows 계측 작업대
+
+장비 제어 화면을 열어둔 상태에서 Aegis 트레이의 읽기 전용 오버레이로 고정 신호와 독립 수집기의 상태를 확인합니다. 작업대에서 선택 태그의 추세를 키보드로 조사하고, 관측과 수신 시각, 보관 이력과 기존 진단을 확인할 수 있습니다.
+[동반 모드·실행·검증 범위](docs/WINDOWS_COMPANION.md) · [포터블 실행 안내](scripts/windows_release/README.ko.md)
+
 ## Platform preflight
 
 Before using the opt-in adapter/archive tools, run `python -m aegis.platform_support`.

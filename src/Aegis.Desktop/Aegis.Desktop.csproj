@@ -3,9 +3,12 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets/Aegis.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Using Remove="System.Drawing" />
+    <Using Remove="System.Windows.Forms" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="[1.0.4258.31]" />
     <ProjectReference Include="../Aegis.Contracts/Aegis.Contracts.csproj" />
     <Resource Include="Assets/pump-hero.png" />

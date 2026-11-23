@@ -1,4 +1,4 @@
-export interface Observation { observationId:string; signalKey:string; value:number|null; unit:string; observedAtUtc:string; quality:string }
+export interface Observation { observationId:string; signalKey:string; value:number|null; unit:string; observedAtUtc:string; receivedAtUtc?:string; quality:string }
 export interface ReviewEvent {eventId:number; disposition:'UNRESOLVED'; startAtUtc:string; lastAtUtc:string; peakDeviationLpm:number; sampleCount:number; endReason:string|null; relatedSignalKeys:string[]}
 export interface Review {algorithmVersion:string; state:string; observedAtUtc:string|null; rawErrorLpm:number|null; trendErrorLpm:number|null; contextReason:string|null; eventCount:number; omittedEventCount:number; events:ReviewEvent[]}
 export interface CollectionStatus {
@@ -45,7 +45,12 @@ export function parseSnapshot(value:unknown):Snapshot {
     if(!record(d)||typeof d.deviceId!=='string'||!identity(d.deviceId)||ids.has(d.deviceId)||!nullable(d.equipmentId,identity)||!nullable(d.moduleId,identity)||!['RUNNING','UNAVAILABLE','ARCHIVE_NOT_CONFIGURED'].includes(String(d.engineState))||!nullable(d.nativeSequence,count)||!Array.isArray(d.observations)||d.observations.length>8||!Array.isArray(d.warnings)||d.warnings.length>32) throw Error('장비 데이터 형식을 확인할 수 없습니다.');
     ids.add(d.deviceId);
     const signals=new Set<string>();
-    for(const o of d.observations) {if(!record(o)||!text(o.observationId)||!o.observationId||typeof o.signalKey!=='string'||!Object.hasOwn(units,o.signalKey)||signals.has(o.signalKey)||o.unit!==units[o.signalKey]||!quality(o.quality)||!timestamp(o.observedAtUtc)||!nullable(o.value,number)||(o.quality==='GOOD'&&o.value===null)) throw Error('신호 데이터 형식을 확인할 수 없습니다.');signals.add(o.signalKey);}
+    for(const o of d.observations) {
+      if(!record(o)||!text(o.observationId)||!o.observationId||typeof o.signalKey!=='string'||!Object.hasOwn(units,o.signalKey)||signals.has(o.signalKey)||
+        o.unit!==units[o.signalKey]||!quality(o.quality)||!timestamp(o.observedAtUtc)||('receivedAtUtc' in o&&!timestamp(o.receivedAtUtc))||
+        !nullable(o.value,number)||(o.quality==='GOOD'&&o.value===null))throw Error('신호 데이터 형식을 확인할 수 없습니다.');
+      signals.add(o.signalKey);
+    }
     if(d.connection!==null&&(!record(d.connection)||!['CONNECTING','CONNECTED','DISCONNECTED','REJECTED','STALE'].includes(String(d.connection.state))||('lastReceivedAtUtc' in d.connection&&!nullable(d.connection.lastReceivedAtUtc,timestamp))))throw Error('연결 상태 형식 오류');
     if(d.ingestion!==null&&(!record(d.ingestion)||typeof d.ingestion.archiveEnabled!=='boolean'||!nullable(d.ingestion.lastCommittedSequence,count)||!nullable(d.ingestion.lastObservedAtUtc,timestamp)||!nullable(d.ingestion.pendingBatches,count)||!nullable(d.ingestion.observedLagMs,v=>number(v)&&Number(v)>=0)))throw Error('보관 상태 형식 오류');
     if(record(d.ingestion)&&'collectionStatus' in d.ingestion&&!validCollection(d.ingestion.collectionStatus))throw Error('수집 근거 형식 오류');
@@ -84,7 +89,11 @@ export function tagState(snapshot:Snapshot|null,device:Device|undefined,observat
   if (collectionEvidence(snapshot,device,now,transport)?.receiptProvenance==='RESTORED') return 'RESTORED';
   return snapshot?.sourceMode==='FIXTURES'?'FIXTURE':'HISTORY';
 }
-export interface Point {t:number;v:number|null;id:string;marker?:'gap'|'transport'}
+export interface Point {
+  t:number;v:number|null;id:string;
+  quality?:Observation['quality']; receivedValue?:number|null; receivedAtUtc?:string;
+  marker?:'gap'|'transport'; detectedAt?:number;
+}
 export type HistoryRange='all'|30|60;
 export function historyWindow(points:readonly Point[],range:HistoryRange):readonly Point[]{
   if(range==='all'||!points.length)return points;
@@ -92,15 +101,45 @@ export function historyWindow(points:readonly Point[],range:HistoryRange):readon
   return points.filter(point=>point.t>=start);
 }
 export type History=Record<string,Record<string,Point[]>>;
-export function interruptHistory(history:History,now=Date.now()):History {return Object.fromEntries(Object.entries(history).map(([device,signals])=>[device,Object.fromEntries(Object.entries(signals).map(([signal,points])=>[signal,points.length&&points.at(-1)?.v!==null?[...points,{t:Math.max(now,points.at(-1)!.t+1),v:null,id:`transport:${now}`,marker:'transport' as const}].slice(-120):points]))]));}
+export function interruptHistory(history:History,now=Date.now()):History {
+  return Object.fromEntries(Object.entries(history).map(([device,signals])=>[
+    device,Object.fromEntries(Object.entries(signals).map(([signal,points])=>{
+      const last=points.at(-1);
+      if(!last||last.marker==='transport')return [signal,points];
+      const marker:Point={t:Math.max(now,last.t+1),v:null,id:`transport:${now}`,marker:'transport',detectedAt:now};
+      return [signal,[...points,marker].slice(-120)];
+    })),
+  ]));
+}
 export function appendHistory(history:History,snapshot:Snapshot):History {
   const next:History={};
+  const at=Date.parse(snapshot.generatedAtUtc);
   for(const d of snapshot.devices){
     const series={...(history[d.deviceId]??{})};
-    for(const o of d.observations){const points=series[o.signalKey]??[];const t=Date.parse(o.observedAtUtc);if(points.some(p=>p.id===o.observationId)||points.length&&t<=points[points.length-1].t)continue;const gap=points.length&&t-points[points.length-1].t>2500?[{t:t-1,v:null,id:`gap:${o.observationId}`,marker:'gap' as const}]:[];const at=Date.parse(snapshot.generatedAtUtc);const fixture=snapshot.sourceMode==='FIXTURES'&&o.quality==='GOOD'&&fresh(o.observedAtUtc,at);series[o.signalKey]=[...points,...gap,{t,v:fixture||observationCurrent(snapshot,d,o,at)?o.value:null,id:o.observationId}].slice(-120);}
+    for(const o of d.observations){
+      const points=series[o.signalKey]??[];
+      const t=Date.parse(o.observedAtUtc);
+      const previous=points.at(-1);
+      const interruption=previous?.marker==='transport'?previous:undefined;
+      const lastObservation=interruption?points.at(-2):previous;
+      if(points.some(point=>!point.marker&&point.id===o.observationId)||(lastObservation&&t<=lastObservation.t))continue;
+      const fixture=snapshot.upstreamState==='CONNECTED'&&snapshot.sourceMode==='FIXTURES'&&o.quality==='GOOD'&&fresh(o.observedAtUtc,at);
+      const point:Point={t,v:fixture||observationCurrent(snapshot,d,o,at)?o.value:null,id:o.observationId,quality:o.quality,receivedValue:o.value,receivedAtUtc:o.receivedAtUtc};
+      const gap:Point[]=[];
+      let retained=points;
+      if(interruption&&interruption.t>=t){
+        // The browser's detection clock can lead the source clock. Preserve the
+        // detection time, but put its line break before the resumed observation.
+        retained=points.slice(0,-1);
+        gap.push({...interruption,t:t-1});
+      }else if(!interruption&&lastObservation&&t-lastObservation.t>2500){
+        gap.push({t:t-1,v:null,id:`gap:${o.observationId}`,marker:'gap'});
+      }
+      series[o.signalKey]=[...retained,...gap,point].slice(-120);
+    }
     next[d.deviceId]=series;
   }
-  return next;
+  return snapshot.upstreamState==='UNAVAILABLE'?interruptHistory(next,at):next;
 }
 export function selectDevice(devices:Device[],id:string,filter:string,query:string):Device|undefined {const rows=filterDevices(devices,filter,query);return rows.find(d=>d.deviceId===id)??rows[0];}
 export function filterDevices(devices:Device[],filter:string,query:string):Device[]{const q=query.toLocaleLowerCase();return devices.filter(d=>(filter==='all'||(filter==='archive'?d.ingestion?.archiveEnabled:d.connection?.state===filter))&&`${d.deviceId} ${d.equipmentId??''} ${d.moduleId??''} ${d.observations.map(o=>`${o.signalKey} ${signalLabels[o.signalKey]??''}`).join(' ')}`.toLocaleLowerCase().includes(q));}

@@ -6,8 +6,9 @@ from datetime import datetime, timedelta, timezone
 ROOT=Path(__file__).resolve().parents[1]
 WORK=ROOT.parent
 WORKSPACE=WORK.parent
-OUT=WORKSPACE/'outputs/desktop-redesign/aegis/actual'
-SCRATCH=ROOT/'runtime/worksheet-qa'
+OUT=Path(os.environ.get('AEGIS_WORKSHEET_QA_OUTPUT', str(WORKSPACE/'outputs/desktop-redesign/aegis/actual'))).resolve()
+SCRATCH=Path(os.environ.get('AEGIS_WORKSHEET_QA_STATE', str(ROOT/'runtime/worksheet-qa'))).resolve()
+OUT.mkdir(parents=True,exist_ok=True)
 SCRATCH.mkdir(parents=True,exist_ok=True)
 sys.path[:0]=[str(ROOT),str(ROOT/'src'),str(WORK/'insure/.venv/Lib/site-packages'),str(WORK/'aegis-restart-qa')]
 import sitecustomize  # Existing process-only loopback recovery for Windows EFAULT.
@@ -32,6 +33,8 @@ def main():
  env=dict(os.environ,PYTHONPATH=os.pathsep.join([str(WORK/'aegis-restart-qa'),str(ROOT/'src'),str(Path(sys.prefix)/'Lib/site-packages')]),PYTHONUTF8='1',AEGIS_API_TOKEN=secrets.token_hex(32),AEGIS_EMULATOR_TOKEN=secrets.token_hex(32),AEGIS_DASHBOARD_TOKEN=secrets.token_hex(32),AEGIS_API_URL=f'http://127.0.0.1:{api_port}',AEGIS_GATEWAY_URL=f'http://127.0.0.1:{gateway_port}',WEBVIEW2_USER_DATA_FOLDER=str(SCRATCH/f'webview-{debug}'),WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=f'--remote-debugging-port={debug} --remote-debugging-address=127.0.0.1')
  archives=SCRATCH/f'archives-{gateway_port}'; archives.mkdir()
  env['AEGIS_ARCHIVE_DIRECTORY']=str(archives)
+ env['AEGIS_DESKTOP_PROFILE_DIR']=str(SCRATCH/f'desktop-profile-{gateway_port}')
+ env['AEGIS_COMPANION_SETTINGS_PATH']=str(SCRATCH/f'companion-settings-{gateway_port}.json')
  with ExitStack() as stack:
   listeners=[stack.enter_context(socket.socket()) for _ in range(2)]
   for listener in listeners: listener.bind(('127.0.0.1',0))

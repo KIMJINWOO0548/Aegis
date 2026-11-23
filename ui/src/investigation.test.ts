@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {appendHistory,interruptHistory,parseSnapshot,type Snapshot,type Point} from './data';
-import {freezeHistory,inspectHistory,pointState,projectHistory,signalSeries} from './investigation';
+import {freezeHistory,inspectHistory,movePointCursor,pointKey,pointState,projectHistory,signalSeries} from './investigation';
 
 const origin=Date.parse('2026-11-06T00:00:00Z');
 function received(second:number,value:number|null,quality='GOOD',observedSecond=second):Snapshot {
@@ -15,7 +15,7 @@ describe('bounded signal investigation',()=>{
   history=appendHistory(history,received(7,999,'GOOD',1));
   const points=history['synthetic-1'].actualFlowLpm;
   expect(points.map(p=>p.v)).toEqual([10,80,10,null,11]);
-  expect(inspectHistory(points)).toEqual({summaries:5,valid:4,unavailable:1,gaps:1,min:10,max:80,start:origin,end:origin+6000});
+  expect(inspectHistory(points)).toEqual({summaries:4,valid:4,unavailable:0,gaps:1,min:10,max:80,start:origin,end:origin+6000});
   expect(points.map(p=>p.id)).not.toContain('sample-7');
  });
  it('shows an interruption and stale or bad values as unavailable, never as zero',()=>{
@@ -25,9 +25,51 @@ describe('bounded signal investigation',()=>{
   history=appendHistory(history,received(5,900,'GOOD',2));
   const points=history['synthetic-1'].actualFlowLpm;
   expect(points.map(p=>p.v)).toEqual([0,null,null,null]);
-  expect(inspectHistory(points)).toMatchObject({valid:1,unavailable:3,min:0,max:0});
+  expect(inspectHistory(points)).toMatchObject({valid:1,unavailable:2,min:0,max:0});
   expect(pointState(points[1])).toBe('수신 중단');
   expect(pointState(points[2])).toBe('값 사용 불가');
+   expect(points[0]).toMatchObject({v:0,quality:'GOOD',receivedValue:0});
+   expect(points[2]).toMatchObject({v:null,quality:'BAD',receivedValue:900});
+ });
+ it('marks a disconnect after an unusable value and accepts the first resumed observation with an earlier source clock',()=>{
+  const before=appendHistory({},received(0,null,'MISSING'));
+  const disconnected=interruptHistory(before,origin+1200);
+  const repeated=interruptHistory(disconnected,origin+1300);
+  expect(repeated).toEqual(disconnected);
+  const resumed=appendHistory(repeated,received(2,0,'GOOD',1))['synthetic-1'].actualFlowLpm;
+  expect(resumed.map(pointState)).toEqual(['값 사용 불가','수신 중단','사용 가능']);
+  expect(resumed.map(point=>point.t)).toEqual([origin,origin+999,origin+1000]);
+  expect(resumed[1].detectedAt).toBe(origin+1200);
+  expect(resumed[2].v).toBe(0);
+  expect(projectHistory(resumed)).toEqual([[origin,null],[origin+999,null],[origin+1000,0]]);
+ });
+ it('marks an unavailable upstream without altering the retained source observation or its receipt time',()=>{
+  const initial=received(0,0);
+  initial.devices[0].observations[0].receivedAtUtc=new Date(origin+100).toISOString();
+  const history=appendHistory({},parseSnapshot(initial));
+  const unavailable={...initial,upstreamState:'UNAVAILABLE' as const,generatedAtUtc:new Date(origin+1500).toISOString()};
+  const disconnected=appendHistory(history,unavailable);
+  const repeated=appendHistory(disconnected,{...unavailable,generatedAtUtc:new Date(origin+2500).toISOString()});
+  expect(repeated['synthetic-1'].actualFlowLpm).toMatchObject([
+   {t:origin,v:0,quality:'GOOD',receivedAtUtc:initial.devices[0].observations[0].receivedAtUtc},
+   {v:null,marker:'transport',detectedAt:origin+1500},
+  ]);
+  initial.devices[0].observations[0].receivedAtUtc='invalid';
+  expect(()=>parseSnapshot(initial)).toThrow('신호 데이터 형식을 확인할 수 없습니다.');
+ });
+ it('moves the cursor among original observations and explicit markers without confusing their identifiers',()=>{
+  const first:Point={t:origin,v:0,id:'matching',quality:'GOOD'};
+  const marker:Point={t:origin+500,v:null,id:'matching',marker:'transport'};
+  const last:Point={t:origin+1000,v:10,id:'later',quality:'GOOD'};
+  const points=[first,marker,last];
+  expect(movePointCursor(points,null,'ArrowLeft')).toBe(pointKey(last));
+  expect(movePointCursor(points,null,'ArrowRight')).toBe(pointKey(first));
+  expect(movePointCursor(points,pointKey(marker),'ArrowLeft')).toBe(pointKey(first));
+  expect(movePointCursor(points,pointKey(first),'ArrowRight')).toBe(pointKey(marker));
+  expect(movePointCursor(points,pointKey(last),'Home')).toBe(pointKey(first));
+  expect(movePointCursor(points,pointKey(first),'End')).toBe(pointKey(last));
+  expect(movePointCursor(points,pointKey(last),'ArrowRight')).toBe(pointKey(last));
+  expect(movePointCursor([],pointKey(last),'Home')).toBeNull();
  });
  it('captures independent immutable point copies while collection and the chosen range can continue',()=>{
   const points:Point[]=[{t:origin,v:3,id:'first'},{t:origin+1000,v:null,id:'gap:next',marker:'gap'}];
