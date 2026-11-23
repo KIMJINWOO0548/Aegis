@@ -16,6 +16,10 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_FRAMEWORKS = {"Microsoft.NETCore.App", "Microsoft.AspNetCore.App", "Microsoft.WindowsDesktop.App"}
+PRIVATE_DOTNET = Path("runtime/dotnet")
+PRIVATE_INVENTORY = Path("runtime/runtime.json")
+PRIVATE_FILES = {"runtime/python/python.exe", "runtime/python/pythonw.exe", "runtime/dotnet/dotnet.exe"}
+SCENARIOS = ("NORMAL", "DEG-02", "DATA-QUALITY", "TRANSIENT", "NOISY-FLOW")
 REQUIRED_FILES = (
     "src/Aegis.Gateway/bin/Release/net10.0/Aegis.Gateway.dll",
     "src/Aegis.Desktop/bin/Release/net10.0-windows/Aegis.Desktop.exe",
@@ -34,8 +38,9 @@ class LaunchError(Exception):
 def arguments():
     parser = argparse.ArgumentParser(description="Aegis Windows portable synthetic workspace")
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--tray", action="store_true", help="Start in the tray (default).")
-    mode.add_argument("--workbench", action="store_true", help="Open the workbench at startup.")
+    mode.add_argument("--tray", action="store_true", help="Start in the tray.")
+    mode.add_argument("--workbench", action="store_true", help="Open the workbench at startup (default).")
+    parser.add_argument("--scenario", choices=SCENARIOS, default="NOISY-FLOW", help="Synthetic scenario for the first module.")
     parser.add_argument("--overlay", action="store_true", help="Show the passive overlay at startup.")
     parser.add_argument("--check", action="store_true", help="Verify the package and runtimes without starting.")
     parser.add_argument("--state-directory", type=Path, help="External directory for isolated synthetic test data.")
@@ -55,14 +60,17 @@ def verify_manifest():
     for entry in manifest["files"]:
         name = entry["path"]
         candidate = (ROOT / name).resolve()
-        if not candidate.is_relative_to(ROOT) or not candidate.is_file():
+        if Path(name).as_posix() != name or not candidate.is_relative_to(ROOT) or not candidate.is_file() or name in paths:
             raise LaunchError(f"패키지 파일이 없거나 경로가 올바르지 않습니다. {name}")
         with candidate.open("rb") as stream:
             digest = hashlib.file_digest(stream, "sha256").hexdigest()
         if candidate.stat().st_size != entry["bytes"] or digest != entry["sha256"]:
             raise LaunchError(f"패키지 파일 검증에 실패했습니다. {name}")
         paths.add(name)
-    if not set(REQUIRED_FILES).difference({"manifest.json"}).issubset(paths):
+    required = set(REQUIRED_FILES) - {"manifest.json"}
+    if (ROOT / PRIVATE_INVENTORY).is_file():
+        required.update(PRIVATE_FILES | {PRIVATE_INVENTORY.as_posix()})
+    if not required.issubset(paths):
         raise LaunchError("패키지 목록에 필수 파일이 빠져 있습니다.")
     print(f"패키지 SHA-256 확인 완료 · {len(paths)}개 파일", flush=True)
 
@@ -86,10 +94,14 @@ def prerequisites():
     if missing_packages:
         raise LaunchError("준비된 Python 환경에서 다음 제품 의존성을 확인하세요. " + ", ".join(missing_packages))
 
-    dotnet = shutil.which("dotnet.exe")
+    dotnet = str(ROOT / PRIVATE_DOTNET / "dotnet.exe") if (ROOT / PRIVATE_INVENTORY).is_file() else shutil.which("dotnet.exe")
     if not dotnet:
         raise LaunchError(".NET 10 x64 Desktop 및 ASP.NET Core 런타임을 준비하세요.")
-    runtimes = subprocess.run([dotnet, "--list-runtimes"], check=True, capture_output=True, text=True, timeout=10)
+    # The runtime prints UTF-8 paths, including Windows user directory names.
+    runtimes = subprocess.run(
+        [dotnet, "--list-runtimes"], check=True, capture_output=True,
+        encoding="utf-8", errors="replace", timeout=10,
+    )
     available = {fields[0] for line in runtimes.stdout.splitlines() if len(fields := line.split()) >= 2 and fields[1].startswith("10.0.")}
     missing_frameworks = REQUIRED_FRAMEWORKS - available
     if missing_frameworks:
@@ -133,18 +145,24 @@ def start(args):
         if interpreter.name.lower() == "pythonw.exe":
             interpreter = interpreter.with_name("python.exe")
         command = [
-            str(interpreter), "-E", "-s", "-B", str(ROOT / "scripts" / "run_hybrid_demo.py"),
+            str(interpreter), "-E", "-s", "-B", "-X", "utf8", str(ROOT / "scripts" / "run_hybrid_demo.py"),
             "--auto-port", "--signal-count", "8", "--interval-ms", "250",
-            "--desktop-state-directory", str(profile),
+            "--desktop-state-directory", str(profile), "--archive-sessions-root", str(archives),
+            "--scenario", args.scenario,
         ]
-        if not args.workbench:
+        if args.tray:
             command.append("--tray")
         if args.overlay:
             command.append("--overlay")
         if args.seconds is not None:
             command.extend(["--seconds", str(args.seconds)])
-        environment = {name: value for name, value in os.environ.items() if not name.upper().startswith(("AEGIS_", "WEBVIEW2_"))}
+        isolated_prefixes = ("AEGIS_", "WEBVIEW2_", "PYTHON", "DOTNET_", "ASPNETCORE_")
+        environment = {name: value for name, value in os.environ.items() if not name.upper().startswith(isolated_prefixes)}
         environment.update(PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1", DOTNET_ENVIRONMENT="Production", ASPNETCORE_ENVIRONMENT="Production")
+        if (ROOT / PRIVATE_INVENTORY).is_file():
+            dotnet_root = str(ROOT / PRIVATE_DOTNET)
+            environment.update(DOTNET_ROOT=dotnet_root, DOTNET_ROOT_X64=dotnet_root)
+            environment["PATH"] = dotnet_root + os.pathsep + environment.get("PATH", "")
         print("Aegis 합성 수집을 시작합니다. 트레이에서 작업대 또는 오버레이를 열 수 있습니다.", flush=True)
         for attempt in range(3):
             archive = Path(tempfile.mkdtemp(prefix="run-", dir=archives))
@@ -167,9 +185,9 @@ def start(args):
 def main() -> int:
     args = arguments()
     try:
+        verify_manifest()
         prerequisites()
         if args.check:
-            verify_manifest()
             print("Python 3.12 x64와 .NET 10 런타임 확인 완료. WebView2는 작업대 실행 시 확인합니다.")
         else:
             start(args)

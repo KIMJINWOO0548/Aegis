@@ -37,6 +37,7 @@ public static class GatewayApplication
         builder.Services.AddSingleton(settings);
         builder.Services.AddSingleton<DashboardSessions>();
         builder.Services.AddSingleton<ArchiveReview>();
+        builder.Services.AddSingleton<ProductWorkspace>();
         builder.Services.AddSingleton<DashboardCache>();
         builder.Services.AddHostedService(provider => provider.GetRequiredService<DashboardCache>());
         builder.Services.AddSignalR(options => { options.EnableDetailedErrors = false; options.MaximumReceiveMessageSize = 4096; options.MaximumParallelInvocationsPerClient = 1; });
@@ -103,15 +104,34 @@ public static class GatewayApplication
         });
         app.MapDelete("/api/session", (HttpContext context, DashboardSessions sessions) => { sessions.Delete(context); return Results.NoContent(); });
         app.MapGet("/api/dashboard", (DashboardCache cache) => Results.Json(cache.Latest));
-        app.MapGet("/api/stored-records", async (HttpContext context, IHttpClientFactory clients) =>
+        app.MapGet("/api/stored-records", (HttpContext context, IHttpClientFactory clients) =>
+            ReadArchive(context, clients, "v1/stored-records", "stored-record-query-1", "current"));
+        app.MapGet("/api/archive-sessions", (HttpContext context, IHttpClientFactory clients) =>
+            ReadArchive(context, clients, "v1/archive-sessions", "archive-sessions-1", "catalog"));
+        app.MapGet("/api/archive-sessions/{sessionId}/records", (string sessionId, HttpContext context, IHttpClientFactory clients) =>
+            ProductWorkspace.SessionId(sessionId)
+                ? ReadArchive(context, clients, $"v1/archive-sessions/{sessionId}/records", "stored-record-query-1", "previous")
+                : Task.FromResult<IResult>(Results.BadRequest()));
+
+        app.MapGet("/api/archive-sessions/{sessionId}/flow-analysis", (string sessionId, HttpContext context, IHttpClientFactory clients) =>
+            ProductWorkspace.SessionId(sessionId)
+                ? ReadArchive(context, clients, $"v1/archive-sessions/{sessionId}/flow-analysis", "flow-analysis-1", "analysis")
+                : Task.FromResult<IResult>(Results.BadRequest()));
+
+        async Task<IResult> ReadArchive(HttpContext context, IHttpClientFactory clients, string route, string schemaVersion, string scope)
         {
             if (settings.Upstream is null || settings.UpstreamToken is null) return Results.StatusCode(503);
             var query = context.Request.Query;
-            bool selectedRun=query.ContainsKey("runId");
-            if (context.Request.QueryString.Value?.Length > 2600 || query.Keys.Any(key =>
+            var selectedRun = query.ContainsKey("runId");
+            var hasFrom = query.ContainsKey("receivedFromUtc");
+            var hasTo = query.ContainsKey("receivedToUtc");
+            if (scope == "catalog" && query.Count != 0
+                || scope == "analysis" && (query.Count != 1 || !query.ContainsKey("deviceId"))
+                || context.Request.QueryString.Value?.Length > 2600 || query.Keys.Any(key =>
                 key is not ("receivedFromUtc" or "receivedToUtc" or "signals" or "deviceId" or "storeId" or "runId") || query[key].Count != 1)
-                || !query.ContainsKey("receivedFromUtc") || !query.ContainsKey("receivedToUtc")
-                || selectedRun!=query.ContainsKey("storeId") || selectedRun&&!query.ContainsKey("deviceId")) return Results.BadRequest();
+                || scope == "current" && !hasFrom || hasFrom != hasTo
+                || selectedRun != query.ContainsKey("storeId") || selectedRun && !query.ContainsKey("deviceId"))
+                return Results.BadRequest();
             try
             {
                 using var deadline = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
@@ -119,11 +139,11 @@ public static class GatewayApplication
                 using var client = clients.CreateClient("upstream");
                 client.Timeout = TimeSpan.FromSeconds(7);
                 using var request = new HttpRequestMessage(HttpMethod.Get,
-                    new Uri(settings.Upstream, "v1/stored-records" + context.Request.QueryString));
+                    new Uri(settings.Upstream, route + context.Request.QueryString));
                 request.Headers.Add("X-Aegis-Token", settings.UpstreamToken);
                 using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
                 await using var stream = await response.Content.ReadAsStreamAsync(deadline.Token);
-                var bytes = new byte[response.IsSuccessStatusCode ? 4 * 1024 * 1024 + 1 : 4097];
+                var bytes = new byte[response.IsSuccessStatusCode ? (scope is "catalog" or "analysis" ? 16 * 1024 + 1 : 4 * 1024 * 1024 + 1) : 4097];
                 var length = 0;
                 while (length < bytes.Length)
                 { var count = await stream.ReadAsync(bytes.AsMemory(length), deadline.Token); if (count == 0) break; length += count; }
@@ -131,7 +151,7 @@ public static class GatewayApplication
                 {
                     var status=response.StatusCode switch
                     { HttpStatusCode.NotFound => 404, HttpStatusCode.UnprocessableEntity => 422,
-                      HttpStatusCode.RequestEntityTooLarge => 413, _ => 503 };
+                      HttpStatusCode.RequestEntityTooLarge => 413, HttpStatusCode.Conflict when scope == "analysis" => 409, _ => 503 };
                     string? code=null;
                     if(length>0&&length<bytes.Length)
                     {
@@ -145,20 +165,21 @@ public static class GatewayApplication
                         catch(JsonException){}
                     }
                     return code is "INVALID_QUERY" or "QUERY_LIMIT" or "SOURCE_UNAVAILABLE" or "SOURCE_INVALID"
-                        or "SOURCE_BINDING_MISMATCH" or "DUPLICATE_SOURCE"
+                        or "SOURCE_BINDING_MISMATCH" or "DUPLICATE_SOURCE" or "FLOW_ANALYSIS_BUSY"
                         ? Results.Json(new {code},statusCode:status) : Results.StatusCode(status);
                 }
                 if (length == bytes.Length) return Results.StatusCode(413);
                 using var body = JsonDocument.Parse(bytes.AsMemory(0, length), new() { MaxDepth = 32 });
                 if (!body.RootElement.TryGetProperty("schemaVersion", out var schema)
-                    || schema.GetString() != "stored-record-query-1") return Results.StatusCode(503);
+                    || schema.GetString() != schemaVersion) return Results.StatusCode(503);
                 if(selectedRun&&!WireValidation.ValidRunEvidence(body.RootElement,query["storeId"].ToString(),
                     query["deviceId"].ToString(),query["runId"].ToString()))return Results.StatusCode(503);
                 return Results.Json(body.RootElement.Clone());
             }
             catch (Exception error) when (error is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)
             { return Results.StatusCode(503); }
-        });
+        }
+        ProductEndpoints.Map(app, settings);
         app.MapHub<DashboardHub>("/hubs/dashboard", options =>
         { options.Transports = HttpTransportType.WebSockets | HttpTransportType.LongPolling; options.ApplicationMaxBufferSize = 4096; options.TransportMaxBufferSize = 65536; options.TransportSendTimeout = TimeSpan.FromSeconds(2); options.LongPolling.PollTimeout = TimeSpan.FromSeconds(20); });
         var staticDirectory = Path.Combine(app.Environment.ContentRootPath, "..", "..", "ui", "dist");

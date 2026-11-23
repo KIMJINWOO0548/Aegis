@@ -2,7 +2,7 @@
 
 import argparse
 from contextlib import contextmanager
-from datetime import timedelta
+from datetime import timedelta, timezone
 import hashlib
 from itertools import islice
 import json
@@ -93,7 +93,7 @@ def _parameters(start, end, device, signals, maximum):
         raise QueryError('INVALID_QUERY') from None
 
 
-def _sources(values):
+def _sources(values, *, allow_clean_portable=False):
     try:
         if isinstance(values, (str, bytes, dict)):
             raise ValueError
@@ -102,9 +102,11 @@ def _sources(values):
             raise ValueError
         result = []
         labels = set()
+        allowed_keys = {'storeId','kind','path','expectedFixtureSha256'}
+        if allow_clean_portable:
+            allowed_keys.add('cleanPortable')
         for value in values:
-            if not isinstance(value, dict) or not {'storeId','kind','path'} <= set(value) <= {
-                    'storeId','kind','path','expectedFixtureSha256'}:
+            if not isinstance(value, dict) or not {'storeId','kind','path'} <= set(value) <= allowed_keys:
                 raise ValueError
             label, kind, path = value['storeId'], value['kind'], value['path']
             if (not isinstance(label, str) or not STORE_ID.fullmatch(label) or label in labels
@@ -116,11 +118,14 @@ def _sources(values):
             if 'expectedFixtureSha256' in value and (kind != 'ADAPTER_STORE_V1'
                     or not isinstance(pin, str) or not HEX.fullmatch(pin)):
                 raise ValueError
+            if 'cleanPortable' in value and (kind != 'RAW_V1' or value['cleanPortable'] is not True):
+                raise ValueError
             path = Path(path).absolute()
             if path.name.lower().endswith(('-wal','-shm','-journal')):
                 raise ValueError
             labels.add(label)
-            result.append(dict(storeId=label, kind=kind, path=path, pin=pin))
+            result.append(dict(storeId=label, kind=kind, path=path, pin=pin,
+                               cleanPortable=value.get('cleanPortable', False)))
         return result
     except (ValueError, TypeError, OverflowError):
         raise QueryError('INVALID_QUERY') from None
@@ -140,7 +145,8 @@ def _reader(source, budget):
         companion = Path(str(path)+suffix)
         if os.path.lexists(companion):
             _regular(companion)
-    c = sqlite3.connect(path.as_uri()+'?mode=ro', uri=True, timeout=.2, isolation_level=None)
+    params = '?mode=ro&immutable=1' if source.get('cleanPortable') else '?mode=ro'
+    c = sqlite3.connect(path.as_uri()+params, uri=True, timeout=.2, isolation_level=None)
     try:
         if _regular(path) != source['physical']:
             raise QueryError('SOURCE_UNAVAILABLE')
@@ -154,7 +160,7 @@ def _reader(source, budget):
         c.close()
 
 
-def _raw_snapshot(c, budget):
+def _raw_schema(c):
     # Enumerate all objects: LIKE 'sqlite_%' would also hide sqliteX... names.
     objects = c.execute('SELECT type,name,tbl_name FROM sqlite_master').fetchall()
     if any((kind == 'table' and name not in COLUMNS)
@@ -164,30 +170,76 @@ def _raw_snapshot(c, budget):
     # Validate columns before count/SELECT so a wrong store kind is an integrity error.
     from aegis.raw_history import _schema
     _schema(c)
+
+
+def _raw_record(row, original):
+    device,run,seq,_observed,receipt,equipment,module,encoded = row
+    return dict(
+        nativeKeyKind='RAW_DEVICE_RUN_SEQUENCE', nativeKey=[device,run,seq], deviceId=device,
+        sourceMetadata=dict(observedAtUtc=original['observedAtUtc'],timestampStatus='PROVIDED',
+            sequence=original['sequence'],sequenceStatus='PROVIDED',runId=original['runId'],runIdStatus='PROVIDED'),
+        firstReceivedAtUtc=receipt,
+        provenance=dict(declaredOrigin='SYNTHETIC',originEvidence='DECLARED_ONLY',
+            declarationSource='LEGACY_PAYLOAD',producerDeclaration=original['source'],
+            acquisitionMethod='NOT_RECORDED',sourceAccessMode='NOT_RECORDED',hardwareIdentityVerified=False),
+        hierarchy=dict(equipmentId=equipment,moduleId=module,evidence='STORED_COLUMNS'),
+        legacyContext={key:original[key] for key in ('protocolVersion','deviceStateVersion','modeId')},
+        signals=original['signals'],
+        evidence=dict(recordSha256=hashlib.sha256(encoded.encode('utf-8')).hexdigest(),
+            representation='LEGACY_STORED_PAYLOAD_JSON',pageWireSha256=None))
+
+
+def _raw_snapshot(c, budget):
+    _raw_schema(c)
     if c.execute('SELECT count(*) FROM raw_batches').fetchone()[0] > MAX_RAW_ROWS:
         raise QueryError('QUERY_LIMIT')
     snap = _inspect(c, budget)
     rows = c.execute('SELECT * FROM raw_batches ORDER BY device_id,run_id,sequence')
     result = []
-    for device,run,seq,observed,receipt,equipment,module,encoded in rows:
+    for row in rows:
         budget.check()
-        original = json.loads(encoded)
-        result.append(dict(
-            nativeKeyKind='RAW_DEVICE_RUN_SEQUENCE', nativeKey=[device,run,seq], deviceId=device,
-            sourceMetadata=dict(observedAtUtc=original['observedAtUtc'],timestampStatus='PROVIDED',
-                sequence=original['sequence'],sequenceStatus='PROVIDED',runId=original['runId'],runIdStatus='PROVIDED'),
-            firstReceivedAtUtc=receipt,
-            provenance=dict(declaredOrigin='SYNTHETIC',originEvidence='DECLARED_ONLY',
-                declarationSource='LEGACY_PAYLOAD',producerDeclaration=original['source'],
-                acquisitionMethod='NOT_RECORDED',sourceAccessMode='NOT_RECORDED',hardwareIdentityVerified=False),
-            hierarchy=dict(equipmentId=equipment,moduleId=module,evidence='STORED_COLUMNS'),
-            legacyContext={key:original[key] for key in ('protocolVersion','deviceStateVersion','modeId')},
-            signals=original['signals'],
-            evidence=dict(recordSha256=hashlib.sha256(encoded.encode('utf-8')).hexdigest(),
-                representation='LEGACY_STORED_PAYLOAD_JSON',pageWireSha256=None)))
+        result.append(_raw_record(row, json.loads(row[-1])))
     return result, dict(gapEvidence=dict(kind='LEGACY_RECORDED_SEQUENCE_GAPS',
         count=snap['tables']['ingest_gaps']['rows'],scope='ENTIRE_STORE',timeCoverage='NOT_INFERRED'),
         commitState='LEGACY_ROWS_SNAPSHOT',bindingEvidence='STORED_SELF_CONSISTENCY')
+
+
+def _raw_window(c, budget, start, end, bound_device, device_id, run_id, max_records):
+    """Validate only the matching rows of an owned portable RAW_V1 snapshot."""
+    from aegis.raw_history import MAX_PAYLOAD_BYTES, _batch
+
+    _raw_schema(c)
+    # The owned RAW_V1 writer stores receipts using UTC datetime.isoformat()
+    # with +00:00. Within that representation, lexical order is time order.
+    limits = [start.astimezone(timezone.utc).isoformat(), end.astimezone(timezone.utc).isoformat()]
+    sql = """SELECT device_id,run_id,sequence,observed_at_utc,received_at_utc,equipment_id,module_id,
+                    CASE WHEN length(CAST(payload_json AS BLOB)) <= ? THEN payload_json END
+             FROM raw_batches WHERE received_at_utc >= ? AND received_at_utc < ?"""
+    values = [MAX_PAYLOAD_BYTES, *limits]
+    if device_id is not None:
+        sql += " AND device_id=?"
+        values.append(device_id)
+    if run_id is not None:
+        sql += " AND run_id=?"
+        values.append(run_id)
+    rows = c.execute(sql + " LIMIT ?", (*values, max_records + 1))
+    result = []
+    for row in rows:
+        budget.check()
+        device, run, _sequence, _observed, receipt, _equipment, _module, encoded = row
+        if device != bound_device:
+            raise QueryError("SOURCE_BINDING_MISMATCH")
+        if encoded is None or len(result) == max_records:
+            raise QueryError("QUERY_LIMIT")
+        _, original, _, _, _ = _batch(row, device, run)
+        parsed_receipt = _timestamp(receipt)
+        if (receipt != parsed_receipt.astimezone(timezone.utc).isoformat()
+                or not start <= parsed_receipt < end):
+            raise QueryError("SOURCE_INVALID")
+        result.append(_raw_record(row, original))
+    return result, dict(
+        gapEvidence=dict(kind='NOT_ASSESSED_OUTSIDE_SELECTED_RUN', count=None, scope='WINDOW', timeCoverage='NOT_INFERRED'),
+        commitState='LEGACY_ROWS_SNAPSHOT', bindingEvidence='PORTABLE_DEVICE_NAME_AND_MATCHING_ROWS')
 
 
 def _adapter_snapshot(c, budget, pin):
@@ -252,7 +304,7 @@ def _input_snapshot(c, budget):
 
 
 def query_stored_records(sources, received_from, received_to, *, device_id=None,
-                         signals=None, max_records=MAX_RECORDS, store_id=None, run_id=None):
+                         signals=None, max_records=MAX_RECORDS, store_id=None, run_id=None, portable_window=False):
     """Read validated per-store snapshots; fail whole query on any unavailable source."""
     start,end,selected = _parameters(received_from,received_to,device_id,signals,max_records)
     run_evidence = None
@@ -263,7 +315,9 @@ def query_stored_records(sources, received_from, received_to, *, device_id=None,
         run_evidence = dict(state='not_found', scope='SELECTED_RUN_SEQUENCE_ONLY',
             storeId=store_id, deviceId=device_id, runId=run_id, storedRowsInReceivedWindow=None,
             recordedGaps=None, ordinalGapState='not_assessed', ordinalGaps=None, resendCount=None)
-    sources = _sources(sources)
+    sources = _sources(sources, allow_clean_portable=portable_window)
+    if portable_window and any(source['kind'] != 'RAW_V1' for source in sources):
+        raise QueryError('INVALID_QUERY')
     budget = _Budget()
     try:
         physical = set()
@@ -277,23 +331,34 @@ def query_stored_records(sources, received_from, received_to, *, device_id=None,
         for source in sources:
             budget.check()
             with _reader(source,budget) as c:
-                if source['kind']=='RAW_V1':
+                selected_store = run_evidence is not None and source['storeId'] == store_id
+                if portable_window:
+                    bound = source['storeId']
+                    relevant = (device_id is None or device_id == bound) and (run_evidence is None or selected_store)
+                    rows, detail = _raw_window(c,budget,start,end,bound,device_id,run_id,max_records) if relevant else (
+                        [], dict(gapEvidence=dict(kind='NOT_ASSESSED_OUTSIDE_SELECTED_RUN', count=None,
+                            scope='WINDOW', timeCoverage='NOT_INFERRED')))
+                elif source['kind']=='RAW_V1':
                     rows, detail = _raw_snapshot(c,budget)
                 elif source['kind']=='ADAPTER_STORE_V1':
                     rows, detail = _adapter_snapshot(c,budget,source['pin'])
                 else:
                     rows, detail = _input_snapshot(c,budget)
-                selected_store = run_evidence is not None and source['storeId'] == store_id
                 if selected_store:
                     if source['kind'] != 'RAW_V1':
                         run_evidence['state'] = 'not_applicable'
-                    elif any(row['deviceId'] == device_id and row['sourceMetadata']['runId'] == run_id for row in rows):
+                    elif (portable_window and source['storeId'] == device_id and c.execute(
+                            'SELECT 1 FROM raw_batches WHERE device_id=? AND run_id=? LIMIT 1', (device_id,run_id)).fetchone()
+                          or any(row['deviceId'] == device_id and row['sourceMetadata']['runId'] == run_id for row in rows)):
                         gaps = c.execute("""SELECT first_sequence,last_sequence,reason FROM ingest_gaps
                             WHERE device_id=? AND run_id=? ORDER BY first_sequence,last_sequence LIMIT ?""",
                             (device_id,run_id,MAX_RUN_GAPS+1)).fetchall()
                         if len(gaps) > MAX_RUN_GAPS:
                             raise QueryError('QUERY_LIMIT')
-                        # The same transaction already validated these rows in _raw_snapshot.
+                        if portable_window and any(type(first) is not int or type(last) is not int
+                                or not 0 <= first <= last or reason != 'REPLAY_OVERFLOW'
+                                for first, last, reason in gaps):
+                            raise QueryError('SOURCE_INVALID')
                         run_evidence.update(state='recorded', recordedGaps=[
                             dict(firstSequence=str(first),lastSequence=str(last),reason=reason)
                             for first,last,reason in gaps])
@@ -320,7 +385,8 @@ def query_stored_records(sources, received_from, received_to, *, device_id=None,
                 if selected_store and run_evidence['state'] == 'recorded':
                     run_evidence['storedRowsInReceivedWindow'] = matched
                 reports.append(dict(storeId=source['storeId'],kind=source['kind'],scannedRecords=len(rows),
-                    matchedRecords=matched,integrity='VERIFIED_STORED_SNAPSHOT',**detail))
+                    matchedRecords=matched, integrity=('VERIFIED_WINDOW_RECORDS' if portable_window and relevant
+                        else 'NOT_ASSESSED' if portable_window else 'VERIFIED_STORED_SNAPSHOT'), **detail))
         records.sort(key=lambda r:(_timestamp(r['firstReceivedAtUtc']),r['identity']['storeId'],
                                    _encode(r['identity']['nativeKey'])))
         result = dict(schemaVersion='stored-record-query-1',timeBasis='FIRST_RECEIPT',
@@ -331,7 +397,7 @@ def query_stored_records(sources, received_from, received_to, *, device_id=None,
             crossStoreDeduplication='NOT_PERFORMED_DIFFERENT_NAMESPACES',
             snapshotConsistency='PER_STORE_SNAPSHOT_NO_DISTRIBUTED_ATOMICITY',
             sourceCoverage='NOT_ASSERTED',selectionComplete=True,sources=reports,records=records,
-            limits=dict(maxSources=MAX_SOURCES,maxRawRowsPerStore=MAX_RAW_ROWS,
+            limits=dict(maxSources=MAX_SOURCES,maxRawRowsPerStore=None if portable_window else MAX_RAW_ROWS,
                 maxRecords=max_records,maxSelectedSignals=MAX_SIGNALS,maxOutputBytes=MAX_OUTPUT_BYTES,
                 cooperativeSeconds=MAX_SECONDS,maxSqlVmSteps=MAX_SQL_STEPS))
         if run_evidence is not None:

@@ -27,3 +27,38 @@ def test_hybrid_demo_enables_tray_overlay_and_automatic_port_explicitly(tmp_path
     for arguments in (["--headless", "--overlay"], ["--auto-port", "--port", "8780"]):
         with pytest.raises(SystemExit):
             parse_args(arguments)
+
+
+def test_producer_recovery_retries_only_dead_module_with_a_bounded_budget():
+    from types import SimpleNamespace
+    from scripts.run_hybrid_demo import SyntheticProducerRecovery
+
+    first = SimpleNamespace(poll=lambda: 1)
+    peer = SimpleNamespace(poll=lambda: None)
+    stack = SimpleNamespace(device_ids=("target", "peer"), emulator_processes=[first, peer])
+    attempts, messages = [], []
+
+    def start(index):
+        attempts.append(index)
+        if len(attempts) == 1:
+            raise OSError("Synthetic start failed")
+        stack.emulator_processes[index] = SimpleNamespace(poll=lambda: None)
+
+    stack.start_emulator = start
+    recovery = SyntheticProducerRecovery(stack, messages.append)
+    for now in (0, .9, 1, 2, 3):
+        recovery.check(now)
+    assert attempts == [0, 0]
+    assert stack.emulator_processes[1] is peer
+    assert stack.emulator_processes[0].poll() is None
+
+    stack.emulator_processes[0] = first
+    for now in (4, 7, 8):
+        recovery.check(now)
+    assert attempts == [0, 0, 0]
+    stack.emulator_processes[0] = first
+    for now in (9, 20, 60):
+        recovery.check(now)
+    assert attempts == [0, 0, 0]
+    assert sum("RESTART_EXHAUSTED" in message for message in messages) == 1
+    assert all("peer" not in message for message in messages)

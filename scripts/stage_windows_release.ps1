@@ -3,7 +3,9 @@ param(
     [Parameter(Mandatory)][string]$Destination,
     [string]$GatewayDirectory,
     [string]$DesktopDirectory,
-    [string]$UiDirectory
+    [string]$UiDirectory,
+    [string]$PythonEnvironment,
+    [string]$DotnetDirectory
 )
 
 $ErrorActionPreference = 'Stop'
@@ -80,6 +82,73 @@ function Write-AppOutput([string]$Directory, [string]$RelativePath, [string]$App
     }
 }
 
+function Write-PythonLibrary([string]$Directory, [string]$RelativePath) {
+    foreach ($item in Get-ChildItem -LiteralPath $Directory -Force) {
+        if ($item.Name -in @('__pycache__', 'site-packages', 'test', 'tests', 'ensurepip', 'idlelib', 'tkinter', 'turtledemo')) { continue }
+        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            throw "Python runtime contains a link or junction: $($item.FullName)"
+        }
+        $relative = Join-Path $RelativePath $item.Name
+        if ($item.PSIsContainer) { Write-PythonLibrary $item.FullName $relative }
+        elseif ($item.Extension -ne '.pyc') { Write-PackageFile $item.FullName $relative }
+    }
+}
+
+function Write-PrivateRuntime {
+    $python = (Get-Item -LiteralPath $PythonEnvironment).FullName
+    Assert-X64Executable $python
+    $planFile = Join-Path $stage 'python-files.json'
+    & $python -I -B (Join-Path $PSScriptRoot 'windows_release/runtime_files.py') (Join-Path $root 'pyproject.toml') $planFile
+    if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $planFile -PathType Leaf)) {
+        throw 'The staging environment must contain the product Python dependencies and the packaging build helper.'
+    }
+    $plan = Get-Content -LiteralPath $planFile -Raw -Encoding utf8 | ConvertFrom-Json
+    Remove-Item -LiteralPath $planFile
+    Assert-X64Executable (Join-Path $plan.base 'python.exe')
+    foreach ($name in @('python.exe','pythonw.exe','python312.dll','python3.dll','vcruntime140.dll','vcruntime140_1.dll','LICENSE.txt')) {
+        Write-PackageFile (Join-Path $plan.base $name) (Join-Path 'runtime/python' $name)
+    }
+    Write-PackageTree (Join-Path $plan.base 'DLLs') 'runtime/python/DLLs'
+    Write-PythonLibrary (Join-Path $plan.base 'Lib') 'runtime/python/Lib'
+    foreach ($file in $plan.files) {
+        Write-PackageFile (Join-Path $plan.site $file) (Join-Path 'runtime/python/Lib/site-packages' $file)
+    }
+
+    $dotnet = if ($DotnetDirectory) { (Get-Item -LiteralPath $DotnetDirectory).FullName }
+        else { Split-Path (Get-Command dotnet.exe -CommandType Application | Select-Object -First 1 -ExpandProperty Source) }
+    Assert-X64Executable (Join-Path $dotnet 'dotnet.exe')
+    $frameworks = @('Microsoft.NETCore.App','Microsoft.AspNetCore.App','Microsoft.WindowsDesktop.App')
+    $versions = @(Get-ChildItem -LiteralPath (Join-Path $dotnet 'host/fxr') -Directory |
+        Where-Object Name -Match '^10\.0\.[0-9]+$' | Sort-Object { [version]$_.Name } -Descending)
+    $runtimeVersion = $null
+    foreach ($version in $versions) {
+        $complete = $true
+        foreach ($framework in $frameworks) {
+            if (!(Test-Path -LiteralPath (Join-Path $dotnet "shared/$framework/$($version.Name)") -PathType Container)) {
+                $complete = $false
+            }
+        }
+        if ($complete) { $runtimeVersion = $version.Name; break }
+    }
+    if (!$runtimeVersion) { throw 'A complete .NET 10 x64 runtime set with a shared patch version is required.' }
+    foreach ($name in @('dotnet.exe','LICENSE.txt','ThirdPartyNotices.txt')) {
+        Write-PackageFile (Join-Path $dotnet $name) (Join-Path 'runtime/dotnet' $name)
+    }
+    Write-PackageTree (Join-Path $dotnet "host/fxr/$runtimeVersion") "runtime/dotnet/host/fxr/$runtimeVersion"
+    foreach ($framework in $frameworks) {
+        Write-PackageTree (Join-Path $dotnet "shared/$framework/$runtimeVersion") "runtime/dotnet/shared/$framework/$runtimeVersion"
+    }
+    $inventory = @{
+        schemaVersion = 1
+        platform = 'win-x64'
+        pythonVersion = $plan.pythonVersion
+        pythonDistributions = $plan.distributions
+        dotnetVersion = $runtimeVersion
+        webView2 = 'system-prerequisite'
+    }
+    [IO.File]::WriteAllText((Join-Path $stage 'runtime/runtime.json'), ($inventory | ConvertTo-Json -Depth 5), [Text.UTF8Encoding]::new($false))
+}
+
 $stage = Join-Path $parent.FullName ('.aegis-staging-' + [guid]::NewGuid().ToString('N'))
 $null = New-Item -Path $stage -ItemType Directory
 try {
@@ -105,7 +174,12 @@ try {
     }
     Write-PackageFile (Join-Path $PSScriptRoot 'windows_release/launch.py') 'scripts/start_windows_release.py'
     Write-PackageFile (Join-Path $PSScriptRoot 'windows_release/Aegis.cmd') 'Aegis.cmd'
+    Write-PackageFile (Join-Path $PSScriptRoot 'windows_release/Install-Aegis.cmd') 'Install-Aegis.cmd'
+    Write-PackageFile (Join-Path $PSScriptRoot 'windows_release/manage_install.py') 'scripts/manage_install.py'
     Write-PackageFile (Join-Path $PSScriptRoot 'windows_release/README.ko.md') 'README.ko.md'
+
+    if ($PythonEnvironment) { Write-PrivateRuntime }
+    elseif ($DotnetDirectory) { throw 'Specify -PythonEnvironment when packaging a private runtime.' }
 
     $manifest = @{
         schemaVersion = 1

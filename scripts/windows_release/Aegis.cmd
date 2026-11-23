@@ -2,6 +2,12 @@
 setlocal DisableDelayedExpansion
 set "PYLAUNCHER_ALLOW_INSTALL="
 set "PYLAUNCHER_DRYRUN="
+if not exist "%~dp0runtime\runtime.json" goto external
+set "AEGIS_PYTHON312=%~dp0runtime\python\python.exe"
+if not exist "%AEGIS_PYTHON312%" goto incomplete
+goto configured
+
+:external
 if defined AEGIS_PYTHON312 goto configured
 where.exe py.exe >nul 2>&1
 if errorlevel 1 goto missing
@@ -26,6 +32,11 @@ exit /b %ERRORLEVEL%
 :use_configured
 "%AEGIS_PYTHON312%" -X utf8 -I -B "%~dp0scripts\start_windows_release.py" %*
 goto complete
+
+:incomplete
+echo Aegis runtime files are missing. Extract the package again and run Aegis.cmd --check.
+pause
+exit /b 1
 
 :missing
 echo A prepared Windows x64 Python 3.12 environment is required.
