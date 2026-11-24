@@ -2,11 +2,11 @@
 
 **Windows에서 장비 신호의 수신·품질·추세를 보고, 이상이 발생한 시점의 원본까지 확인하는 읽기 전용 계측 작업대입니다.** 여러 모듈의 상태를 한 화면에 모아 보고, 다른 업무 중에는 필요한 신호만 오버레이에 고정할 수 있습니다.
 
-[Windows 실행과 설치](scripts/windows_release/README.ko.md) · [시연 흐름과 검증 범위](docs/PORTFOLIO_WINDOWS.md) · [동반 모드](docs/WINDOWS_COMPANION.md)
+[Windows x64 다운로드](https://github.com/KIMJINWOO0548/Aegis/releases/latest) · [실행 안내](scripts/windows_release/README.ko.md) · [시연 흐름과 검증 범위](docs/PORTFOLIO_WINDOWS.md)
 
-![Aegis Windows 메인 작업대. 왼쪽에서 장비 모듈과 태그를 선택하면 오른쪽에서 합성 유량과 추세를 본다.](docs/images/windows-workbench/aegis-main.png)
+![Aegis Windows 15초 시연. 합성 수집기 두 대의 상태를 확인하고, 두 번째 모듈의 공급 압력 추세와 원본 관측 시각을 확인한 뒤 오버레이를 연다.](docs/images/windows-workbench/aegis-demo-15s.gif)
 
-*최대화한 Windows 작업대, OS 배율 125%. 두 개의 로컬 합성 수집기가 보내는 신호입니다.*
+*Windows에서 합성 수집기 두 대를 실행한 화면입니다.* [작업대 원본 캡처](docs/images/windows-workbench/aegis-main.png) · [동반 모드](docs/WINDOWS_COMPANION.md)
 
 ### 읽기 전용 오버레이
 
