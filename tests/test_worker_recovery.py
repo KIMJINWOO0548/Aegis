@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import signal
+import socket
 import sqlite3
 import subprocess
 import sys
@@ -293,6 +294,8 @@ def _snapshot_server(mode):
     requests = []
 
     class Handler(BaseHTTPRequestHandler):
+        timeout = 2  # Bound socket reads and writes while server_close waits for handlers.
+
         def log_message(self, *_args):
             pass
 
@@ -312,21 +315,42 @@ def _snapshot_server(mode):
                 self.send_header("Content-Length", str(len(response_body)))
                 self.end_headers()
                 self.wfile.write(response_body)
-            except (BrokenPipeError, ConnectionResetError):
+            except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+                # The worker may have timed out and closed the socket before replying.
                 pass
 
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": .02}, daemon=True)
-    thread.start()
-    try:
-        configured = _source(server.server_port, poll_ms=60000 if mode == "long_idle" else 50)
-        if replay:
-            configured = configured.model_copy(update={"transport": "replay"})
-        yield configured, requests
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join(timeout=2)
+    with ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
+        # server_close waits for non-daemon request handlers.
+        server.daemon_threads = False
+        thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": .02}, daemon=False)
+        thread.start()
+        try:
+            configured = _source(server.server_port, poll_ms=60000 if mode == "long_idle" else 50)
+            if replay:
+                configured = configured.model_copy(update={"transport": "replay"})
+            yield configured, requests
+        finally:
+            server.shutdown()
+            thread.join()
+
+
+def test_snapshot_server_joins_handler_after_client_abort(monkeypatch, capsys):
+    handlers = []
+
+    def abort_response(_handler):
+        handlers.append(threading.current_thread())
+        raise ConnectionAbortedError("Synthetic client disconnect during response.")
+
+    monkeypatch.setattr(BaseHTTPRequestHandler, "end_headers", abort_response)
+    with _snapshot_server("timeout") as (configured, requests):
+        with socket.create_connection(("127.0.0.1", urlsplit(configured.baseUrl).port), timeout=2) as client:
+            client.sendall(b"GET / HTTP/1.0\r\n\r\n")
+            asyncio.run(_until(lambda: requests, seconds=2))
+
+    assert len(handlers) == 1
+    assert not handlers[0].daemon
+    assert not handlers[0].is_alive()
+    assert capsys.readouterr().err == ""
 
 
 @pytest.mark.parametrize("mode", ["no_new_data", "long_idle", "timeout"])
