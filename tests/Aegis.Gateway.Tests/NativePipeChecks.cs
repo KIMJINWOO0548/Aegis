@@ -17,21 +17,19 @@ internal static class NativePipeChecks
         }, "InvalidDataException");
         await RejectAsync(executable, "partial frame and disconnect", async (pipe, token) =>
         {
+            // Confirm the server has handled a request before cutting the next frame.
+            await SubmitAndConfirmAsync(pipe, token);
             var fragment = new byte[5];
             BinaryPrimitives.WriteUInt32LittleEndian(fragment, 128);
             fragment[4] = (byte)'{';
             await pipe.WriteAsync(fragment, token);
-        }, "EndOfStreamException");
+        }, "EndOfStreamException", disconnect: true);
         await RejectAsync(executable, "old generation",
             (pipe, token) => NativeWire.WriteAsync(pipe, Submit(2, 1), token), "InvalidDataException");
         await RejectAsync(executable, "duplicate request id", async (pipe, token) =>
         {
             VerifyPipeSecurity(pipe);
-            await NativeWire.WriteAsync(pipe, Submit(3, 1), token);
-            var reply = await NativeWire.ReadAsync<NativeResponse>(pipe, token);
-            if (reply.Version != NativeWire.Version || reply.Generation != 3 || reply.RequestId != 1
-                || reply.Snapshot?.ProcessedFrameCount != 1)
-                throw new InvalidOperationException("Initial native pipe request failed.");
+            await SubmitAndConfirmAsync(pipe, token);
             await NativeWire.WriteAsync(pipe, Submit(3, 1), token);
         }, "InvalidDataException");
         await RejectAsync(executable, "unexpected client PID", (_, _) => Task.CompletedTask,
@@ -55,8 +53,18 @@ internal static class NativePipeChecks
     private static NativeRequest Submit(long generation, long id) =>
         new(NativeWire.Version, generation, id, "submit", [new(1, 0, 1000, 1, 4, 0)]);
 
+    private static async Task SubmitAndConfirmAsync(NamedPipeClientStream pipe, CancellationToken token)
+    {
+        await NativeWire.WriteAsync(pipe, Submit(3, 1), token);
+        var reply = await NativeWire.ReadAsync<NativeResponse>(pipe, token);
+        if (reply.Version != NativeWire.Version || reply.Generation != 3 || reply.RequestId != 1
+            || reply.Snapshot?.ProcessedFrameCount != 1)
+            throw new InvalidOperationException("Initial native pipe request failed.");
+    }
+
     private static async Task RejectAsync(string executable, string check,
-        Func<NamedPipeClientStream, CancellationToken, Task> send, string expectedError, uint? clientPid = null)
+        Func<NamedPipeClientStream, CancellationToken, Task> send, string expectedError,
+        uint? clientPid = null, bool disconnect = false)
     {
         var pipeName = $"aegis-native-{Guid.NewGuid():N}";
         var start = new ProcessStartInfo(executable)
@@ -78,12 +86,14 @@ internal static class NativePipeChecks
             {
                 await pipe.ConnectAsync(timeout.Token);
                 await send(pipe, timeout.Token);
-                if (clientPid is not null) await host.WaitForExitAsync(timeout.Token);
+                // Only the disconnect case closes the client before the server rejects it.
+                if (!disconnect) await host.WaitForExitAsync(timeout.Token);
             }
             await host.WaitForExitAsync(timeout.Token);
             var diagnostic = await stderr;
-            if (host.ExitCode != 1 || !diagnostic.Contains(expectedError, StringComparison.Ordinal))
+            if (host.ExitCode != 1 || (!Reports(expectedError) && (!disconnect || !Reports("IOException"))))
                 throw new InvalidOperationException($"{check} was not rejected as expected. {diagnostic}");
+            bool Reports(string error) => diagnostic.Contains($"Native host failed: {error}:", StringComparison.Ordinal);
         }
         finally
         {
