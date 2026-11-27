@@ -24,9 +24,9 @@
 
 [Windows x64 포터블 ZIP](https://github.com/KIMJINWOO0548/Aegis/releases/latest)을 로컬 폴더에 풀고 마이크로소프트 Edge WebView2 Runtime이 준비된 PC에서 `Aegis.cmd`를 실행합니다. 합성 수집기 두 개로 수신·보관·작업대를 확인할 수 있습니다. [실행, 저장 위치, 사용자별 설치 안내](scripts/windows_release/README.ko.md).
 
-현재 브랜치의 검사 결과는 [Windows CI](https://github.com/KIMJINWOO0548/Aegis/actions/workflows/windows-ci.yml?query=branch%3Amain)와 [Linux 보관 CI](https://github.com/KIMJINWOO0548/Aegis/actions/workflows/posix-archive-ci.yml?query=branch%3Amain)에서 확인할 수 있습니다. 날짜별 개발 결과와 이전 하이브리드 실행 절차는 [이전 개발 및 검증 기록](docs/DEVELOPMENT_HISTORY.md)에 있습니다.
+기본 브랜치의 검사 결과는 [Windows CI](https://github.com/KIMJINWOO0548/Aegis/actions/workflows/windows-ci.yml?query=branch%3Amain)와 [Linux 보관 CI](https://github.com/KIMJINWOO0548/Aegis/actions/workflows/posix-archive-ci.yml?query=branch%3Amain)에서 확인할 수 있습니다. 날짜별 개발 결과와 이전 하이브리드 실행 절차는 [이전 개발 및 검증 기록](docs/DEVELOPMENT_HISTORY.md)에 있습니다.
 
-실제 설비 연결은 검증하지 않았습니다. 합성 어댑터의 Windows 저장은 신뢰할 수 있는 로컬 NTFS 경로를 지원합니다. 보관 도구의 지원 범위와 저장 제한은 [Windows 어댑터 검증](docs/WINDOWS_ADAPTER_STORE_20261116.md)과 [플랫폼 사전 확인](docs/GAMJA_RECONCILIATION_20261116.md)을 참고하세요.
+Windows에서는 합성 신호의 원본을 로컬 NTFS 경로에 저장합니다. [Windows 설정과 보관 기록](scripts/windows_release/README.ko.md#설정과-보관-기록)에서 데이터 위치와 지원 범위를, [아카이브 백업·복원 안내](docs/ARCHIVE_BACKUP_20261109.md)에서 백업 도구의 실행 조건을 확인할 수 있습니다. 실제 설비 연결은 검증 범위 밖입니다.
 
 ## 코드와 증거
 
