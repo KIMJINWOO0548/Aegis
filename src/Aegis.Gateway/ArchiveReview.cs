@@ -6,7 +6,8 @@ using Microsoft.Data.Sqlite;
 
 namespace Aegis.Gateway;
 
-public sealed record NativeReview(FlowReviewSnapshot? Review, string EngineState, long? NativeSequence);
+public sealed record NativeReview(FlowReviewSnapshot? Review, string EngineState, long? NativeSequence,
+    NativeFlowEvidence? NativeFlow = null);
 
 public sealed class ArchiveReview(GatewaySettings settings)
 {
@@ -19,20 +20,70 @@ public sealed class ArchiveReview(GatewaySettings settings)
         public DateTimeOffset Received;
     }
     private readonly Dictionary<string, Cursor> _cursors = new(StringComparer.Ordinal);
-    public FlowReviewSnapshot? Snapshot(string deviceId) => _cursors.TryGetValue(deviceId, out var cursor) ? cursor.Engine.Snapshot() : null;
-    public static string FileName(string deviceId) => $"module-{deviceId}-{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(deviceId))).ToLowerInvariant()[..12]}.sqlite3";
-    public NativeReview Read(string deviceId, string? equipmentId, string? moduleId)
+    private readonly object _nativeGate = new();
+    private readonly Dictionary<string, NativeDeviceReview> _native = new(StringComparer.Ordinal);
+    private readonly List<Task> _retiring = [];
+    private bool _stopping;
+
+    public FlowReviewSnapshot? Snapshot(string deviceId)
     {
-        if (string.IsNullOrWhiteSpace(settings.ArchiveDirectory)) return new(null, "ARCHIVE_NOT_CONFIGURED", null);
+        lock (_nativeGate)
+        {
+            if (_native.TryGetValue(deviceId, out var worker)) return worker.Read().Review;
+        }
+        return _cursors.TryGetValue(deviceId, out var cursor) ? cursor.Engine.Snapshot() : null;
+    }
+    public static string FileName(string deviceId) => $"module-{deviceId}-{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(deviceId))).ToLowerInvariant()[..12]}.sqlite3";
+    public NativeReview Read(string deviceId, string? equipmentId, string? moduleId, bool nativeAllowed = true)
+    {
+        if (settings.ArchiveDirectory is not { } directory || string.IsNullOrWhiteSpace(directory))
+            return new(null, "ARCHIVE_NOT_CONFIGURED", null);
         WireValidation.Identity(deviceId);
+        if (nativeAllowed && !string.IsNullOrWhiteSpace(settings.NativeHostPath))
+        {
+            lock (_nativeGate)
+            {
+                if (_stopping) return new(null, "UNAVAILABLE", null);
+                if (_native.TryGetValue(deviceId, out var old)
+                    && (old.EquipmentId != equipmentId || old.ModuleId != moduleId))
+                    Retire(deviceId);
+                if (!_native.TryGetValue(deviceId, out var worker))
+                {
+                    // Keep the opt-in experiment bounded. For other modules, fall
+                    // through to the established managed review implementation.
+                    if (_native.Count < 4)
+                    {
+                        var managedCursor = new Cursor(deviceId);
+                        var reader = new NativeArchiveReader(directory, deviceId, equipmentId, moduleId);
+                        worker = new NativeDeviceReview(equipmentId, moduleId, settings.NativeHostPath, reader,
+                            () => ReadManaged(directory, deviceId, equipmentId, moduleId, managedCursor));
+                        _native.Add(deviceId, worker);
+                    }
+                }
+                if (worker is not null)
+                {
+                    worker.SetSourceAvailable(true);
+                    return worker.Read();
+                }
+            }
+        }
+        else
+        {
+            lock (_nativeGate) Retire(deviceId);
+        }
         if (!_cursors.TryGetValue(deviceId, out var cursor))
         {
             if (_cursors.Count >= 32) return new(null, "UNAVAILABLE", null);
             _cursors[deviceId] = cursor = new(deviceId);
         }
+        return ReadManaged(directory, deviceId, equipmentId, moduleId, cursor);
+    }
+
+    private static NativeReview ReadManaged(string directory, string deviceId, string? equipmentId, string? moduleId, Cursor cursor)
+    {
         try
         {
-            var path = Path.Combine(Path.GetFullPath(settings.ArchiveDirectory), FileName(deviceId));
+            var path = Path.Combine(Path.GetFullPath(directory), FileName(deviceId));
             using var database = new SqliteConnection(new SqliteConnectionStringBuilder
             { DataSource = path, Mode = SqliteOpenMode.ReadOnly, Cache = SqliteCacheMode.Private, Pooling = false, DefaultTimeout = 1 }.ToString());
             database.Open();
@@ -87,6 +138,39 @@ public sealed class ArchiveReview(GatewaySettings settings)
         { cursor.Engine.MarkUnavailable(); return new(cursor.Engine.Snapshot(), "UNAVAILABLE", cursor.Sequence); }
     }
     public void Retain(ISet<string> devices)
-    { foreach (var key in _cursors.Keys.Where(key => !devices.Contains(key)).ToArray()) _cursors.Remove(key); }
-    public void Unavailable() { foreach (var cursor in _cursors.Values) cursor.Engine.MarkUnavailable(); }
+    {
+        foreach (var key in _cursors.Keys.Where(key => !devices.Contains(key)).ToArray()) _cursors.Remove(key);
+        lock (_nativeGate)
+        {
+            foreach (var key in _native.Keys.Where(key => !devices.Contains(key)).ToArray()) Retire(key);
+            _retiring.RemoveAll(task => task.IsCompletedSuccessfully);
+        }
+    }
+
+    public void Unavailable()
+    {
+        foreach (var cursor in _cursors.Values) cursor.Engine.MarkUnavailable();
+        lock (_nativeGate)
+            foreach (var worker in _native.Values) worker.SetSourceAvailable(false);
+    }
+
+    private void Retire(string key)
+    {
+        if (_native.Remove(key, out var worker)) _retiring.Add(worker.StopAsync());
+    }
+
+    internal int? NativeHostProcessId(string deviceId)
+    {
+        lock (_nativeGate) return _native.TryGetValue(deviceId, out var worker) ? worker.ProcessId : null;
+    }
+
+    public Task StopAsync(CancellationToken token)
+    {
+        lock (_nativeGate)
+        {
+            _stopping = true;
+            foreach (var key in _native.Keys.ToArray()) Retire(key);
+            return Task.WhenAll(_retiring).WaitAsync(token);
+        }
+    }
 }

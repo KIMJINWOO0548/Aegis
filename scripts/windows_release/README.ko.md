@@ -11,9 +11,13 @@ Aegis는 Windows x64용 설비 신호 작업대입니다. 이 패키지는 두 �
 | 명령 | 동작 |
 | --- | --- |
 | `Aegis.cmd --check` | 실행 없이 패키지 SHA-256, Python, .NET 확인 |
+| `Aegis.cmd --native-review --check` | 네이티브 엔진이 포함된 패키지와 x64 호스트·DLL 확인 |
+| `Aegis.cmd --native-review --workbench` | 동봉된 네이티브 엔진으로 합성 신호 검토 시작 |
 | `Aegis.cmd --tray --overlay` | 트레이에서 수집을 시작하고 읽기 전용 오버레이 열기 |
 | `Aegis.cmd --workbench --scenario DEG-02` | 합성 유량 편차 사례와 작업대 열기 |
 | `Aegis.cmd --workbench --seconds 30` | 실행을 30초로 제한하는 합성 시험 |
+
+네이티브 검토는 `--native-review`를 지정할 때만 사용합니다. 해당 옵션이 없으면 기존 합성 검토로 실행하며, 네이티브 파일이 없는 패키지에서 옵션을 지정하면 실행 전에 안내합니다.
 
 ## 사용자별 설치 · 업데이트 · 되돌리기 · 제거
 

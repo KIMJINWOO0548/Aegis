@@ -26,10 +26,31 @@ jobs:
       - name: Prepare project environment
         shell: pwsh
         run: ./scripts/setup.ps1
+      - name: Build and test Windows x64 native engine
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force TestResults | Out-Null
+          cmake -S src/Aegis.Native -B artifacts/native-build -A x64 -DBUILD_TESTING=ON
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build artifacts/native-build --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir artifacts/native-build -C Release --output-on-failure --output-junit "$pwd/TestResults/native.xml"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet build src/Aegis.NativeHost/Aegis.NativeHost.csproj -c Release --no-restore
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item artifacts/native-build/Release/aegis_native.dll src/Aegis.NativeHost/bin/Release/net10.0/aegis_native.dll
       - name: Run the local verification suite
         if: always()
         shell: pwsh
         run: ./scripts/verify.ps1
+      - name: Exercise actual native Gateway pipe and recovery checks
+        shell: pwsh
+        run: |
+          $env:AEGIS_TEST_NATIVE_HOST_EXE = (Resolve-Path src/Aegis.NativeHost/bin/Release/net10.0/Aegis.NativeHost.exe).Path
+          dotnet run --project tests/Aegis.Gateway.Tests/Aegis.Gateway.Tests.csproj -c Release --no-build --no-restore
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet run --project tests/Aegis.Gateway.Tests/Aegis.Gateway.Tests.csproj -c Release --no-build --no-restore -- --native-fault-timing
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         if: always()
         with:

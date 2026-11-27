@@ -28,6 +28,17 @@ $env:AEGIS_DASHBOARD_TOKEN = [Convert]::ToHexString([Security.Cryptography.Rando
 
 기존 WPF 재현은 `.venv\Scripts\python.exe scripts\run_emulator_demo.py --isolate --count 3 --scenario DATA-QUALITY --seconds 70`입니다. 두 Windows 화면 모두 시작 시 논리 작업 영역에 맞춥니다. 실제 다중 모니터·DPI 조합의 Windows 렌더링은 추가 검증이 필요합니다.
 
+### Windows x64 네이티브 검토 실행
+
+개발 실행기에서 합성 모듈을 대상으로 켤 수 있습니다. Windows x64 Release로 빌드한 `aegis_native.dll`을 `Aegis.NativeHost.exe` 옆에 둡니다.
+
+```powershell
+dotnet publish src/Aegis.NativeHost -c Release -o artifacts/native-host
+.venv\Scripts\python.exe scripts\run_hybrid_demo.py --count 2 --scenario NORMAL --native-host artifacts\native-host\Aegis.NativeHost.exe
+```
+
+Gateway는 합성 모듈 최대 4개를 장비별 호스트에 연결합니다. 인증된 `/api/dashboard`의 `nativeFlow`에는 연속된 최근 32개 유효 프레임의 유량 절대 편차 평균과 원본 관측 시각이 들어갑니다. 시드가 부족하거나 출처가 맞지 않으면 이유와 상태를 반환합니다. Workbench를 트레이로 닫으면 수집이 계속되고, 명시적으로 종료하면 실행기가 Gateway와 소유한 호스트의 종료를 기다립니다.
+
 ## 데이터 경계
 
 ### 선택적 로컬 보관 이력

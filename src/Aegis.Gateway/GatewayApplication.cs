@@ -10,12 +10,15 @@ namespace Aegis.Gateway;
 
 public sealed record GatewaySettings(Uri Origin, Uri? Upstream, string? UpstreamToken, string? DashboardToken, string? ArchiveDirectory)
 {
+    public string? NativeHostPath { get; init; }
+
     public static GatewaySettings Read(IConfiguration config)
     {
         var origin = LocalUri(config["AEGIS_GATEWAY_URL"] ?? "http://127.0.0.1:8780")
             ?? throw new InvalidOperationException("Gateway requires a literal loopback HTTP origin.");
         return new(origin, LocalUri(config["AEGIS_API_URL"] ?? "http://127.0.0.1:8765"),
-            Token(config["AEGIS_API_TOKEN"]), Token(config["AEGIS_DASHBOARD_TOKEN"]), config["AEGIS_ARCHIVE_DIRECTORY"]);
+            Token(config["AEGIS_API_TOKEN"]), Token(config["AEGIS_DASHBOARD_TOKEN"]), config["AEGIS_ARCHIVE_DIRECTORY"])
+        { NativeHostPath = config["AEGIS_NATIVE_HOST"] };
     }
     public static Uri? LocalUri(string value) => Uri.TryCreate(value, UriKind.Absolute, out var uri)
         && uri.Scheme == "http" && uri.Host == "127.0.0.1" && uri.UserInfo == "" && uri.AbsolutePath == "/"

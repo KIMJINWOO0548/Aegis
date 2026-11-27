@@ -147,7 +147,7 @@ export default function App(){
    openArchive={openIncidentArchive} close={()=>closeProductView(incidentButton.current)}/></div>
   :view==='analysis'&&device?<div className="instrument-history"><AnalysisProfile key={device.deviceId} deviceId={device.deviceId}
    close={()=>closeProductView(analysisButton.current)}/></div>
-  :view==='diagnostics'?<div className="instrument-history"><LocalDiagnostics close={()=>closeProductView(diagnosticsButton.current)}/></div>:chart}/>
+  :view==='diagnostics'?<div className="instrument-history"><LocalDiagnostics close={()=>closeProductView(diagnosticsButton.current)} selectedModule={!!device} nativeFlow={device?.nativeFlow} nativeSequence={device?.nativeSequence??null} now={now}/></div>:chart}/>
  <footer className="instrument-footer"><span><LockKeyhole size={12} aria-hidden="true"/>원본 읽기 전용 · {current?'현재 수신':'수신 대기 / 이력'} · {device?.deviceId??'모듈 미선택'}</span>
   <span>마지막 수신 <Clock stamp={evidence?.lastReceivedAtUtc} fallback="수신 전"/> · 보관 완료 <Clock stamp={evidence?.lastCommittedAtUtc}/></span></footer>
  </main></div>;

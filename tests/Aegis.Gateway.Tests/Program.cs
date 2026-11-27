@@ -9,6 +9,9 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+if (args.Length == 6 && args[0] == "--pipe") return await NativeFaultTimingChecks.ChildAsync(args);
+if (args is ["--native-fault-timing"]) { await NativeFaultTimingChecks.RunAsync(); return 0; }
+
 const string token = "gateway-test-credential-with-more-than-32-chars";
 await using var app = GatewayApplication.Build([], builder =>
 {
@@ -92,8 +95,17 @@ void CheckThrows(Action action, string name) { try { action(); } catch (InvalidD
 await RawAndCacheChecks.Run(Check, app.Services.GetRequiredService<Microsoft.AspNetCore.SignalR.IHubContext<DashboardHub>>());
 await WarningAggregationChecks.Run(Check, app.Services.GetRequiredService<Microsoft.AspNetCore.SignalR.IHubContext<DashboardHub>>());
 await ProductChecks.Run(Check, token);
+NativeArchiveReaderTests.Run(Check);
+if (Environment.GetEnvironmentVariable("AEGIS_TEST_NATIVE_HOST_EXE") is { Length: > 0 } nativeHost)
+{
+    await NativePipeChecks.RunAsync(nativeHost);
+    await NativeHostRecoveryChecks.RunAsync(nativeHost);
+}
+else
+    Console.WriteLine("SKIP Windows native host process checks (AEGIS_TEST_NATIVE_HOST_EXE not set).");
 Console.WriteLine($"PASS {checks} in-process gateway checks (no network listeners).");
 await app.StopAsync();
+return 0;
 
 sealed class UnavailableHandler : HttpMessageHandler
 {

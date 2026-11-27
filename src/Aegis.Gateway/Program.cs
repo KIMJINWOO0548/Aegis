@@ -17,8 +17,25 @@ for (var attempt = 1; ; attempt++)
         await Task.Delay(TimeSpan.FromMilliseconds(120 * attempt));
         continue;
     }
+    if (OperatingSystem.IsWindows()
+        && Environment.GetEnvironmentVariable("AEGIS_GATEWAY_STOP_ON_STDIN_EOF") == "1"
+        && Console.IsInputRedirected)
+        _ = StopWhenLauncherClosesAsync(app.Lifetime);
     await app.WaitForShutdownAsync();
     break;
+}
+
+static async Task StopWhenLauncherClosesAsync(IHostApplicationLifetime lifetime)
+{
+    try
+    {
+        using var input = Console.OpenStandardInput();
+        var buffer = new byte[64];
+        while (await input.ReadAsync(buffer, lifetime.ApplicationStopping) != 0) { }
+        lifetime.StopApplication();
+    }
+    catch (OperationCanceledException) when (lifetime.ApplicationStopping.IsCancellationRequested) { }
+    catch (IOException) { lifetime.StopApplication(); }
 }
 
 public partial class Program;

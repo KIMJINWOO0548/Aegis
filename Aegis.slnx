@@ -5,6 +5,7 @@
     <Project Path="src/Aegis.Worker/Aegis.Worker.csproj" />
     <Project Path="src/Aegis.SignalProcessing/Aegis.SignalProcessing.csproj" />
     <Project Path="src/Aegis.Gateway/Aegis.Gateway.csproj" />
+    <Project Path="src/Aegis.NativeHost/Aegis.NativeHost.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Aegis.Contracts.Tests/Aegis.Contracts.Tests.csproj" />

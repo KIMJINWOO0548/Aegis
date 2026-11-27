@@ -10,7 +10,8 @@ public sealed record DashboardSnapshot(string SchemaVersion, DateTimeOffset Gene
     string SourceMode, string? Message, IReadOnlyList<DashboardDevice> Devices, object Inference);
 public sealed record DashboardDevice(string DeviceId, string? EquipmentId, string? ModuleId, JsonNode? Connection,
     JsonNode? Ingestion, JsonArray Observations, JsonNode? Diagnostics, JsonArray Warnings,
-    Aegis.SignalProcessing.FlowReviewSnapshot? Review, string EngineState, long? NativeSequence);
+    Aegis.SignalProcessing.FlowReviewSnapshot? Review, string EngineState, long? NativeSequence,
+    NativeFlowEvidence? NativeFlow = null);
 
 public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory clients, ArchiveReview archive,
     IHubContext<DashboardHub> hub, ProductWorkspace? workspace = null) : BackgroundService
@@ -52,6 +53,11 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
         await _refresh.WaitAsync(cancellationToken);
         try { await RefreshCoreAsync(cancellationToken); }
         finally { _refresh.Release(); }
+    }
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        try { await base.StopAsync(cancellationToken); }
+        finally { await archive.StopAsync(cancellationToken); }
     }
     private async Task RefreshCoreAsync(CancellationToken cancellationToken)
     {
@@ -125,9 +131,16 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
                     if (now - observed > TimeSpan.FromSeconds(3) || now - received > TimeSpan.FromSeconds(3) || observed > now.AddSeconds(1) || received > now.AddSeconds(1))
                     { if (observation!["quality"]!.GetValue<string>() == "GOOD") observation["quality"] = "STALE"; if (connection?["state"]?.GetValue<string>() == "CONNECTED") connection["state"] = "STALE"; }
                 }
-                var native = archive.Read(id, equipment, module);
+                var native = archive.Read(id, equipment, module, nativeAllowed: mode == "EMULATORS");
+                if (native.NativeFlow is { State: "READY" } flow
+                    && !string.Equals(flow.SourceRunId, ingestion?["lastCommittedRunId"]?.GetValue<string>(), StringComparison.OrdinalIgnoreCase))
+                {
+                    native = native with { EngineState = "UNAVAILABLE", NativeSequence = null,
+                        NativeFlow = new("RECOVERING", flow.ObservedAtUtc, Reason: "SOURCE_RUN_CHANGED") };
+                }
                 result.Add(new(id, equipment, module, connection, ingestion, observations, diagnostics,
-                    new JsonArray(warnings.Where(warning => WireValidation.String(warning!, "deviceId") == id).Select(warning => warning!.DeepClone()).ToArray()), native.Review, native.EngineState, native.NativeSequence));
+                    new JsonArray(warnings.Where(warning => WireValidation.String(warning!, "deviceId") == id).Select(warning => warning!.DeepClone()).ToArray()),
+                    native.Review, native.EngineState, native.NativeSequence, native.NativeFlow));
             }
             workspace?.CaptureSafely(typedWarnings);
             Volatile.Write(ref _latest, new("dashboard-1", DateTimeOffset.UtcNow, "CONNECTED", mode, null, result, Inference));
@@ -166,7 +179,9 @@ public sealed class DashboardCache(GatewaySettings settings, IHttpClientFactory 
                 foreach (var observation in device.Observations)
                     if (observation?["quality"]?.GetValue<string>() == "GOOD") observation["quality"] = "STALE";
                 var unavailable = archive.Snapshot(device.DeviceId);
-                return device with { Review = unavailable ?? device.Review, EngineState = "UNAVAILABLE" };
+                return device with { Review = unavailable ?? device.Review, EngineState = "UNAVAILABLE",
+                    NativeFlow = device.NativeFlow is { } native
+                        ? new("UNAVAILABLE", native.ObservedAtUtc, Reason: "UPSTREAM_UNAVAILABLE") : null };
             }).ToArray();
             Volatile.Write(ref _latest, previous with { GeneratedAtUtc = DateTimeOffset.UtcNow,
                 UpstreamState = "UNAVAILABLE", Message = "Local upstream unavailable; displaying received history.", Devices = history });

@@ -65,3 +65,68 @@ def test_launch_verifies_integrity_before_loading_runtime(monkeypatch):
     monkeypatch.setattr(launch, "start", lambda value: operations.append("start"))
     assert launch.main() == 0
     assert operations == ["manifest", "runtime", "start"]
+
+
+def _native_package(tmp_path, monkeypatch):
+    import json
+    monkeypatch.setattr(launch, "ROOT", tmp_path)
+    header = b"MZ" + bytes(58) + (64).to_bytes(4, "little") + b"PE\0\0\x64\x86"
+    for name in launch.NATIVE_FILES:
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(header)
+    (tmp_path / "manifest.json").write_text(json.dumps({"files": [{"path": name} for name in launch.NATIVE_FILES]}))
+    return tmp_path / launch.NATIVE_DIRECTORY / "Aegis.NativeHost.exe"
+
+
+def test_native_host_requires_packaged_pair_and_x64(tmp_path, monkeypatch):
+    host = _native_package(tmp_path, monkeypatch)
+    assert launch.native_host() == host.resolve()
+    dll = host.with_name("aegis_native.dll")
+    dll.write_bytes(b"MZ" + bytes(58) + (64).to_bytes(4, "little") + b"PE\0\0\x4c\x01")
+    with pytest.raises(launch.LaunchError, match="x64"):
+        launch.native_host()
+    dll.unlink()
+    with pytest.raises(launch.LaunchError):
+        launch.native_host()
+
+
+def test_native_host_rejects_unrecorded_files(tmp_path, monkeypatch):
+    _native_package(tmp_path, monkeypatch)
+    (tmp_path / "manifest.json").write_text('{"files": []}')
+    with pytest.raises(launch.LaunchError):
+        launch.native_host()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="The portable launcher uses a Windows state lock.")
+@pytest.mark.parametrize("native_review", [False, True])
+def test_native_launch_opt_in_and_environment_isolation(tmp_path, monkeypatch, native_review):
+    package = tmp_path / "package"
+    package.mkdir()
+    host = _native_package(package, monkeypatch)
+    calls = []
+    monkeypatch.setenv("AEGIS_NATIVE_HOST_EXE", "outside-host.exe")
+    monkeypatch.setenv("AEGIS_NATIVE_REVIEW", "true")
+    monkeypatch.setenv("DOTNET_STARTUP_HOOKS", "outside-hook.dll")
+    monkeypatch.setenv("DOTNET_ROOT", "outside-dotnet")
+    monkeypatch.setattr(launch.subprocess, "run", lambda command, **kwargs: (calls.append((command, kwargs["env"])) or SimpleNamespace(returncode=0)))
+    launch.start(SimpleNamespace(state_directory=tmp_path / "state", tray=False, scenario="NORMAL",
+                                 overlay=False, seconds=1, background=False, native_review=native_review))
+    command, environment = calls[0]
+    assert ("--native-host" in command) == native_review
+    if native_review:
+        assert command[command.index("--native-host") + 1] == str(host.resolve())
+    assert not any(key in environment for key in ("AEGIS_NATIVE_HOST_EXE", "AEGIS_NATIVE_REVIEW", "DOTNET_STARTUP_HOOKS", "DOTNET_ROOT"))
+
+
+def test_private_dotnet_replaces_inherited_environment(tmp_path, monkeypatch):
+    monkeypatch.setattr(launch, "ROOT", tmp_path)
+    inventory = tmp_path / launch.PRIVATE_INVENTORY
+    inventory.parent.mkdir()
+    inventory.write_text("{}")
+    monkeypatch.setenv("DOTNET_ROOT", "outside-dotnet")
+    monkeypatch.setenv("DOTNET_STARTUP_HOOKS", "outside-hook.dll")
+    environment = launch.isolated_environment()
+    assert environment["DOTNET_ROOT"] == str(tmp_path / launch.PRIVATE_DOTNET)
+    assert environment["DOTNET_ROOT_X64"] == environment["DOTNET_ROOT"]
+    assert "DOTNET_STARTUP_HOOKS" not in environment
