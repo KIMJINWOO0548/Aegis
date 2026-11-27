@@ -18,8 +18,11 @@ internal static partial class LocalPipe
     internal static NamedPipeServerStream Open(string pipeName)
     {
         using var identity = WindowsIdentity.GetCurrent();
-        var sid = identity.User?.Value ?? throw new UnauthorizedAccessException("Missing current Windows user.");
-        if (!ConvertStringSecurityDescriptorToSecurityDescriptorW($"O:{sid}D:P(A;;GA;;;{sid})", 1, out var descriptor, 0))
+        var ownerSid = identity.Owner?.Value ?? throw new UnauthorizedAccessException("Missing current Windows token owner.");
+        var userSid = identity.User?.Value ?? throw new UnauthorizedAccessException("Missing current Windows user.");
+        // CurrentUserOnly checks the token owner, which can be a group.
+        // Grant pipe access to the user SID only.
+        if (!ConvertStringSecurityDescriptorToSecurityDescriptorW($"O:{ownerSid}D:P(A;;GA;;;{userSid})", 1, out var descriptor, 0))
             throw new Win32Exception(Marshal.GetLastWin32Error());
         try
         {

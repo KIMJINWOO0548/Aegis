@@ -1,6 +1,8 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using Aegis.SignalProcessing;
 
 internal static class NativePipeChecks
@@ -24,6 +26,7 @@ internal static class NativePipeChecks
             (pipe, token) => NativeWire.WriteAsync(pipe, Submit(2, 1), token), "InvalidDataException");
         await RejectAsync(executable, "duplicate request id", async (pipe, token) =>
         {
+            VerifyPipeSecurity(pipe);
             await NativeWire.WriteAsync(pipe, Submit(3, 1), token);
             var reply = await NativeWire.ReadAsync<NativeResponse>(pipe, token);
             if (reply.Version != NativeWire.Version || reply.Generation != 3 || reply.RequestId != 1
@@ -34,6 +37,19 @@ internal static class NativePipeChecks
         await RejectAsync(executable, "unexpected client PID", (_, _) => Task.CompletedTask,
             "UnauthorizedAccessException", clientPid: uint.MaxValue);
         Console.WriteLine("PASS native pipe rejects oversized, partial, old-generation, duplicate and wrong-client requests.");
+    }
+
+    private static void VerifyPipeSecurity(NamedPipeClientStream pipe)
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
+        using var identity = WindowsIdentity.GetCurrent();
+        var security = pipe.GetAccessControl();
+        var rules = security.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier));
+        if (!Equals(security.GetOwner(typeof(SecurityIdentifier)), identity.Owner)
+            || rules.Count != 1 || rules[0] is not PipeAccessRule
+                { AccessControlType: AccessControlType.Allow, IsInherited: false } rule
+            || !Equals(rule.IdentityReference, identity.User))
+            throw new InvalidOperationException("Pipe must use the token owner and grant access to the account SID only.");
     }
 
     private static NativeRequest Submit(long generation, long id) =>
