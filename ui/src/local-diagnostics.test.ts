@@ -13,11 +13,13 @@ const snapshot={
 
 it('serializes only allowed diagnostic values for preview and export without replacing zero or null',()=>{
  const parsed=parseLocalDiagnostics({...snapshot,extraPath:'C:/private/demo',modules:[
-  {...moduleSnapshot,deviceId:'secret-device-name',quality:{...moduleSnapshot.quality,raw:117}},
+  {...moduleSnapshot,deviceId:'secret-device-name',nativeSequence:0,sourceRunId:'private-run-id',
+   nativeFlow:{state:'READY',sampleCount:32,meanAbsoluteDeviationLpm:0,sourceRunId:'private-run-id',rawFrames:[1,2]},
+   quality:{...moduleSnapshot.quality,raw:117}},
  ]});
  const preview=localDiagnosticsJson(parsed);
  expect(JSON.parse(preview)).toEqual(snapshot);
- expect(preview).not.toMatch(/extraPath|private|secret-device-name|raw/);
+ expect(preview).not.toMatch(/extraPath|private|secret-device-name|raw|nativeFlow|nativeSequence|sourceRunId/);
 });
 
 it('rejects unrecognized metadata rather than exporting it',()=>{

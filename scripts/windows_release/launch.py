@@ -19,6 +19,11 @@ REQUIRED_FRAMEWORKS = {"Microsoft.NETCore.App", "Microsoft.AspNetCore.App", "Mic
 PRIVATE_DOTNET = Path("runtime/dotnet")
 PRIVATE_INVENTORY = Path("runtime/runtime.json")
 PRIVATE_FILES = {"runtime/python/python.exe", "runtime/python/pythonw.exe", "runtime/dotnet/dotnet.exe"}
+NATIVE_DIRECTORY = Path("src/Aegis.NativeHost/bin/Release/net10.0")
+NATIVE_FILES = tuple((NATIVE_DIRECTORY / name).as_posix() for name in (
+    "Aegis.NativeHost.exe", "Aegis.NativeHost.dll", "Aegis.NativeHost.deps.json",
+    "Aegis.NativeHost.runtimeconfig.json", "Aegis.SignalProcessing.dll", "aegis_native.dll",
+))
 SCENARIOS = ("NORMAL", "DEG-02", "DATA-QUALITY", "TRANSIENT", "NOISY-FLOW")
 REQUIRED_FILES = (
     "src/Aegis.Gateway/bin/Release/net10.0/Aegis.Gateway.dll",
@@ -42,6 +47,7 @@ def arguments():
     mode.add_argument("--workbench", action="store_true", help="Open the workbench at startup (default).")
     parser.add_argument("--scenario", choices=SCENARIOS, default="NOISY-FLOW", help="Synthetic scenario for the first module.")
     parser.add_argument("--overlay", action="store_true", help="Show the passive overlay at startup.")
+    parser.add_argument("--native-review", action="store_true", help="Opt in to the packaged native synthetic review engine.")
     parser.add_argument("--check", action="store_true", help="Verify the package and runtimes without starting.")
     parser.add_argument("--state-directory", type=Path, help="External directory for isolated synthetic test data.")
     parser.add_argument("--seconds", type=int, help="Optional bounded smoke run of 1 to 3600 seconds.")
@@ -72,7 +78,40 @@ def verify_manifest():
         required.update(PRIVATE_FILES | {PRIVATE_INVENTORY.as_posix()})
     if not required.issubset(paths):
         raise LaunchError("패키지 목록에 필수 파일이 빠져 있습니다.")
+    if any(name in paths for name in NATIVE_FILES) and not set(NATIVE_FILES).issubset(paths):
+        raise LaunchError("네이티브 검토 패키지 파일이 빠져 있습니다.")
     print(f"패키지 SHA-256 확인 완료 · {len(paths)}개 파일", flush=True)
+
+
+def native_host():
+    manifest = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))
+    recorded = {entry["path"] for entry in manifest["files"]}
+    if not set(NATIVE_FILES).issubset(recorded):
+        raise LaunchError("이 패키지에는 네이티브 검토 엔진이 포함되지 않았습니다.")
+    for name in NATIVE_FILES:
+        path = ROOT / name
+        if not path.is_file() or path.is_symlink() or not path.resolve().is_relative_to(ROOT):
+            raise LaunchError(f"네이티브 검토 파일 경로가 올바르지 않습니다. {name}")
+        if path.suffix == ".exe" or path.name == "aegis_native.dll":
+            with path.open("rb") as stream:
+                if stream.read(2) != b"MZ":
+                    raise LaunchError(f"Windows x64 PE 파일이 아닙니다. {name}")
+                stream.seek(0x3C)
+                stream.seek(int.from_bytes(stream.read(4), "little"))
+                if stream.read(6) != b"PE\0\0\x64\x86":
+                    raise LaunchError(f"Windows x64 PE 파일이 아닙니다. {name}")
+    return (ROOT / NATIVE_DIRECTORY / "Aegis.NativeHost.exe").resolve()
+
+
+def isolated_environment():
+    isolated_prefixes = ("AEGIS_", "WEBVIEW2_", "PYTHON", "DOTNET_", "ASPNETCORE_")
+    environment = {name: value for name, value in os.environ.items() if not name.upper().startswith(isolated_prefixes)}
+    environment.update(PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1", DOTNET_ENVIRONMENT="Production", ASPNETCORE_ENVIRONMENT="Production")
+    if (ROOT / PRIVATE_INVENTORY).is_file():
+        dotnet_root = str(ROOT / PRIVATE_DOTNET)
+        environment.update(DOTNET_ROOT=dotnet_root, DOTNET_ROOT_X64=dotnet_root)
+        environment["PATH"] = dotnet_root + os.pathsep + environment.get("PATH", "")
+    return environment
 
 
 def prerequisites():
@@ -100,7 +139,7 @@ def prerequisites():
     # The runtime prints UTF-8 paths, including Windows user directory names.
     runtimes = subprocess.run(
         [dotnet, "--list-runtimes"], check=True, capture_output=True,
-        encoding="utf-8", errors="replace", timeout=10,
+        encoding="utf-8", errors="replace", timeout=10, env=isolated_environment(),
     )
     available = {fields[0] for line in runtimes.stdout.splitlines() if len(fields := line.split()) >= 2 and fields[1].startswith("10.0.")}
     missing_frameworks = REQUIRED_FRAMEWORKS - available
@@ -150,19 +189,15 @@ def start(args):
             "--desktop-state-directory", str(profile), "--archive-sessions-root", str(archives),
             "--scenario", args.scenario,
         ]
+        if getattr(args, "native_review", False):
+            command.extend(["--native-host", str(native_host())])
         if args.tray:
             command.append("--tray")
         if args.overlay:
             command.append("--overlay")
         if args.seconds is not None:
             command.extend(["--seconds", str(args.seconds)])
-        isolated_prefixes = ("AEGIS_", "WEBVIEW2_", "PYTHON", "DOTNET_", "ASPNETCORE_")
-        environment = {name: value for name, value in os.environ.items() if not name.upper().startswith(isolated_prefixes)}
-        environment.update(PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1", DOTNET_ENVIRONMENT="Production", ASPNETCORE_ENVIRONMENT="Production")
-        if (ROOT / PRIVATE_INVENTORY).is_file():
-            dotnet_root = str(ROOT / PRIVATE_DOTNET)
-            environment.update(DOTNET_ROOT=dotnet_root, DOTNET_ROOT_X64=dotnet_root)
-            environment["PATH"] = dotnet_root + os.pathsep + environment.get("PATH", "")
+        environment = isolated_environment()
         print("Aegis 합성 수집을 시작합니다. 트레이에서 작업대 또는 오버레이를 열 수 있습니다.", flush=True)
         for attempt in range(3):
             archive = Path(tempfile.mkdtemp(prefix="run-", dir=archives))
@@ -186,6 +221,8 @@ def main() -> int:
     args = arguments()
     try:
         verify_manifest()
+        if getattr(args, "native_review", False):
+            native_host()
         prerequisites()
         if args.check:
             print("Python 3.12 x64와 .NET 10 런타임 확인 완료. WebView2는 작업대 실행 시 확인합니다.")

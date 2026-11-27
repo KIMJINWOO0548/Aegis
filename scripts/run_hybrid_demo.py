@@ -74,6 +74,7 @@ def parse_args(arguments=None):
     parser.add_argument("--scenario", choices=["NORMAL", "DEG-02", "DATA-QUALITY", "TRANSIENT", "NOISY-FLOW"], default="NOISY-FLOW")
     parser.add_argument("--archive-directory", type=Path, help="Retained module archives; defaults to a new runtime/raw/hybrid folder.")
     parser.add_argument("--archive-sessions-root", type=Path, help="Portable launcher's owned runs directory.")
+    parser.add_argument("--native-host", type=Path, help="Opt in to the Windows x64 native review host for synthetic modules.")
     result = parser.parse_args(arguments)
     if (not 1 <= result.count <= 32 or not 8 <= result.signal_count <= 512
             or not 1 <= result.interval_ms <= 60000 or not 1 <= result.port <= 65535
@@ -83,6 +84,10 @@ def parse_args(arguments=None):
         parser.error("--overlay and --desktop-state-directory require the desktop.")
     if result.archive_sessions_root is not None and result.archive_directory is None:
         parser.error("--archive-sessions-root requires --archive-directory for the current run.")
+    if result.native_host is not None:
+        result.native_host = result.native_host.resolve()
+        if os.name != "nt" or result.native_host.name.lower() != "aegis.nativehost.exe" or not result.native_host.is_file():
+            parser.error("--native-host requires a Windows Aegis.NativeHost.exe file.")
     return result
 
 
@@ -111,11 +116,17 @@ def main():
                 environment.update(AEGIS_COMPANION_SETTINGS_PATH=str(state / "companion-settings.json"),
                                    AEGIS_DESKTOP_PROFILE_DIR=str(state / "WebView2Profile"))
             gateway_environment = dict(environment)
+            if args.native_host is not None:
+                gateway_environment["AEGIS_NATIVE_HOST"] = str(args.native_host)
+            native_enabled = os.name == "nt" and bool(gateway_environment.get("AEGIS_NATIVE_HOST"))
+            if native_enabled:
+                gateway_environment["AEGIS_GATEWAY_STOP_ON_STDIN_EOF"] = "1"
             if args.archive_sessions_root is not None:
                 gateway_environment["AEGIS_PRODUCT_STATE_DIRECTORY"] = str(args.archive_sessions_root.resolve().parent)
             with (archive / "gateway.log").open("w", encoding="utf-8") as output:
                 gateway = subprocess.Popen(["dotnet", str(gateway_dll)], cwd=ROOT / "src/Aegis.Gateway", env=gateway_environment,
-                    stdout=output, stderr=output, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+                    stdin=subprocess.PIPE if native_enabled else None, stdout=output, stderr=output,
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
                 try:
                     with httpx.Client(base_url=origin, timeout=3, trust_env=False, follow_redirects=False) as client:
                         wait_until(lambda: client.get("/health").status_code == 200, [*stack.processes, gateway], seconds=20)
@@ -139,6 +150,13 @@ def main():
                 finally:
                     if desktop is not None:
                         _stop(desktop)
+                    if gateway.stdin is not None:
+                        gateway.stdin.close()
+                        try:
+                            if gateway.wait(timeout=7) == 0:
+                                print("Gateway completed graceful shutdown.", flush=True)
+                        except subprocess.TimeoutExpired:
+                            print("Gateway shutdown deadline exceeded; stopping the owned process.", flush=True)
                     _stop(gateway)
     except KeyboardInterrupt:
         pass

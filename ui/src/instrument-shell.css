@@ -413,6 +413,19 @@ html { background: var(--instrument-canvas); }
   border-top: 1px solid var(--instrument-border);
   padding-block-start: 8px;
 }
+.native-flow-summary {
+  margin-block-end: 10px;
+  padding: 8px;
+  border: 1px solid var(--instrument-border);
+  border-radius: 5px;
+  background: var(--instrument-recess);
+}
+.native-flow-summary h3 { font-weight: 650; }
+.native-flow-summary .chart-note { margin-block: 2px 5px; }
+.native-flow-state { font-weight: 650; }
+.native-flow-state[data-native-state="READY"] { color: var(--instrument-good); }
+.native-flow-state[data-native-state="WARMING"], .native-flow-state[data-native-state="RECOVERING"] { color: var(--instrument-warn); }
+.native-flow-state[data-native-state="UNAVAILABLE"] { color: var(--instrument-error); }
 .diagnostic-modules h3, .learned-flow-comparison h4 { margin-block-end: 5px; font-weight: 650; }
 .diagnostic-modules li { padding-block: 4px; border-bottom: 1px solid var(--instrument-border); }
 .diagnostic-modules summary, .diagnostic-preview summary { padding-block: 3px; cursor: pointer; }

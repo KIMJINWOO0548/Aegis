@@ -14,7 +14,8 @@ export interface CollectionStatus {
   workerStatus:'RUNNING'|'RESTARTING'|'FAILED'|'UNAVAILABLE'|'NOT_APPLICABLE';
   workerReason:'ARCHIVE_IDENTITY_MISMATCH'|'WORKER_UNAVAILABLE'|null;
 }
-export interface Device {deviceId:string;equipmentId:string|null;moduleId:string|null;connection:{state:string;lastReceivedAtUtc?:string;acceptedBatches?:number;rejectedBatches?:number;reasonCode?:string;pollLatencyMs?:number}|null;ingestion:{archiveEnabled:boolean;lastCommittedSequence:number|null;lastObservedAtUtc:string|null;pendingBatches:number|null;observedLagMs:number|null;acceptedSignalValues?:number;collectionStatus?:CollectionStatus}|null;observations:Observation[];diagnostics:{evaluation:string;enabled:boolean;issues:{signalKey:string;reasonCode:string;message:string}[]}|null;warnings:{id:string;state:string;createdAtUtc:string}[];review:Review|null;engineState:string;nativeSequence:number|null}
+export interface NativeFlowEvidence {state:'READY'|'WARMING'|'RECOVERING'|'UNAVAILABLE';observedAtUtc:string|null;sampleCount:number;meanAbsoluteDeviationLpm:number|null;reason:'ARCHIVE_UNAVAILABLE'|'NATIVE_HOST_UNAVAILABLE'|'REPLAY_WINDOW_INCOMPLETE'|'SOURCE_RUN_CHANGED'|'SOURCE_STALE'|'UPSTREAM_UNAVAILABLE'|null}
+export interface Device {deviceId:string;equipmentId:string|null;moduleId:string|null;connection:{state:string;lastReceivedAtUtc?:string;acceptedBatches?:number;rejectedBatches?:number;reasonCode?:string;pollLatencyMs?:number}|null;ingestion:{archiveEnabled:boolean;lastCommittedSequence:number|null;lastObservedAtUtc:string|null;pendingBatches:number|null;observedLagMs:number|null;acceptedSignalValues?:number;collectionStatus?:CollectionStatus}|null;observations:Observation[];diagnostics:{evaluation:string;enabled:boolean;issues:{signalKey:string;reasonCode:string;message:string}[]}|null;warnings:{id:string;state:string;createdAtUtc:string}[];review:Review|null;engineState:string;nativeSequence:number|null;nativeFlow?:NativeFlowEvidence|null}
 export interface Snapshot {schemaVersion:'dashboard-1';generatedAtUtc:string;upstreamState:'CONNECTED'|'UNAVAILABLE'|'CONFIGURATION_REQUIRED';sourceMode:'EMULATORS'|'FIXTURES'|'UNKNOWN';message:string|null;devices:Device[];inference:{state:'NOT_REGISTERED';message:string}}
 const record=(v:unknown):v is Record<string,unknown>=>typeof v==='object'&&v!==null&&!Array.isArray(v);
 const text=(v:unknown):v is string=>typeof v==='string'&&v.length<=512;
@@ -38,12 +39,28 @@ function validCollection(v:unknown):v is CollectionStatus {
 }
 const quality=(v:unknown)=>['GOOD','BAD','MISSING','STALE'].includes(String(v));
 const units:Record<string,string>={setpointFlowLpm:'L/min',actualFlowLpm:'L/min',supplyPressureKpa:'kPa',valveCommandPct:'%',valveFeedbackPct:'%',motorCurrentAmp:'A',temperatureC:'degC',cycleCount:'count'};
+const nativeFlowStates=['READY','WARMING','RECOVERING','UNAVAILABLE'] as const;
+const nativeFlowReasons=['ARCHIVE_UNAVAILABLE','NATIVE_HOST_UNAVAILABLE','REPLAY_WINDOW_INCOMPLETE','SOURCE_RUN_CHANGED','SOURCE_STALE','UPSTREAM_UNAVAILABLE'] as const;
+function parseNativeFlow(value:unknown):NativeFlowEvidence|null {
+  if(value===null)return null;
+  if(!record(value)||Object.keys(value).some(key=>!['state','observedAtUtc','sampleCount','meanAbsoluteDeviationLpm','reason','sourceRunId'].includes(key))||
+    !nativeFlowStates.includes(value.state as typeof nativeFlowStates[number])||!nullable(value.observedAtUtc,timestamp)||!count(value.sampleCount)||Number(value.sampleCount)>32||
+    !nullable(value.meanAbsoluteDeviationLpm,v=>number(v)&&Number(v)>=0&&Number(v)<=100)||
+    !nullable(value.reason,reason=>typeof reason==='string'&&nativeFlowReasons.includes(reason as typeof nativeFlowReasons[number]))||
+    !nullable(value.sourceRunId,v=>typeof v==='string'&&v.length<=128))throw Error('네이티브 처리 상태 형식 오류');
+  // Source run IDs are implementation evidence. Keep the dashboard contract
+  // limited to values needed by the selected-module status surface.
+  return {state:value.state as NativeFlowEvidence['state'],observedAtUtc:value.observedAtUtc as string|null,
+    sampleCount:value.sampleCount as number,meanAbsoluteDeviationLpm:value.meanAbsoluteDeviationLpm as number|null,
+    reason:value.reason as NativeFlowEvidence['reason']};
+}
 export function parseSnapshot(value:unknown):Snapshot {
   if(!record(value)||value.schemaVersion!=='dashboard-1'||!timestamp(value.generatedAtUtc)||!nullable(value.message,text)||!['CONNECTED','UNAVAILABLE','CONFIGURATION_REQUIRED'].includes(String(value.upstreamState))||!['EMULATORS','FIXTURES','UNKNOWN'].includes(String(value.sourceMode))||!Array.isArray(value.devices)||value.devices.length>32||!record(value.inference)||value.inference.state!=='NOT_REGISTERED'||!text(value.inference.message)) throw Error('지원하지 않는 대시보드 응답입니다.');
   const ids=new Set<string>();
   for(const d of value.devices){
     if(!record(d)||typeof d.deviceId!=='string'||!identity(d.deviceId)||ids.has(d.deviceId)||!nullable(d.equipmentId,identity)||!nullable(d.moduleId,identity)||!['RUNNING','UNAVAILABLE','ARCHIVE_NOT_CONFIGURED'].includes(String(d.engineState))||!nullable(d.nativeSequence,count)||!Array.isArray(d.observations)||d.observations.length>8||!Array.isArray(d.warnings)||d.warnings.length>32) throw Error('장비 데이터 형식을 확인할 수 없습니다.');
     ids.add(d.deviceId);
+    if('nativeFlow' in d)parseNativeFlow(d.nativeFlow);
     const signals=new Set<string>();
     for(const o of d.observations) {
       if(!record(o)||!text(o.observationId)||!o.observationId||typeof o.signalKey!=='string'||!Object.hasOwn(units,o.signalKey)||signals.has(o.signalKey)||
@@ -58,7 +75,8 @@ export function parseSnapshot(value:unknown):Snapshot {
     if(d.warnings.some(w=>!record(w)||!text(w.id)||!text(w.state)||!timestamp(w.createdAtUtc)))throw Error('경고 형식 오류');
     if(d.review!==null&&(!record(d.review)||d.review.algorithmVersion!=='flow-review-dotnet-dev-1'||!text(d.review.state)||!nullable(d.review.observedAtUtc,timestamp)||!nullable(d.review.rawErrorLpm,number)||!nullable(d.review.trendErrorLpm,number)||!nullable(d.review.contextReason,text)||!count(d.review.eventCount)||!count(d.review.omittedEventCount)||!Array.isArray(d.review.events)||d.review.events.length>32||d.review.events.some(e=>!record(e)||e.disposition!=='UNRESOLVED'||!count(e.eventId)||!timestamp(e.startAtUtc)||!timestamp(e.lastAtUtc)||!number(e.peakDeviationLpm)||!count(e.sampleCount)||!nullable(e.endReason,text)||!Array.isArray(e.relatedSignalKeys)||e.relatedSignalKeys.length>8||e.relatedSignalKeys.some(k=>typeof k!=='string'||!Object.hasOwn(units,k))))) throw Error('검토 근거 형식을 확인할 수 없습니다.');
   }
-  return value as unknown as Snapshot;
+  return {...value,devices:value.devices.map((device:Record<string,unknown>)=>
+    'nativeFlow' in device?{...device,nativeFlow:parseNativeFlow(device.nativeFlow)}:device)} as unknown as Snapshot;
 }
 export const signalLabels:Record<string,string>={setpointFlowLpm:'설정 유량',actualFlowLpm:'실측 유량',supplyPressureKpa:'공급 압력',valveCommandPct:'밸브 명령',valveFeedbackPct:'밸브 피드백',motorCurrentAmp:'모터 전류',temperatureC:'온도',cycleCount:'사이클 수'};
 export const fresh=(stamp:string,now:number)=>now-Date.parse(stamp)<3000&&now-Date.parse(stamp)>=-1000;

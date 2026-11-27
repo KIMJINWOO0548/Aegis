@@ -3,6 +3,7 @@ import {Download,RefreshCw} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Card,CardContent,CardHeader,CardTitle} from '@/components/ui/card';
 import {localDiagnosticsJson,parseLocalDiagnostics,type LocalDiagnosticsReport} from './local-diagnostics';
+import {formatValue,type NativeFlowEvidence} from './data';
 
 type NativeBridge={
  postMessage(message:unknown):void;
@@ -20,6 +21,8 @@ const freshnessLabels={CURRENT:'수신 중',STALE:'수신 지연',RESTORED:'복�
 const connectionLabels={CONNECTING:'연결 중',CONNECTED:'연결됨',DISCONNECTED:'연결 끊김',REJECTED:'연결 거절',STALE:'연결 지연',UNKNOWN:'확인 불가'};
 const engineLabels={RUNNING:'가동',UNAVAILABLE:'사용 불가',ARCHIVE_NOT_CONFIGURED:'보관 설정 안 됨',UNKNOWN:'확인 불가'};
 const workerLabels={RUNNING:'가동',RESTARTING:'재시작 중',FAILED:'중단',UNAVAILABLE:'사용 불가',NOT_APPLICABLE:'해당 없음',UNKNOWN:'확인 불가'};
+const nativeFlowLabels={READY:'준비 완료',WARMING:'준비 중',RECOVERING:'복구 중',UNAVAILABLE:'사용 불가'};
+const nativeFlowReasons={ARCHIVE_UNAVAILABLE:'보관 데이터를 읽을 수 없습니다.',NATIVE_HOST_UNAVAILABLE:'네이티브 처리 호스트에 연결할 수 없습니다.',REPLAY_WINDOW_INCOMPLETE:'보관 이력 동기화를 완료하지 못했습니다.',SOURCE_RUN_CHANGED:'원본 실행 구간을 다시 동기화하고 있습니다.',SOURCE_STALE:'새 관측이 없어 상태가 오래되었습니다.',UPSTREAM_UNAVAILABLE:'게이트웨이 데이터 연결을 사용할 수 없습니다.'};
 const saveStatuses={saved:'진단 JSON을 저장했습니다.',cancelled:'진단 파일 저장을 취소했습니다.',error:'진단 파일을 저장하지 못했습니다. 저장 위치와 파일 이름을 확인하세요.'};
 
 function nativeBridge():NativeBridge|undefined {
@@ -42,7 +45,33 @@ function nextModuleAction(row:ModuleRow):string|null {
  return null;
 }
 
-export default function LocalDiagnostics({close}:{close:()=>void}) {
+function observationAge(value:string|null,now:number):string {
+ if(!value)return '기록 없음';
+ const elapsed=now-Date.parse(value);
+ if(elapsed<0)return '시각 확인 필요';
+ const seconds=Math.floor(elapsed/1000);
+ if(seconds<1)return '1초 미만 전';
+ if(seconds<60)return `${seconds}초 전`;
+ return `${Math.floor(seconds/60)}분 ${seconds%60}초 전`;
+}
+
+function NativeFlowSummary({selectedModule,nativeFlow,nativeSequence,now}:{selectedModule:boolean;nativeFlow:NativeFlowEvidence|null|undefined;nativeSequence:number|null;now:number}) {
+ const label=nativeFlow?nativeFlowLabels[nativeFlow.state]:selectedModule?'기본 관리형':'모듈 미선택';
+ return <section className="native-flow-summary" aria-labelledby="native-flow-title">
+  <h3 id="native-flow-title">선택 모듈 처리 상태</h3>
+  <p className="chart-note">대시보드에 캐시된 상태와 관측 요약입니다.</p>
+  <dl className="incident-evidence">
+   <dt>처리 상태</dt><dd><span className="native-flow-state" data-native-state={nativeFlow?.state??(selectedModule?'MANAGED':'NONE')} aria-label={`처리 상태: ${label}`}>{label}</span></dd>
+   <dt>상태 사유</dt><dd>{nativeFlow?.reason?nativeFlowReasons[nativeFlow.reason]:'기록 없음'}</dd>
+   <dt>표본 수</dt><dd>{nativeFlow?nativeFlow.sampleCount:'—'}</dd>
+   <dt>평균 절대 편차</dt><dd>{nativeFlow?.meanAbsoluteDeviationLpm===null||!nativeFlow?'—':`${formatValue(nativeFlow.meanAbsoluteDeviationLpm)} L/min`}</dd>
+   <dt>마지막 관측 경과</dt><dd>{nativeFlow?observationAge(nativeFlow.observedAtUtc,now):'기록 없음'}</dd>
+   <dt>처리 순번</dt><dd>{nativeSequence??'기록 없음'}</dd>
+  </dl>
+ </section>;
+}
+
+export default function LocalDiagnostics({close,nativeFlow,nativeSequence,now,selectedModule}:{close:()=>void;nativeFlow:NativeFlowEvidence|null|undefined;nativeSequence:number|null;now:number;selectedModule:boolean}) {
  const [report,setReport]=useState<LocalDiagnosticsReport|null>(null);
  const [refresh,setRefresh]=useState(0);
  const [loading,setLoading]=useState(true);
@@ -124,6 +153,7 @@ export default function LocalDiagnostics({close}:{close:()=>void}) {
   <CardContent className="panel-body" aria-busy={loading}>
    {loading&&<p role="status" className="chart-note">로컬 상태를 확인하는 중…</p>}
    {failure&&<p role="alert" className="chart-note">{failure}</p>}
+   <NativeFlowSummary selectedModule={selectedModule} nativeFlow={nativeFlow} nativeSequence={nativeSequence} now={now}/>
    {report&&<>
     <dl className="incident-evidence">
      <dt>작성 시각</dt><dd><Timestamp value={report.generatedAtUtc}/></dd>

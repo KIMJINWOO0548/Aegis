@@ -5,7 +5,10 @@ param(
     [string]$DesktopDirectory,
     [string]$UiDirectory,
     [string]$PythonEnvironment,
-    [string]$DotnetDirectory
+    [string]$DotnetDirectory,
+    [string]$NativeHostDirectory,
+    [string]$NativeDll,
+    [string]$PrivateRuntimeDirectory
 )
 
 $ErrorActionPreference = 'Stop'
@@ -149,11 +152,64 @@ function Write-PrivateRuntime {
     [IO.File]::WriteAllText((Join-Path $stage 'runtime/runtime.json'), ($inventory | ConvertTo-Json -Depth 5), [Text.UTF8Encoding]::new($false))
 }
 
+if ([bool]$NativeHostDirectory -ne [bool]$NativeDll) {
+    throw 'Specify both -NativeHostDirectory and -NativeDll for native review.'
+}
+if ($PrivateRuntimeDirectory -and ($PythonEnvironment -or $DotnetDirectory)) {
+    throw 'Choose -PrivateRuntimeDirectory or build a runtime with -PythonEnvironment.'
+}
+
+function Write-ExistingRuntime {
+    $runtime = (Get-Item -LiteralPath $PrivateRuntimeDirectory).FullName
+    $inventory = Get-Content -LiteralPath (Join-Path $runtime 'runtime.json') -Raw | ConvertFrom-Json
+    if ($inventory.platform -ne 'win-x64' -or $inventory.pythonVersion -notmatch '^3\.12\.' -or $inventory.dotnetVersion -notmatch '^10\.0\.[0-9]+$') {
+        throw 'Expected a Windows x64 Python 3.12 and .NET 10 private runtime inventory.'
+    }
+    # Reuse only the complete runtime recorded by its original package manifest.
+    $original = Get-Content -LiteralPath (Join-Path (Split-Path $runtime) 'manifest.json') -Raw | ConvertFrom-Json
+    $entries = @($original.files | Where-Object { $_.path.StartsWith('runtime/') })
+    $files = @(Get-PlainFiles $runtime)
+    if ($original.platform -ne 'win-x64' -or $original.schemaVersion -ne 1 -or $entries.Count -ne $files.Count) {
+        throw 'The reusable runtime must match its original package manifest.'
+    }
+    $seen = @{}
+    foreach ($file in $files) {
+        $relative = 'runtime/' + $file.FullName.Substring($runtime.Length + 1).Replace('\', '/')
+        $entry = @($entries | Where-Object path -CEQ $relative)
+        if ($entry.Count -ne 1 -or $seen.ContainsKey($relative) -or $entry[0].bytes -ne $file.Length -or
+            $entry[0].sha256 -ne (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()) {
+            throw "Reusable runtime integrity mismatch: $relative"
+        }
+        $seen[$relative] = $true
+    }
+    foreach ($name in @('python/python.exe', 'python/pythonw.exe', 'dotnet/dotnet.exe')) {
+        Assert-X64Executable (Join-Path $runtime $name)
+    }
+    foreach ($framework in @('Microsoft.NETCore.App', 'Microsoft.AspNetCore.App', 'Microsoft.WindowsDesktop.App')) {
+        if (!(Test-Path -LiteralPath (Join-Path $runtime "dotnet/shared/$framework/$($inventory.dotnetVersion)") -PathType Container)) {
+            throw "Incomplete reusable .NET runtime: $framework"
+        }
+    }
+    Write-PackageTree $runtime 'runtime'
+}
+
 $stage = Join-Path $parent.FullName ('.aegis-staging-' + [guid]::NewGuid().ToString('N'))
 $null = New-Item -Path $stage -ItemType Directory
 try {
     Write-AppOutput $source.Gateway 'src/Aegis.Gateway/bin/Release/net10.0' 'Aegis.Gateway'
     Write-AppOutput $source.Desktop 'src/Aegis.Desktop/bin/Release/net10.0-windows' 'Aegis.Desktop'
+    if ($NativeHostDirectory) {
+        if ([IO.Path]::GetFileName($NativeDll) -cne 'aegis_native.dll') { throw 'Native DLL must be named aegis_native.dll.' }
+        Assert-X64Executable $NativeDll
+        $nativeRelative = 'src/Aegis.NativeHost/bin/Release/net10.0'
+        Write-AppOutput $NativeHostDirectory $nativeRelative 'Aegis.NativeHost'
+        $copiedDll = Join-Path $stage "$nativeRelative/aegis_native.dll"
+        if (Test-Path -LiteralPath $copiedDll) {
+            if ((Get-FileHash -LiteralPath $copiedDll).Hash -ne (Get-FileHash -LiteralPath $NativeDll).Hash) {
+                throw 'NativeHost output contains a different aegis_native.dll.'
+            }
+        } else { Write-PackageFile $NativeDll "$nativeRelative/aegis_native.dll" }
+    }
     $ui = Get-Item -LiteralPath $source.Ui
     if (!$ui.PSIsContainer -or ($ui.Attributes -band [IO.FileAttributes]::ReparsePoint) -or
         !(Test-Path -LiteralPath (Join-Path $ui.FullName 'assets') -PathType Container)) {
@@ -178,7 +234,8 @@ try {
     Write-PackageFile (Join-Path $PSScriptRoot 'windows_release/manage_install.py') 'scripts/manage_install.py'
     Write-PackageFile (Join-Path $PSScriptRoot 'windows_release/README.ko.md') 'README.ko.md'
 
-    if ($PythonEnvironment) { Write-PrivateRuntime }
+    if ($PrivateRuntimeDirectory) { Write-ExistingRuntime }
+    elseif ($PythonEnvironment) { Write-PrivateRuntime }
     elseif ($DotnetDirectory) { throw 'Specify -PythonEnvironment when packaging a private runtime.' }
 
     $manifest = @{
